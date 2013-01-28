@@ -114,7 +114,15 @@ copy_loop:
 	cmp	r0, r2				/* until source end addreee [r2]    */
 	ble	copy_loop
 #endif
+	/* clear .bss */
+	mov   	r0,#0                   /* get a zero 						*/
+	ldr   	r1,=__bss_start         /* bss start 						*/
+	ldr   	r2,=__bss_end           /* bss end 							*/
 	
+bss_loop:
+	cmp   	r1,r2                   /* check if data to clear 			*/
+	strlo 	r0,[r1],#4              /* clear 4 bytes 					*/
+	blo   	bss_loop                /* loop until done 					*/
 	/* start RT-Thread Kernel */
 	ldr	pc, _rtthread_startup
 
@@ -143,7 +151,7 @@ vector_resv: 	bl rt_hw_trap_resv
 .globl rt_interrupt_to_thread
 vector_irq:	
 	stmfd	sp!, {r0-r12,lr}
-	bl  led_off
+	/*bl  led_off*/
 	bl	rt_interrupt_enter
 	bl	rt_hw_trap_irq
 	bl	rt_interrupt_leave
@@ -251,7 +259,7 @@ led_off:
 	str	r0,	[r1]			@ r0->[r1]
 
 	ldr	r1,	=0x1d20014		@ r1<-PDATC
-	ldr	r0,	=0x0			@ r0<-00
+	ldr	r0,	=0x00			@ r0<-00
 	str	r0,	[r1]			@ r0->[r1]
 
 	mov	pc, lr
