@@ -807,3 +807,199 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
 	}
 	return TRUE;
 }
+
+BOOL burn(pe p)
+{
+		unsigned char ucData[240];
+		unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
+		BOOL ucReturn;
+    unsigned char i,addr;		
+		cm_PowerOn();
+		//test iic bus
+		ucData[0] = 0x12;
+		ucData[1] = 0x34;
+		ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_MTZ, ucData, 2, FALSE);
+		if (ucReturn != TRUE) {
+			AT88DBG("Write Config Zone MTZ failed\n");
+			return FALSE;
+		}
+		                                                            
+		// Read back data
+		ucData[0] = 0x00;
+		ucData[1] = 0x00;
+		ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_MTZ, ucData, 2);
+		if (ucReturn != TRUE || ucData[0]!=0x12 || ucData[1]!=0x34) {
+			AT88DBG("Read Config Zone MTZ failed\n");
+			return FALSE;
+		}
+		//write user zone
+		memset(ucData,0xff,32);
+		for(i=0;i<4;i++)
+		{
+			if(memcmp(p.user_zone[i],ucData,32)!=0)
+			{
+				cm_SetUserZone(DEFAULT_ADDRESS, i, FALSE);
+				ucReturn = cm_WriteUserZone(DEFAULT_ADDRESS, 0, p.user_zone[i], 16);
+     		if(ucReturn != TRUE){
+	 				AT88DBG("cm_WriteUserZone Zone failed 1\n");
+					return FALSE;
+     		}
+     		ucReturn = cm_WriteUserZone(DEFAULT_ADDRESS, 0x10, (unsigned char *)(p.user_zone[i]+16), 16);
+     		if(ucReturn != TRUE){
+	 				AT88DBG("cm_WriteUserZone Zone failed 2\n");
+					return FALSE;
+     		}
+    	}
+    }
+    //unlock config zone
+		ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, Def_SecureCode,7, 0);
+		if (ucReturn != TRUE)  {
+				AT88DBG("cm_VerifyPassword failed\n");
+				return FALSE;
+		}
+		ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, ucData, 0xf0);
+		if (ucReturn != TRUE) {
+			AT88DBG("cm_ReadConfigZone failed\n");
+			return FALSE;
+		}
+		AT88DBG("\nRead all config data\n");
+		for(i=0;i<0xf0;i++)
+		{
+			if(i%8==0 && i!=0)
+			AT88DBG("\n");
+			AT88DBG("%4X ",ucData[i]);		
+		}
+		memset(ucData,0xff,32);
+		//write pw
+		for(i=0;i<8;i++)
+		{
+			if(memcmp(p.pw[i],ucData,7)!=0)
+			{
+				if(i==0)
+					addr=AT88SC_W0;
+				else if(i==1)
+					addr=AT88SC_W1;
+				else if(i==2)
+					addr=AT88SC_W2;
+				else if(i==3)
+					addr=AT88SC_W3;
+				else if(i==4)
+					addr=AT88SC_W4;
+				else if(i==5)
+					addr=AT88SC_W5;
+				else if(i==6)
+					addr=AT88SC_W6;
+				else if(i==7)
+					addr=AT88SC_W7;
+				ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, addr, p.pw[i], 7, FALSE);
+				if(ucReturn != TRUE) {
+					AT88DBG("cm_WriteConfigZone PW failed \n");
+					return FALSE;
+				}
+			}
+		}
+		//write G
+		for(i=0;i<4;i++)
+		{
+			if(memcmp(p.g[i],ucData,8)!=0)
+			{
+				ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_G0+i*8, p.g[i], 8, FALSE);
+	      if (ucReturn != TRUE) {
+		 			AT88DBG("cm_WriteConfigZone G Failed\n");
+					return FALSE;
+	     	}
+			}
+		}
+		//write Ci
+		for(i=0;i<4;i++)
+		{
+			if(memcmp(p.ci[i],ucData,7)!=0)
+			{
+				if(i==0)
+					addr=AT88SC_CI0;
+				else if(i==1)
+					addr=AT88SC_CI1;
+				else if(i==2)
+					addr=AT88SC_CI2;
+				else if(i==3)
+					addr=AT88SC_CI3;
+				ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, addr, p.ci[i], 7, FALSE);
+	      if (ucReturn != TRUE) {
+		 			AT88DBG("cm_WriteConfigZone Ci Failed\n");
+					return FALSE;
+	     	}
+			}
+		}
+		//write ar
+		for(i=0;i<4;i++)
+		{
+			if(memcmp(p.ar[i],ucData,2)!=0)
+			{
+				ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_AR0+i*2, p.ar[i], 2, FALSE);
+	      if (ucReturn != TRUE) {
+		 			AT88DBG("cm_WriteConfigZone AR Failed\n");
+					return FALSE;
+	     	}
+			}
+		}
+		if(p.fuse)
+		{
+			//set fuse
+			unsigned char fuse;
+			cm_ReadFuse(DEFAULT_ADDRESS,&fuse);
+			AT88DBG("Before fuse , %x",fuse);
+			fuse=0x06;
+			cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
+			fuse=0x04;
+			cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
+			fuse=0x00;
+			cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
+			cm_ReadFuse(DEFAULT_ADDRESS,&fuse);
+			AT88DBG("after fuse , %x",fuse);
+		}
+		ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, ucData, 0xf0);
+		if (ucReturn != TRUE) {
+			AT88DBG("cm_ReadConfigZone failed\n");
+			return FALSE;
+		}
+		AT88DBG("\nRead all config data again\n");
+		for(i=0;i<0xf0;i++)
+		{
+			if(i%8==0 && i!=0)
+			AT88DBG("\n");
+			AT88DBG("%4X ",ucData[i]);		
+		}
+		return TRUE;
+}
+
+BOOL auth(pge p)
+{
+		BOOL ucReturn;
+    unsigned char i,addr;		
+		cm_PowerOn();
+		ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, p->use_g, p->g, NULL, TRUE);
+		AT88DBG("cm_VerifyCrypto %x\n",p->use_g);
+		if (ucReturn != TRUE){
+				AT88DBG("cm_VerifyCrypto failed\n");
+				return FALSE;
+		}
+		
+		ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 0);
+		if (ucReturn != TRUE)  {
+				AT88DBG("cm_VerifyPassword failed\n");
+				return FALSE;
+		}
+		cm_SetUserZone(DEFAULT_ADDRESS, p->zone_index, FALSE);
+		ucReturn = cm_ReadUserZone(DEFAULT_ADDRESS, 0, p->user_zone, 32);
+		if (ucReturn != TRUE){
+				AT88DBG("At88sc_Read failed\n");
+				return FALSE;
+		}
+		for(i=0;i<32;i++)
+		{
+			if(i%8==0 && i!=0)
+			AT88DBG("\n");
+			AT88DBG("%4X ",p->user_zone[i]);		
+		}
+		return TRUE;
+}

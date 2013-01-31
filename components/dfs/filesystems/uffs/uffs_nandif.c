@@ -143,13 +143,13 @@ void uffs_setup_storage(
 	rt_memset(attr, 0, sizeof(struct uffs_StorageAttrSt));
 
 //	attr->total_blocks = nand->end_block - nand->start_block + 1;/* no use */
-	attr->page_data_size = nand->page_size;                /* page data size */
-	attr->pages_per_block = nand->pages_per_block;         /* pages per block */
-	attr->spare_size = nand->oob_size;                     /* page spare size */
-	attr->ecc_opt = RT_CONFIG_UFFS_ECC_MODE;               /* ecc option */
-	attr->ecc_size = 0;                                    /* ecc size is 0 , the uffs will calculate the ecc size*/
-	attr->block_status_offs = attr->ecc_size;              /* indicate block bad or good, offset in spare */
-	attr->layout_opt = RT_CONFIG_UFFS_LAYOUT;              /* let UFFS do the spare layout */
+	attr->page_data_size = nand->page_size;		                 /* page data size */
+	attr->pages_per_block = nand->pages_per_block;               /* pages per block */
+	attr->spare_size = nand->oob_size;		  	                 /* page spare size */
+	attr->block_status_offs = UFFS_BLOCK_MARK_SPARE_OFFSET;      /* block status offset is 5th byte in spare */
+	attr->ecc_opt = RT_CONFIG_UFFS_ECC_MODE;                     /* ecc option */
+	attr->ecc_size = RT_CONFIG_UFFS_ECC_SIZE;		  	         /* ecc size */
+	attr->layout_opt = RT_CONFIG_UFFS_LAYOUT;                    /* let UFFS do the spare layout */
 }
 
 #elif  RT_CONFIG_UFFS_ECC_MODE == UFFS_ECC_HW_AUTO
@@ -303,10 +303,10 @@ const uffs_FlashOps nand_ops =
 	nand_erase_block,   /* EraseBlock() */
 };
 
-static rt_uint8_t hw_flash_data_layout[UFFS_SPARE_LAYOUT_SIZE] =
+const rt_uint8_t k9fxg08_data_layout[UFFS_SPARE_LAYOUT_SIZE] =
 {0x05, 0x08, 0xFF, 0x00};
 
-static rt_uint8_t hw_flash_ecc_layout[UFFS_SPARE_LAYOUT_SIZE] =
+const rt_uint8_t k9fxg08_ecc_layout[UFFS_SPARE_LAYOUT_SIZE] =
 {0x00, 0x04, 0xFF, 0x00};
 
 void uffs_setup_storage(
@@ -316,30 +316,20 @@ void uffs_setup_storage(
 	rt_memset(attr, 0, sizeof(struct uffs_StorageAttrSt));
 
 //	attr->total_blocks = nand->end_block - nand->start_block + 1;/* no use */
-	attr->page_data_size = nand->page_size;                /* page data size */
-	attr->pages_per_block = nand->pages_per_block;         /* pages per block */
-	attr->spare_size = nand->oob_size;                     /* page spare size */
-	attr->ecc_opt = RT_CONFIG_UFFS_ECC_MODE;               /* ecc option */
-	attr->ecc_size = nand->oob_size-nand->oob_free;        /* ecc size */
-	attr->block_status_offs = attr->ecc_size;              /* indicate block bad or good, offset in spare */
-	attr->layout_opt = RT_CONFIG_UFFS_LAYOUT;              /* let UFFS do the spare layout */
-
-	/* calculate the ecc layout array */
-	hw_flash_data_layout[0] = attr->ecc_size + 1; /* ecc size + 1byte block status */
-	hw_flash_data_layout[1] = 0x08;
-	hw_flash_data_layout[2] = 0xFF;
-	hw_flash_data_layout[3] = 0x00;
-
-	hw_flash_ecc_layout[0] = 0;
-	hw_flash_ecc_layout[1] = attr->ecc_size;
-	hw_flash_ecc_layout[2] = 0xFF;
-	hw_flash_ecc_layout[3] = 0x00;
+	attr->page_data_size = nand->page_size;		                 /* page data size */
+	attr->pages_per_block = nand->block_size / nand->page_size ; /* pages per block */
+	attr->spare_size = nand->oob_size;		  	                 /* page spare size */
+	attr->block_status_offs = UFFS_BLOCK_MARK_SPARE_OFFSET;      /* block status offset is 5th byte in spare */
+	attr->ecc_opt = RT_CONFIG_UFFS_ECC_MODE;                     /* ecc option */
+	attr->ecc_size = RT_CONFIG_UFFS_ECC_SIZE;		  	         /* ecc size */
+	attr->layout_opt = RT_CONFIG_UFFS_LAYOUT;                    /* let UFFS do the spare layout */
 
 	/* initialize  _uffs_data_layout and _uffs_ecc_layout */
-	rt_memcpy(attr->_uffs_data_layout, hw_flash_data_layout, UFFS_SPARE_LAYOUT_SIZE);
-	rt_memcpy(attr->_uffs_ecc_layout, hw_flash_ecc_layout, UFFS_SPARE_LAYOUT_SIZE);
+	rt_memcpy(attr->_uffs_data_layout, k9fxg08_data_layout, UFFS_SPARE_LAYOUT_SIZE);
+	rt_memcpy(attr->_uffs_ecc_layout, k9fxg08_ecc_layout, UFFS_SPARE_LAYOUT_SIZE);
 
 	attr->data_layout = attr->_uffs_data_layout;
 	attr->ecc_layout = attr->_uffs_ecc_layout;
 }
 #endif
+

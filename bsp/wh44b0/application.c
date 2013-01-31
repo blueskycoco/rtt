@@ -21,6 +21,7 @@
 #include <netif/ethernetif.h>
 #include "rtl8019.h"
 #endif
+#include "s1.h"
 void rt_led_thread_entry(void *parameter)
 {
 		/* LwIP Initialization */
@@ -97,4 +98,48 @@ void nfs(const char *folder)
 #endif
 }
 FINSH_FUNCTION_EXPORT(nfs, mount nfs);
+void b(void)
+{
+	pe p;
+	int i;
+	memset(&p,0xff,sizeof(pe));
+	for(i=0;i<32;i++)
+	{
+		p.user_zone[0][i]=i;
+	}
+	p.ar[0][0]=0x17;//normal auth,encrypted
+	p.ar[0][1]=0x61;//use g1,pw1
+	for(i=0;i<7;i++)
+	{
+		p.ci[1][i]=i;
+		if(i!=3)
+			p.pw[1][i]=i;
+	}
+	for(i=0;i<8;i++)
+	{
+		p.g[1][i]=i;
+	}
+	p.fuse=RT_FALSE;
+	burn(p);
+}
+FINSH_FUNCTION_EXPORT(b, test at88sc burn);
+void a(void)
+{
+	ge p;
+	int i;
+	memset(&p,0xff,sizeof(ge));
+	for(i=0;i<3;i++)
+	{
+			p.pw[i]=i;
+	}
+	for(i=0;i<8;i++)
+	{
+		p.g[i]=i;
+	}
+	p.use_g=1;
+	p.use_pw=1;
+	p.zone_index=0;
+	auth(&p);
+}
+FINSH_FUNCTION_EXPORT(a, test at88sc auth);
 /** @} */
