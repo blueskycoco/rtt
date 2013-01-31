@@ -30,13 +30,54 @@
 #define DATA_BASE   0x0a000001
 #define inportb(r) 		(*(volatile rt_uint8_t *)(r))
 #define outportb(r, d) 	(*(volatile rt_uint8_t *)(d) = (r))
+struct sl811h_ep {
+	struct usb_host_endpoint *hep;
+	//struct usb_device	*udev;
+
+	u8			defctrl;
+	u8			maxpacket;
+	u8			epnum;
+	u8			nextpid;
+
+	u16			error_count;
+	u16			nak_count;
+	u16			length;		/* of current packet */
+
+	/* periodic schedule */
+	u16			period;
+	u16			branch;
+	u16			load;
+	struct sl811h_ep	*next;
+
+	/* async schedule */
+	rt_list_t	schedule;
+};
 struct sl811
 {
     struct uhcd sl811_hcd;
     struct uhubinst root_hub;
-    rt_bool_t ignore_disconnect = RT_FALSE;
+    rt_bool_t ignore_disconnect;
     rt_uint32_t port1;
     rt_uint8_t ctrl1,ctrl2,irq_enable;
+	/* sw model */
+	rt_timer_t	timer;
+	struct sl811h_ep	*next_periodic;
+	struct sl811h_ep	*next_async;
+
+	struct sl811h_ep	*active_a;
+	rt_uint32_t			tick_a;
+	struct sl811h_ep	*active_b;
+	rt_uint32_t			tick_b;
+
+	rt_uint16_t			frame;
+
+	/* async schedule: control, bulk */
+	rt_list_t	async;
+
+	/* periodic schedule: interrupt, iso */
+	rt_uint16_t			load[PERIODIC_SIZE];
+	struct sl811h_ep	*periodic[PERIODIC_SIZE];
+	rt_uint16_t		periodic_count;
 };
 static struct sl811 sl811_device;
 static inline rt_uint8_t sl811_read(rt_uint8_t reg)
@@ -109,9 +150,9 @@ rt_uint8_t sl811_connect ()
         USB_Host.device_prop.address, USB_Host.device_prop.speed,
         EP_TYPE_CTRL, USB_Host.Control.ep0size);   
 #endif       
-    root_hub.port_status[0] |= (PORT_CCS | PORT_CCSC);
+    sl811_device.root_hub.port_status[0] |= (PORT_CCS | PORT_CCSC);
     msg.type = USB_MSG_CONNECT_CHANGE;
-    msg.content.uhub = &root_hub;
+    msg.content.uhub = &(sl811_device.root_hub);
     rt_usb_post_event(&msg, sizeof(struct uhost_msg));    
 
     return 0;
@@ -135,10 +176,10 @@ rt_uint8_t sl811_disconnect ()
     USBH_DeAllocate_AllChannel(&USB_OTG_Core);  
     USB_Host.gState = HOST_IDLE;
 #endif
-    root_hub.port_status[0] |= PORT_CCSC;
-    root_hub.port_status[0] &= ~PORT_CCS;
+    sl811_device.root_hub.port_status[0] |= PORT_CCSC;
+    sl811_device.root_hub.port_status[0] &= ~PORT_CCS;
     msg.type = USB_MSG_CONNECT_CHANGE;
-    msg.content.uhub = &root_hub;
+    msg.content.uhub = &(sl811_device.root_hub);
     rt_usb_post_event(&msg, sizeof(struct uhost_msg));    
 
     return 0;
@@ -168,8 +209,8 @@ static int sl811_control_xfer(uinst_t uinst, ureq_t setup, void* buffer,
     RT_ASSERT(uinst != RT_NULL);
     RT_ASSERT(setup != RT_NULL);
 
-    if(!(root_hub.port_status[0] & PORT_CCS) || 
-        (root_hub.port_status[0] & PORT_CCSC)) return -1;
+    if(!(sl811_device.root_hub.port_status[0] & PORT_CCS) || 
+        (sl811_device.root_hub.port_status[0] & PORT_CCSC)) return -1;
 
     rt_sem_take(&sem_lock, RT_WAITING_FOREVER);
 #if 0
@@ -218,8 +259,8 @@ static int sl811_int_xfer(upipe_t pipe, void* buffer, int nbytes, int timeout)
     RT_ASSERT(pipe != RT_NULL);
     RT_ASSERT(buffer != RT_NULL);
 
-    if(!(root_hub.port_status[0] & PORT_CCS) || 
-        (root_hub.port_status[0] & PORT_CCSC)) return -1;
+    if(!(sl811_device.root_hub.port_status[0] & PORT_CCS) || 
+        (sl811_device.root_hub.port_status[0] & PORT_CCSC)) return -1;
 
     rt_sem_take(&sem_lock, RT_WAITING_FOREVER);
 
@@ -249,8 +290,8 @@ static int sl811_bulk_xfer(upipe_t pipe, void* buffer, int nbytes, int timeout)
     RT_ASSERT(pipe != RT_NULL);
     RT_ASSERT(buffer != RT_NULL);
 
-    if(!(root_hub.port_status[0] & PORT_CCS) || 
-        (root_hub.port_status[0] & PORT_CCSC)) return -1;
+    if(!(sl811_device.root_hub.port_status[0] & PORT_CCS) || 
+        (sl811_device.root_hub.port_status[0] & PORT_CCSC)) return -1;
 
     ptr = (rt_uint8_t*)buffer;
     channel = (rt_uint32_t)pipe->user_data & 0xFF;
@@ -422,7 +463,7 @@ static rt_err_t sl811_hub_control(rt_uint16_t port, rt_uint8_t cmd, void* args)
     switch(cmd)
     {
     case RH_GET_PORT_STATUS:
-        *(rt_uint32_t*)args = root_hub.port_status[port - 1];
+        *(rt_uint32_t*)args = sl811_device.root_hub.port_status[port - 1];
         break;
     case RH_SET_PORT_STATUS:
         break;
@@ -430,14 +471,14 @@ static rt_err_t sl811_hub_control(rt_uint16_t port, rt_uint8_t cmd, void* args)
         switch((rt_uint32_t)args & 0xFF)
         {
         case PORT_FEAT_C_RESET:
-            root_hub.port_status[port - 1] &= ~PORT_PRSC;    
-            ignore_disconnect = RT_FALSE;            
+            sl811_device.root_hub.port_status[port - 1] &= ~PORT_PRSC;    
+            sl811_device.ignore_disconnect = RT_FALSE;            
             break;
         case PORT_FEAT_C_CONNECTION:
-            root_hub.port_status[port - 1] &= ~PORT_CCSC;            
+            sl811_device.root_hub.port_status[port - 1] &= ~PORT_CCSC;            
             break;
         case PORT_FEAT_C_ENABLE:
-            root_hub.port_status[port - 1] &= ~PORT_PESC;            
+            sl811_device.root_hub.port_status[port - 1] &= ~PORT_PESC;            
             break;
         default:
             break;
@@ -447,16 +488,16 @@ static rt_err_t sl811_hub_control(rt_uint16_t port, rt_uint8_t cmd, void* args)
         switch((rt_uint32_t)args & 0xFF)
         {        
         case PORT_FEAT_POWER:
-            root_hub.port_status[port - 1] |= PORT_PPS;
+            sl811_device.root_hub.port_status[port - 1] |= PORT_PPS;
             break;
         case PORT_FEAT_RESET:            
-            ignore_disconnect = RT_TRUE;            
-            root_hub.port_status[port - 1] |= PORT_PRS;    
+            sl811_device.ignore_disconnect = RT_TRUE;            
+            sl811_device.root_hub.port_status[port - 1] |= PORT_PRS;    
       //      USB_OTG_ResetPort(&USB_OTG_Core);             
-            root_hub.port_status[port - 1] &= ~PORT_PRS;  
+            sl811_device.root_hub.port_status[port - 1] &= ~PORT_PRS;  
             break;
         case PORT_FEAT_ENABLE:
-            root_hub.port_status[port - 1] |= PORT_PES;            
+            sl811_device.root_hub.port_status[port - 1] |= PORT_PES;            
             break;
         }    
         break;
@@ -477,12 +518,13 @@ static struct uhcd_ops sl811_ops =
     sl811_free_pipe,
     sl811_hub_control,    
 };
-void sl811_isr(int arg)
+
+void sl811h_irq(int arg)
 {
 	//struct sl811	*sl811 = hcd_to_sl811(hcd);
 	rt_uint8_t		irqstat;
-	irqreturn_t ret = IRQ_NONE;
-	unsigned	retries = 5;
+	//irqreturn_t	ret = IRQ_NONE;
+	rt_uint8_t	retries = 5;
 
 	//spin_lock(&sl811->lock);
 
@@ -493,6 +535,15 @@ retry:
 		irqstat &= sl811_device.irq_enable;
 	}
 
+#ifdef	QUIRK2
+	/* this may no longer be necessary ... */
+	if (irqstat == 0) {
+		irqstat = checkdone(sl811);
+		if (irqstat)
+			sl811_device.stat_lost++;
+	}
+#endif
+
 	/* USB packets, not necessarily handled in the order they're
 	 * issued ... that's fine if they're different endpoints.
 	 */
@@ -501,6 +552,13 @@ retry:
 		sl811->active_a = NULL;
 		sl811->stat_a++;
 	}
+#ifdef USE_B
+	if (irqstat & SL11H_INTMASK_DONE_B) {
+		done(sl811, sl811->active_b, SL811_EP_B(SL811_HOST_BUF));
+		sl811->active_b = NULL;
+		sl811->stat_b++;
+	}
+#endif
 	if (irqstat & SL11H_INTMASK_SOFINTR) {
 		unsigned index;
 
@@ -546,6 +604,17 @@ retry:
 				-ESHUTDOWN);
 			sl811->active_a = NULL;
 		}
+#ifdef	USE_B
+		if (sl811->active_b) {
+			sl811_write(sl811, SL811_EP_B(SL11H_HOSTCTLREG), 0);
+			finish_request(sl811, sl811->active_b,
+				container_of(sl811->active_b
+						->hep->urb_list.next,
+					struct urb, urb_list),
+				NULL, -ESHUTDOWN);
+			sl811->active_b = NULL;
+		}
+#endif
 
 		/* port status seems weird until after reset, so
 		 * force the reset and make khubd clean up later.
@@ -582,6 +651,7 @@ retry:
 
 	return ret;
 }
+
 void INTEINT4_handler(int irqno)
 {
     sl811_isr(0);
@@ -598,10 +668,10 @@ static rt_err_t sl811_init(rt_device_t dev)
     rt_sem_init(&sem_lock, "s_lock", 1, RT_IPC_FLAG_FIFO);    
 
     /* roothub initilizition */
-    root_hub.num_ports = 1;
-    root_hub.is_roothub = RT_TRUE;
-    root_hub.self = RT_NULL;
-    root_hub.hcd = &(sl811_device.sl811_hcd);
+    sl811_device.root_hub.num_ports = 1;
+    sl811_device.root_hub.is_roothub = RT_TRUE;
+    sl811_device.root_hub.self = RT_NULL;
+    sl811_device.root_hub.hcd = &(sl811_device.sl811_hcd);
 #if 0
     /* Hardware Init */
     USB_OTG_HS_Init(&USB_OTG_Core);  
