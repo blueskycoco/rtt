@@ -129,7 +129,7 @@ BOOL cm_Read(unsigned char Command, unsigned char Addr1, unsigned char Addr2,uns
     }
 
     AT88DBG("<cm_Read>Command = 0x%02x, Addr1 = 0x%02x, Addr2 = 0x%02x, Nbytes = 0x%02x\r\n", Command, Addr1,Addr2,Nbytes);
-    sleep_ms(20UL);
+    //sleep_ms(20UL);
 
     while (restart_count++ < 5)
     {
@@ -182,10 +182,10 @@ BOOL cm_Read(unsigned char Command, unsigned char Addr1, unsigned char Addr2,uns
         */
         i2c_SendNack();
         i2c_SendStop();
-        sleep_ms(200UL);
-        AT88DBG("[SIO_READ]receive data.\n");
-        for(i=0;i<Nbytes;i++)
-            AT88DBG("%x ",pBuffer[i]);
+        //sleep_ms(200UL);
+        //AT88DBG("[SIO_READ]receive data.\n");
+        //for(i=0;i<Nbytes;i++)
+            //AT88DBG("%x ",pBuffer[i]);
         return TRUE;
     }
 
@@ -254,7 +254,8 @@ unsigned int cm_Write(unsigned char Command, unsigned char Addr1, unsigned char 
         }
         /* Following bytes are written in successive internal registers */
         if(pBuffer !=NULL && Nbytes != 0)
-            for (i = 0; i < Nbytes; i++)
+        {
+			for (i = 0; i < Nbytes; i++)
             {
                 i2c_SendData(*pWritePtr++);
                 if (!i2c_ReceiveAck())
@@ -262,9 +263,14 @@ unsigned int cm_Write(unsigned char Command, unsigned char Addr1, unsigned char 
                     AT88DBG("<cm_Write>NACK received after %x data byte.\r\n", i+1);
                     i2c_SendStop();
                     sleep_ms(20UL);
-                    continue;
+                    break;
                 }            
             }
+			if(i<Nbytes)
+			{
+				continue;
+			}
+		}
 
         /* done. */
         i2c_SendStop();
@@ -358,6 +364,24 @@ void clock_gpaXtimes(unsigned char Datain,unsigned char times)
         clock_gpa(Datain);
 
 }
+BOOL cm_SendChecksum(unsigned char ucDevAddr)
+{
+    unsigned char pucChkSum[2];
+    if(needAuth)
+    {
+        clock_gpaXtimes(0x00,15);
+        pucChkSum[0] = Gpa_byte;
+        clock_gpaXtimes(0x00,5);
+        pucChkSum[1] = Gpa_byte;
+    }
+    if(cm_Write((ucDevAddr<<4)|0x04, 0x02, 0x00,0x02,pucChkSum)!=0x02)
+        return FALSE;
+    else
+	{
+		cm_AckPolling((ucDevAddr<<4)|0x02);
+        return TRUE;
+	}
+}
 void cm_resetCryptoVal(void)
 {
     RA=0;
@@ -408,7 +432,7 @@ BOOL cm_WriteConfigZone(unsigned char ucDevAddr, unsigned char ucCryptoAddr, uns
 
     if(cm_Write((ucDevAddr<<4)|0x04, 0x00, ucCryptoAddr,ucCount,pucBuffer)!=ucCount)
         return FALSE;
-
+	cm_AckPolling((ucDevAddr<<4)|0x02);
     return TRUE;
 
 }
@@ -517,8 +541,8 @@ BOOL cm_VerifyPassword(unsigned char ucDevAddr, unsigned char* pucPassword, unsi
         return FALSE;
     else
     {
-        if(needAuth)
-            cm_AckPolling((ucDevAddr<<4)|0x02);
+        //if(needAuth)
+        cm_AckPolling((ucDevAddr<<4)|0x02);
         cm_ReadConfigZone(ucDevAddr, ucSetAddr, &verifyok, 1);
         if(verifyok!=0xff)
         {
@@ -563,7 +587,10 @@ BOOL cm_WriteUserZone(unsigned char ucDevAddr, unsigned int uiCryptoAddr,
 
     if(cm_Write((ucDevAddr<<4)|0x00, 0x00, uiCryptoAddr,ucCount,pucBuffer)!=ucCount)
         return FALSE;
-
+	if(needAuth)
+		cm_SendChecksum(ucDevAddr);
+	else
+		cm_AckPolling((ucDevAddr<<4)|0x02);
     return TRUE;
 
 }
@@ -573,7 +600,9 @@ BOOL cm_ReadFuse(unsigned char ucDevAddr, unsigned char* pucFuze)
 }
 BOOL cm_WriteFuse(unsigned char ucDevAddr, unsigned char* pucFuze)
 {
-    return cm_Write((ucDevAddr<<4)|0x06, 0x01, *pucFuze,0x00,NULL);
+    BOOL result = cm_Write((ucDevAddr<<4)|0x06, 0x01, *pucFuze,0x00,NULL);
+	cm_AckPolling((ucDevAddr<<4)|0x02);
+	return result;
 }
 BOOL cm_ReadChecksum(unsigned char ucDevAddr)
 {
@@ -602,21 +631,7 @@ BOOL cm_ReadChecksum(unsigned char ucDevAddr)
     }
     return TRUE;
 }
-BOOL cm_SendChecksum(unsigned char ucDevAddr)
-{
-    unsigned char pucChkSum[2];
-    if(needAuth)
-    {
-        clock_gpaXtimes(0x00,15);
-        pucChkSum[0] = Gpa_byte;
-        clock_gpaXtimes(0x00,5);
-        pucChkSum[1] = Gpa_byte;
-    }
-    if(cm_Write((ucDevAddr<<4)|0x04, 0x02, 0x00,0x02,pucChkSum)!=0x02)
-        return FALSE;
-    else
-        return TRUE;
-}
+
 BOOL cm_ReadUserZone(unsigned char ucDevAddr, unsigned int uiCryptoAddr, 
         unsigned char* pucBuffer, unsigned char ucCount)
 {
@@ -813,7 +828,7 @@ BOOL burn(pe p)
 		unsigned char ucData[240];
 		unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
 		BOOL ucReturn;
-    unsigned char i,addr;		
+		unsigned char i,addr;		
 		cm_PowerOn();
 		//test iic bus
 		ucData[0] = 0x12;
@@ -942,7 +957,7 @@ BOOL burn(pe p)
 	     	}
 			}
 		}
-		if(p.fuse)
+		if(p.fuse==TRUE)
 		{
 			//set fuse
 			unsigned char fuse;

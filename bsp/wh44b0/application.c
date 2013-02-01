@@ -22,6 +22,7 @@
 #include "rtl8019.h"
 #endif
 #include "s1.h"
+#include <dfs_posix.h>
 void rt_led_thread_entry(void *parameter)
 {
 		/* LwIP Initialization */
@@ -102,6 +103,7 @@ void b(void)
 {
 	pe p;
 	int i;
+	int fd,length;
 	memset(&p,0xff,sizeof(pe));
 	for(i=0;i<32;i++)
 	{
@@ -120,13 +122,48 @@ void b(void)
 		p.g[1][i]=i;
 	}
 	p.fuse=RT_FALSE;
+	fd = open("/nor/burn.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
+	if (fd < 0)
+	{
+		rt_kprintf("open file for write failed\n");
+		return;
+	}
+	length = write(fd, &p, sizeof(pe));
+	if (length != sizeof(pe))
+	{
+		rt_kprintf("write data failed\n");
+		close(fd);
+		return;
+	}
+	close(fd);
 	burn(p);
 }
 FINSH_FUNCTION_EXPORT(b, test at88sc burn);
+void bf(void)
+{
+	pe p;
+	int fd,length;
+	fd = open("/nor/burn.txt", O_RDONLY, 0);
+	if (fd < 0)
+	{
+		rt_kprintf("check: open file for read failed\n");
+		return;
+	}
+	length = read(fd, &p, sizeof(pe));
+	if (length != sizeof(pe))
+	{
+		rt_kprintf("check: read file failed\n");
+		close(fd);
+		return;
+	}
+	close(fd);
+	burn(p);
+}
+FINSH_FUNCTION_EXPORT(bf, test at88sc burn from file);
 void a(void)
 {
 	ge p;
-	int i;
+	int i,fd,length;
 	memset(&p,0xff,sizeof(ge));
 	for(i=0;i<3;i++)
 	{
@@ -139,7 +176,42 @@ void a(void)
 	p.use_g=1;
 	p.use_pw=1;
 	p.zone_index=0;
+	fd = open("/nor/auth.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
+	if (fd < 0)
+	{
+		rt_kprintf("open file for write failed\n");
+		return;
+	}
+	length = write(fd, &p, sizeof(ge));
+	if (length != sizeof(ge))
+	{
+		rt_kprintf("write data failed\n");
+		close(fd);
+		return;
+	}
+	close(fd);
 	auth(&p);
 }
 FINSH_FUNCTION_EXPORT(a, test at88sc auth);
+void af(void)
+{
+	ge p;
+	int fd,length;
+	fd = open("/nor/auth.txt", O_RDONLY, 0);
+	if (fd < 0)
+	{
+		rt_kprintf("check: open file for read failed\n");
+		return;
+	}
+	length = read(fd, &p, sizeof(ge));
+	if (length != sizeof(ge))
+	{
+		rt_kprintf("check: read file failed\n");
+		close(fd);
+		return;
+	}
+	close(fd);
+	auth(&p);
+}
+FINSH_FUNCTION_EXPORT(af, test at88sc auth from file);
 /** @} */
