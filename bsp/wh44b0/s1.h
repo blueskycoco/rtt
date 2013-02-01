@@ -100,7 +100,7 @@ typedef struct {
 	unsigned char ci[4][7];
 	unsigned char g[4][8];
 	unsigned char pw[8][7];
-	BOOL fuse;
+	unsigned char fuse;
 }pe,*ppe;
 
 typedef struct {

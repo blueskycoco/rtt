@@ -121,7 +121,7 @@ void b(void)
 	{
 		p.g[1][i]=i;
 	}
-	p.fuse=RT_FALSE;
+	p.fuse=0x00;
 	fd = open("/nor/burn.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
 	if (fd < 0)
 	{
