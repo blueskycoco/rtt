@@ -100,13 +100,13 @@ void cm_PowerOn(void)
     /* set the clock and data lines to the proper states */
     i2c_scl_set(1);
     i2c_sda_set(1);
-    sleep_ms(50);
+    sleep_ms(10);
     for(i=0;i<6;i++)
     {
         i2c_scl_set(1);
-        sleep_ms(50);
+        sleep_ms(1);
         i2c_scl_set(0);
-        sleep_ms(50);
+        sleep_ms(1);
     }
     i2c_scl_set(1);
 }
@@ -128,8 +128,8 @@ BOOL cm_Read(unsigned char Command, unsigned char Addr1, unsigned char Addr2,uns
         return FALSE;
     }
 
-    AT88DBG("<cm_Read>Command = 0x%02x, Addr1 = 0x%02x, Addr2 = 0x%02x, Nbytes = 0x%02x\r\n", Command, Addr1,Addr2,Nbytes);
-    //sleep_ms(20UL);
+    //AT88DBG("<cm_Read>Command = 0x%02x, Addr1 = 0x%02x, Addr2 = 0x%02x, Nbytes = 0x%02x\r\n", Command, Addr1,Addr2,Nbytes);
+    //sleep_ms(200UL);
 
     while (restart_count++ < 5)
     {
@@ -199,8 +199,8 @@ unsigned int cm_Write(unsigned char Command, unsigned char Addr1, unsigned char 
     int restart_count = 0;
     unsigned char *pWritePtr = pBuffer;
     //unsigned char rdData[BYTES_MAX];
-    AT88DBG("<cm_Write> Command = 0x%02x, Addr1 = 0x%02x, Addr2 = 0x%02x, Nbytes = 0x%02x,pBuffer %x %x\r\n", 
-            Command, Addr1, Addr2,Nbytes,pBuffer[0],pBuffer[1]);
+    //AT88DBG("<cm_Write> Command = 0x%02x, Addr1 = 0x%02x, Addr2 = 0x%02x, Nbytes = 0x%02x,pBuffer %x %x\r\n", 
+           // Command, Addr1, Addr2,Nbytes,pBuffer[0],pBuffer[1]);
 
 	
     if (Nbytes > BYTES_MAX)
@@ -255,7 +255,7 @@ unsigned int cm_Write(unsigned char Command, unsigned char Addr1, unsigned char 
         /* Following bytes are written in successive internal registers */
         if(pBuffer !=NULL && Nbytes != 0)
         {
-			for (i = 0; i < Nbytes; i++)
+						for (i = 0; i < Nbytes; i++)
             {
                 i2c_SendData(*pWritePtr++);
                 if (!i2c_ReceiveAck())
@@ -266,11 +266,11 @@ unsigned int cm_Write(unsigned char Command, unsigned char Addr1, unsigned char 
                     break;
                 }            
             }
-			if(i<Nbytes)
-			{
-				continue;
+						if(i<Nbytes)
+						{
+							continue;
+						}
 			}
-		}
 
         /* done. */
         i2c_SendStop();
@@ -432,7 +432,7 @@ BOOL cm_WriteConfigZone(unsigned char ucDevAddr, unsigned char ucCryptoAddr, uns
 
     if(cm_Write((ucDevAddr<<4)|0x04, 0x00, ucCryptoAddr,ucCount,pucBuffer)!=ucCount)
         return FALSE;
-	cm_AckPolling((ucDevAddr<<4)|0x02);
+		cm_AckPolling((ucDevAddr<<4)|0x02);
     return TRUE;
 
 }
@@ -673,16 +673,16 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
 	unsigned char NewCi[8];
 	unsigned char CiAddr=AT88SC_CI0,SkAddr=AT88SC_SK0;
 	
-	if(pucRandom==NULL)
-	{
+	//if(pucRandom==NULL)
+	//{
 		for(i=0;i<8;i++)
 		buf[i]=i*12+3;
-	}
-	else
-	{
-		for(i=0;i<8;i++)
-		buf[i]=pucRandom[i];
-	}
+	//}
+	//else
+	//{
+		//for(i=0;i<8;i++)
+		//buf[i]=pucRandom[i];
+	//}
 	switch(ucKeySet)
 	{
 		case 0:
@@ -706,6 +706,10 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
 	}
 	//readback Ci and Sk
 	cm_ReadConfigZone(DEFAULT_ADDRESS, CiAddr-1, Ci, 8);
+	AT88DBG("use which g, %d\n",ucKeySet);
+	for(i=0;i<8;i++)
+		AT88DBG("%x %x\n",Ci[i],pucKey[i]);
+		return FALSE;
 	cm_resetCryptoVal();
 	//Verify init
 	for(i=0;i<4;i++)
@@ -830,20 +834,27 @@ BOOL burn(pe p)
 		BOOL ucReturn;
 		unsigned char i,addr;		
 		cm_PowerOn();
+		ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, ucData, 0x20);
+		if (ucReturn != TRUE) {
+			AT88DBG("Read Config Zone ATR failed\n");
+			return FALSE;
+		}  
+		for(i=0;i<32;i++)
+      AT88DBG("%x ",ucData[i]);
 		//test iic bus
-		ucData[0] = 0x12;
-		ucData[1] = 0x34;
+		ucData[0] = 0x77;
+		ucData[1] = 0x33;
 		ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_MTZ, ucData, 2, FALSE);
 		if (ucReturn != TRUE) {
 			AT88DBG("Write Config Zone MTZ failed\n");
 			return FALSE;
 		}
-		                                                            
+		                                                        
 		// Read back data
 		ucData[0] = 0x00;
 		ucData[1] = 0x00;
 		ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_MTZ, ucData, 2);
-		if (ucReturn != TRUE || ucData[0]!=0x12 || ucData[1]!=0x34) {
+		if (ucReturn != TRUE || ucData[0]!=0x77 || ucData[1]!=0x33) {
 			AT88DBG("Read Config Zone MTZ failed\n");
 			return FALSE;
 		}
@@ -964,11 +975,11 @@ BOOL burn(pe p)
 			cm_ReadFuse(DEFAULT_ADDRESS,&fuse);
 			AT88DBG("Before fuse , %x",fuse);
 			fuse=0x06;
-			cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
+			//cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
 			fuse=0x04;
-			cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
+			//cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
 			fuse=0x00;
-			cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
+			//cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
 			cm_ReadFuse(DEFAULT_ADDRESS,&fuse);
 			AT88DBG("after fuse , %x",fuse);
 		}
@@ -990,8 +1001,20 @@ BOOL burn(pe p)
 BOOL auth(pge p)
 {
 		BOOL ucReturn;
-    unsigned char i,addr;		
+    unsigned char i,addr;	
+    unsigned char ucData[240];	
+    unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
 		cm_PowerOn();
+		AT88DBG("\nRead all config data again\n");
+		//ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, Def_SecureCode,7, 0);
+		ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, ucData, 0xf0);
+		for(i=0;i<0xf0;i++)
+		{
+			if(i%8==0 && i!=0)
+			AT88DBG("\n");
+			AT88DBG("%4X ",ucData[i]);		
+		}
+		return TRUE;
 		ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, p->use_g, p->g, NULL, TRUE);
 		AT88DBG("cm_VerifyCrypto %x\n",p->use_g);
 		if (ucReturn != TRUE){
