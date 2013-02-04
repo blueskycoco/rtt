@@ -248,10 +248,7 @@ void INTEINT4567_handler(int irqno)
 	INTPND = eint_pend;
 	EXTINTPND =	extint_pend;
 }
-void INTEINT4_handler(int irqno)
-{
-	return;
-}
+
 void INTEINT5_handler(int irqno)
 {
 	return;

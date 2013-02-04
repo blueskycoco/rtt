@@ -17,6 +17,7 @@
 #include <rtdevice.h>
 #include <s3c44b0.h>
 #include "board.h"
+#include "ch11.h"
 #include "sl811hs.h"
 #ifdef RT_USING_USB_HOST
 
@@ -30,6 +31,7 @@
 #define DATA_BASE   0x0a000001
 #define inportb(r) 		(*(volatile rt_uint8_t *)(r))
 #define outportb(r, d) 	(*(volatile rt_uint8_t *)(d) = (r))
+#if 0
 struct sl811h_ep {
 	struct usb_host_endpoint *hep;
 	//struct usb_device	*udev;
@@ -52,6 +54,7 @@ struct sl811h_ep {
 	/* async schedule */
 	rt_list_t	schedule;
 };
+#endif
 struct sl811
 {
     struct uhcd sl811_hcd;
@@ -61,12 +64,12 @@ struct sl811
     rt_uint8_t ctrl1,ctrl2,irq_enable;
 	/* sw model */
 	rt_timer_t	timer;
-	struct sl811h_ep	*next_periodic;
-	struct sl811h_ep	*next_async;
+	//struct sl811h_ep	*next_periodic;
+	//struct sl811h_ep	*next_async;
 
-	struct sl811h_ep	*active_a;
+	//struct sl811h_ep	*active_a;
 	rt_uint32_t			tick_a;
-	struct sl811h_ep	*active_b;
+	//struct sl811h_ep	*active_b;
 	rt_uint32_t			tick_b;
 
 	rt_uint16_t			frame;
@@ -76,7 +79,7 @@ struct sl811
 
 	/* periodic schedule: interrupt, iso */
 	rt_uint16_t			load[PERIODIC_SIZE];
-	struct sl811h_ep	*periodic[PERIODIC_SIZE];
+	//struct sl811h_ep	*periodic[PERIODIC_SIZE];
 	rt_uint16_t		periodic_count;
 };
 static struct sl811 sl811_device;
@@ -119,6 +122,29 @@ sl811_read_buf(rt_uint8_t addr, void *buf, rt_uint16_t count)
        } while (--count);
 }
 static struct rt_semaphore sem_lock;
+static void port_power(struct sl811 *sl811, int is_on)
+{
+	/* hub is inactive unless the port is powered */
+	if (is_on) {
+		if (sl811->port1 & USB_PORT_STAT_POWER)
+			return;
+
+		sl811->port1 = USB_PORT_STAT_POWER;
+		sl811->irq_enable = SL11H_INTMASK_INSRMV;
+	} else {
+		sl811->port1 = 0;
+		sl811->irq_enable = 0;
+	}
+	sl811->ctrl1 = 0;
+	sl811_write(SL11H_IRQ_ENABLE, 0);
+	sl811_write(SL11H_IRQ_STATUS, ~0);
+	sl811_write(SL11H_CTLREG1, SL11H_CTL1MASK_SE0);
+	rt_thread_delay(2);
+	sl811_write(SL11H_IRQ_ENABLE, 0);
+	sl811_write(SL11H_CTLREG1, sl811->ctrl1);
+	sl811_write(SL811HS_CTLREG2, SL811HS_CTL2_INIT);
+	sl811_write(SL11H_IRQ_ENABLE, sl811->irq_enable);
+}
 
 /**
   * @brief  USBH_Connect
@@ -150,11 +176,13 @@ rt_uint8_t sl811_connect ()
         USB_Host.device_prop.address, USB_Host.device_prop.speed,
         EP_TYPE_CTRL, USB_Host.Control.ep0size);   
 #endif       
+	rt_kprintf("sl811_connect\n");
+	if(sl811_device.root_hub.port_status[0] & PORT_CCS) return 0;
+    if(sl811_device.ignore_disconnect == RT_TRUE) return 0;
     sl811_device.root_hub.port_status[0] |= (PORT_CCS | PORT_CCSC);
     msg.type = USB_MSG_CONNECT_CHANGE;
     msg.content.uhub = &(sl811_device.root_hub);
     rt_usb_post_event(&msg, sizeof(struct uhost_msg));    
-
     return 0;
 }
 
@@ -176,6 +204,7 @@ rt_uint8_t sl811_disconnect ()
     USBH_DeAllocate_AllChannel(&USB_OTG_Core);  
     USB_Host.gState = HOST_IDLE;
 #endif
+	rt_kprintf("sl811_disconnect\n");
     sl811_device.root_hub.port_status[0] |= PORT_CCSC;
     sl811_device.root_hub.port_status[0] &= ~PORT_CCS;
     msg.type = USB_MSG_CONNECT_CHANGE;
@@ -543,7 +572,7 @@ retry:
 			sl811_device.stat_lost++;
 	}
 #endif
-
+#if 0
 	/* USB packets, not necessarily handled in the order they're
 	 * issued ... that's fine if they're different endpoints.
 	 */
@@ -576,24 +605,25 @@ retry:
 		if (sl811->periodic[index])
 			sl811->next_periodic = sl811->periodic[index];
 	}
-
+#endif
 	/* khubd manages debouncing and wakeup */
 	if (irqstat & SL11H_INTMASK_INSRMV) {
-		sl811->stat_insrmv++;
+		//sl811->stat_insrmv++;
 
 		/* most stats are reset for each VBUS session */
-		sl811->stat_wake = 0;
-		sl811->stat_sof = 0;
-		sl811->stat_a = 0;
-		sl811->stat_b = 0;
-		sl811->stat_lost = 0;
+		//sl811->stat_wake = 0;
+		//sl811->stat_sof = 0;
+		//sl811->stat_a = 0;
+		//sl811->stat_b = 0;
+		//sl811->stat_lost = 0;
+		//sl811->stat_lost = 0;
 
-		sl811->ctrl1 = 0;
-		sl811_write(sl811, SL11H_CTLREG1, sl811->ctrl1);
+		sl811_device.ctrl1 = 0;
+		sl811_write(SL11H_CTLREG1, sl811_device.ctrl1);
 
-		sl811->irq_enable = SL11H_INTMASK_INSRMV;
-		sl811_write(sl811, SL11H_IRQ_ENABLE, sl811->irq_enable);
-
+		sl811_device.irq_enable = SL11H_INTMASK_INSRMV;
+		sl811_write(SL11H_IRQ_ENABLE, sl811_device.irq_enable);
+#if 0
 		/* usbcore nukes other pending transactions on disconnect */
 		if (sl811->active_a) {
 			sl811_write(sl811, SL811_EP_A(SL11H_HOSTCTLREG), 0);
@@ -615,17 +645,24 @@ retry:
 			sl811->active_b = NULL;
 		}
 #endif
-
+#endif
 		/* port status seems weird until after reset, so
 		 * force the reset and make khubd clean up later.
 		 */
 		if (irqstat & SL11H_INTMASK_RD)
-			sl811->port1 &= ~USB_PORT_STAT_CONNECTION;
+			{
+				sl811_device.port1 &= ~USB_PORT_STAT_CONNECTION;
+				sl811_connect();
+			}
 		else
-			sl811->port1 |= USB_PORT_STAT_CONNECTION;
+			{
+				sl811_device.port1 |= USB_PORT_STAT_CONNECTION;
+				sl811_disconnect();
+			}
 
-		sl811->port1 |= USB_PORT_STAT_C_CONNECTION << 16;
-
+		sl811_device.port1 |= USB_PORT_STAT_C_CONNECTION << 16;
+		}
+#if 0
 	} else if (irqstat & SL11H_INTMASK_RD) {
 		if (sl811->port1 & USB_PORT_STAT_SUSPEND) {
 			DBG("wakeup\n");
@@ -648,13 +685,13 @@ retry:
 	sl811_write(sl811, SL11H_IRQ_ENABLE, sl811->irq_enable);
 
 	spin_unlock(&sl811->lock);
-
-	return ret;
+#endif
+	return ;
 }
 
 void INTEINT4_handler(int irqno)
 {
-    sl811_isr(0);
+    sl811h_irq(0);
 }
 /**
  * This function will initialize susb host controller device.
@@ -672,6 +709,7 @@ static rt_err_t sl811_init(rt_device_t dev)
     sl811_device.root_hub.is_roothub = RT_TRUE;
     sl811_device.root_hub.self = RT_NULL;
     sl811_device.root_hub.hcd = &(sl811_device.sl811_hcd);
+	port_power(&sl811_device, 1);
 #if 0
     /* Hardware Init */
     USB_OTG_HS_Init(&USB_OTG_Core);  

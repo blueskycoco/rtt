@@ -130,6 +130,10 @@ void rtthread_startup(void)
 	devfs_init();	
 #endif
 #endif
+ #ifdef RT_USING_USB_HOST
+	rt_usb_host_init();
+	rt_hw_sl811_init();
+ #endif
 #ifdef RT_USING_DEVICE
 	/* register uart0 */
 	rt_hw_serial_register(&uart0_device, "uart0",
@@ -309,6 +313,7 @@ void rtthread_startup(void)
 	}
 #endif
 #endif
+
 
 
 
