@@ -99,7 +99,7 @@ void nfs(const char *folder)
 #endif
 }
 FINSH_FUNCTION_EXPORT(nfs, mount nfs);
-void b(void)
+void b(unsigned char zone)
 {
 	pe p;
 	int i;
@@ -107,19 +107,19 @@ void b(void)
 	memset(&p,0xff,sizeof(pe));
 	for(i=0;i<32;i++)
 	{
-		p.user_zone[0][i]=i;
+		p.user_zone[zone][i]=i;
 	}
-	p.ar[0][0]=0x17;//normal auth,encrypted
-	p.ar[0][1]=0x61;//use g1,pw1
+	p.ar[zone][0]=0x17;//normal auth,encrypted
+	p.ar[zone][1]=(zone<<6)|(zone&0x3);//use g1,pw1
 	for(i=0;i<7;i++)
 	{
-		p.ci[1][i]=i;
+		p.ci[zone][i]=i;
 		if(i!=3)
-			p.pw[1][i]=i;
+			p.pw[zone][i]=i;
 	}
 	for(i=0;i<8;i++)
 	{
-		p.g[1][i]=i;
+		p.g[zone][i]=i;
 	}
 	p.fuse=0x00;
 	fd = open("/nor/burn.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
@@ -160,7 +160,7 @@ void bf(void)
 	burn(p);
 }
 FINSH_FUNCTION_EXPORT(bf, test at88sc burn from file);
-void a(void)
+void a(unsigned char zone)
 {
 	ge p;
 	int i,fd,length;
@@ -173,9 +173,14 @@ void a(void)
 	{
 		p.g[i]=i;
 	}
+	if(zone==0){
 	p.use_g=1;
 	p.use_pw=1;
-	p.zone_index=0;
+}else{
+p.use_g=zone;
+	p.use_pw=zone;
+}
+	p.zone_index=zone;
 	fd = open("/nor/auth.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
 	if (fd < 0)
 	{
@@ -192,7 +197,7 @@ void a(void)
 	close(fd);
 	auth(&p);
 }
-FINSH_FUNCTION_EXPORT(a, test at88sc auth);
+FINSH_FUNCTION_EXPORT(a, a(1).test at88sc auth);
 void af(void)
 {
 	ge p;

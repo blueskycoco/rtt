@@ -290,7 +290,7 @@ void cm_AckPolling(unsigned char Command)
     i2c_SendData(Command);
     while (!i2c_ReceiveAck())
     {
-        AT88DBG("<cm_AckPolling>Acknowledge Polling\r\n");
+        //AT88DBG("<cm_AckPolling>Acknowledge Polling\r\n");
         i2c_SendStart();
         i2c_SendData(Command);
         sleep_ms(2UL);        
@@ -354,7 +354,7 @@ void clock_gpa(unsigned char Datain)
     TB = TA;
     TA = Taddmod31;
     //Output stage
-    Gpaoi = ((~SA & (RA ^ RE)) | (SA & (TA ^TD) & 0x0f));
+    Gpaoi = ((~SA & (RA ^ RE)) | (SA & (TA ^TD))) & 0x0f;
     Gpa_byte = ((Gpa_byte&0x0f)<<4) | Gpaoi;
 }
 void clock_gpaXtimes(unsigned char Datain,unsigned char times)
@@ -424,7 +424,7 @@ BOOL cm_WriteConfigZone(unsigned char ucDevAddr, unsigned char ucCryptoAddr, uns
         {
             clock_gpaXtimes(0x00,5);
             //we need encrypt password zone
-            if(ucCryptoAddr <= (AT88SC_R7+2) && ucCryptoAddr>=AT88SC_PACW0)
+            if((ucCryptoAddr+i) <= (AT88SC_R7+2) && (ucCryptoAddr+i)>=AT88SC_PACW0)
                 pucBuffer[i] = pucBuffer[i] ^ Gpa_byte;
             clock_gpaXtimes(pucBuffer[i],1);
         }
@@ -454,7 +454,7 @@ BOOL cm_ReadConfigZone(unsigned char ucDevAddr, unsigned char ucCryptoAddr,
     if(needAuth)
         for(i=0;i<ucCount;i++)
         {
-            if(ucCryptoAddr <= (AT88SC_R7+2) && ucCryptoAddr>=AT88SC_PACW0)
+            if((ucCryptoAddr+i) <= (AT88SC_R7+2) && (ucCryptoAddr+i)>=AT88SC_PACW0)
                 pucBuffer[i] = pucBuffer[i] ^ Gpa_byte;
             clock_gpaXtimes(pucBuffer[i],1);
             clock_gpaXtimes(0x00,5);
@@ -663,8 +663,7 @@ BOOL cm_ReadUserZone(unsigned char ucDevAddr, unsigned int uiCryptoAddr,
 
 }
 
-BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned char* pucKey, 
-        unsigned char* pucRandom, unsigned char ucEncrypt)
+BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned char* pucKey)
 {
     unsigned char buf[16];
     int i;
@@ -673,16 +672,8 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
     unsigned char NewCi[8];
     unsigned char CiAddr=AT88SC_CI0,SkAddr=AT88SC_SK0;
 
-    //if(pucRandom==NULL)
-    //{
     for(i=0;i<8;i++)
         buf[i]=i*12+3;
-    //}
-    //else
-    //{
-    //for(i=0;i<8;i++)
-    //buf[i]=pucRandom[i];
-    //}
     switch(ucKeySet)
     {
         case 0:
@@ -705,11 +696,7 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
             break;
     }
     //readback Ci and Sk
-    cm_ReadConfigZone(DEFAULT_ADDRESS, CiAddr-1, Ci, 8);
-    AT88DBG("use which g, %d\n",ucKeySet);
-    for(i=0;i<8;i++)
-        AT88DBG("%x %x\n",Ci[i],pucKey[i]);
-    return FALSE;
+    cm_ReadConfigZone(DEFAULT_ADDRESS, CiAddr-1, Ci, 8);    
     cm_resetCryptoVal();
     //Verify init
     for(i=0;i<4;i++)
@@ -754,77 +741,77 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
         clock_gpaXtimes(0x00,3);
         needAuth=TRUE;
         cm_AckPolling((ucDevAddr<<4)|0x06);
-        AT88DBG("==>read New Ci\n");
         cm_ReadConfigZone(DEFAULT_ADDRESS, CiAddr-1, NewCi, 8);
-        if(NewCi[0]!=0xff)
+        for(i=0;i<8;i++)
         {
-			for(i=0;i<8;i++)
-            AT88DBG("Ci[%d] = %x ,NewCi[%d] = %x\n",i,Ci[i],i,NewCi[i]);
-            return FALSE;
-        }
+       		if(Ci[i]!=NewCi[i])
+       	 	{
+       	 		AT88DBG("Ci[%d] = %x ,NewCi[%d] = %x\n",i,Ci[i],i,NewCi[i]);
+       	 		needDecry=FALSE;
+            needAuth=FALSE;
+       	 		return FALSE;
+       	 	}
+       	}
     }
 
-    if(ucEncrypt)
+
+    //begin Encryption authication
+    cm_resetCryptoVal();
+    for(i=0;i<4;i++)
     {
-        //begin Encryption authication
-        cm_resetCryptoVal();
-        AT88DBG("\nVerify Encrypt\n");
-        for(i=0;i<4;i++)
-        {
-            clock_gpaXtimes(Ci[2*i], 3);
-            clock_gpaXtimes(Ci[2*i+1], 3);
-            clock_gpaXtimes(buf[i], 1);
-        }
-        for(i=0;i<4;i++)
-        {
-            clock_gpaXtimes(Sk[2*i], 3);
-            clock_gpaXtimes(Sk[2*i+1], 3);
-            clock_gpaXtimes(buf[i+4], 1);
-        }
-        clock_gpaXtimes(0x00,6);
-        buf[8] = Gpa_byte;//challenge 0
-        for(i=1;i<8;i++)
-        {
-            clock_gpaXtimes(0x00,7);
-            buf[i+8] = Gpa_byte;//challenge 1 to 7
-        }
-        //send challenge and random number
-        if(cm_Write((ucDevAddr<<4)|0x08, 0x10|ucKeySet, 0x00,0x10,buf)!=0x10)
-        {
-            AT88DBG("cm_Write failed 2\n");
-            return FALSE;
-        }
-        else
-        {
-            //compute new Ci and new Sk
-            Ci[0]=0xff;
-            for(i=1;i<8;i++)
-            {
-                clock_gpaXtimes(0x00, 2);
-                Ci[i]=Gpa_byte;
-            }
-            for(i=0;i<8;i++)
-            {
-                clock_gpaXtimes(0x00,2);
-                Sk[i]=Gpa_byte;
-            }
-            clock_gpaXtimes(0x00,3);
-            cm_AckPolling((ucDevAddr<<4)|0x06);
-            cm_ReadConfigZone(DEFAULT_ADDRESS, CiAddr-1, NewCi, 8);
-            if(NewCi[0]!=0xff)
-            {
-                AT88DBG("111aac2 = %x \n",NewCi[0]);
-                needDecry=FALSE;
-                needAuth=FALSE;
-                return FALSE;
-            }
-            else
-            {
-                needDecry=TRUE;
-                needAuth=TRUE;
-            }
-        }
+        clock_gpaXtimes(Ci[2*i], 3);
+        clock_gpaXtimes(Ci[2*i+1], 3);
+        clock_gpaXtimes(buf[i], 1);
     }
+    for(i=0;i<4;i++)
+    {
+        clock_gpaXtimes(Sk[2*i], 3);
+        clock_gpaXtimes(Sk[2*i+1], 3);
+        clock_gpaXtimes(buf[i+4], 1);
+    }
+    clock_gpaXtimes(0x00,6);
+    buf[8] = Gpa_byte;//challenge 0
+    for(i=1;i<8;i++)
+    {
+        clock_gpaXtimes(0x00,7);
+        buf[i+8] = Gpa_byte;//challenge 1 to 7
+    }
+    //send challenge and random number
+    if(cm_Write((ucDevAddr<<4)|0x08, 0x10|ucKeySet, 0x00,0x10,buf)!=0x10)
+    {
+        AT88DBG("cm_Write failed 2\n");
+        return FALSE;
+    }
+    else
+    {
+      //compute new Ci and new Sk
+      Ci[0]=0xff;
+      for(i=1;i<8;i++)
+      {
+          clock_gpaXtimes(0x00, 2);
+          Ci[i]=Gpa_byte;
+      }
+      for(i=0;i<8;i++)
+      {
+          clock_gpaXtimes(0x00,2);
+          Sk[i]=Gpa_byte;
+      }
+      clock_gpaXtimes(0x00,3);
+      needAuth=TRUE;
+      cm_AckPolling((ucDevAddr<<4)|0x06);
+      cm_ReadConfigZone(DEFAULT_ADDRESS, CiAddr-1, NewCi, 8);
+      for(i=0;i<8;i++)
+  		{
+ 				if(Ci[i]!=NewCi[i])
+ 	 			{
+ 	 					AT88DBG("Ci[%d] = %x ,NewCi[%d] = %x\n",i,Ci[i],i,NewCi[i]);
+ 	 					return FALSE;
+ 	 			}
+ 			}         
+      needDecry=TRUE;
+      needAuth=TRUE;        
+    }
+    
     return TRUE;
 }
 
@@ -834,14 +821,7 @@ BOOL burn(pe p)
     unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
     BOOL ucReturn;
     unsigned char i,addr;		
-    cm_PowerOn();
-    ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, ucData, 0x20);
-    if (ucReturn != TRUE) {
-        AT88DBG("Read Config Zone ATR failed\n");
-        return FALSE;
-    }  
-    for(i=0;i<32;i++)
-        AT88DBG("%x ",ucData[i]);
+    cm_PowerOn();    
     //test iic bus
     ucData[0] = 0x77;
     ucData[1] = 0x33;
@@ -850,7 +830,6 @@ BOOL burn(pe p)
         AT88DBG("Write Config Zone MTZ failed\n");
         return FALSE;
     }
-
     // Read back data
     ucData[0] = 0x00;
     ucData[1] = 0x00;
@@ -859,6 +838,7 @@ BOOL burn(pe p)
         AT88DBG("Read Config Zone MTZ failed\n");
         return FALSE;
     }
+   
     //write user zone
     memset(ucData,0xff,32);
     for(i=0;i<4;i++)
@@ -883,18 +863,6 @@ BOOL burn(pe p)
     if (ucReturn != TRUE)  {
         AT88DBG("cm_VerifyPassword failed\n");
         return FALSE;
-    }
-    ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, ucData, 0xf0);
-    if (ucReturn != TRUE) {
-        AT88DBG("cm_ReadConfigZone failed\n");
-        return FALSE;
-    }
-    AT88DBG("\nRead all config data\n");
-    for(i=0;i<0xf0;i++)
-    {
-        if(i%8==0 && i!=0)
-            AT88DBG("\n");
-        AT88DBG("%4X ",ucData[i]);		
     }
     memset(ucData,0xff,32);
     //write pw
@@ -1006,32 +974,22 @@ BOOL auth(pge p)
     unsigned char ucData[240];	
     unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
     cm_PowerOn();
-    AT88DBG("\nRead all config data again\n");
-    //ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, Def_SecureCode,7, 0);
-    ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, ucData, 0xf0);
-    for(i=0;i<0xf0;i++)
-    {
-        if(i%8==0 && i!=0)
-            AT88DBG("\n");
-        AT88DBG("%4X ",ucData[i]);		
-    }
-    return TRUE;
-    ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, p->use_g, p->g, NULL, TRUE);
-    AT88DBG("cm_VerifyCrypto %x\n",p->use_g);
+    
+    ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, p->use_g, p->g);
     if (ucReturn != TRUE){
-        AT88DBG("cm_VerifyCrypto failed\n");
+        AT88DBG("cm_VerifyCrypto failed1\n");
         return FALSE;
     }
-
-    ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 0);
+		ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 0);
     if (ucReturn != TRUE)  {
         AT88DBG("cm_VerifyPassword failed\n");
         return FALSE;
     }
     cm_SetUserZone(DEFAULT_ADDRESS, p->zone_index, FALSE);
+    
     ucReturn = cm_ReadUserZone(DEFAULT_ADDRESS, 0, p->user_zone, 32);
     if (ucReturn != TRUE){
-        AT88DBG("At88sc_Read failed\n");
+        AT88DBG("At88sc_Read failed %d\n",p->zone_index);
         return FALSE;
     }
     for(i=0;i<32;i++)

@@ -131,8 +131,8 @@ void rtthread_startup(void)
 #endif
 #endif
  #ifdef RT_USING_USB_HOST
-	rt_usb_host_init();
-	rt_hw_sl811_init();
+	//rt_usb_host_init();
+	//rt_hw_sl811_init();
  #endif
 #ifdef RT_USING_DEVICE
 	/* register uart0 */
