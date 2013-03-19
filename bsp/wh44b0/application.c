@@ -25,37 +25,16 @@
 #include <dfs_posix.h>
 void rt_led_thread_entry(void *parameter)
 {
-		/* LwIP Initialization */
-#ifdef RT_USING_LWIP
-		{
-			extern void lwip_sys_init(void);
-			eth_system_device_init();
-	
-			/* register ethernetif device */
-			rt_hw_rtl8019_init();
-	
-			/* re-init device driver */
-			rt_device_init_all();
-			/* init lwip system */
-			lwip_sys_init();
-			rt_kprintf("TCP/IP initialized!\n");
-			netio_init();
-		}
-#endif
-	nfs_init();
-	nfs("192.168.0.100:/test");
-	ftpd_start();
-	chargen();
 	while (1)
 	{
 		/* light on leds for one second */
 		//rt_kprintf("Led on rom\n");
 		rt_hw_led_set(0xff);
-		rt_thread_delay(100);
+		rt_thread_delay(2);
 		//rt_kprintf("Led off rom\n");
 		/* light off leds for one second */
 		rt_hw_led_set(0x00);
-		rt_thread_delay(100);
+		rt_thread_delay(2);
 	}
 }
 
@@ -68,6 +47,27 @@ int rt_application_init()
 								512, 20, 20);
 	if (led_thread != RT_NULL)
 		rt_thread_startup(led_thread);
+	/* LwIP Initialization */
+    #ifdef RT_USING_LWIP
+	{
+		extern void lwip_sys_init(void);
+		eth_system_device_init();
+	
+		/* register ethernetif device */
+		rt_hw_rtl8019_init();
+	
+		/* re-init device driver */
+		rt_device_init_all();
+		/* init lwip system */
+		lwip_sys_init();
+		rt_kprintf("TCP/IP initialized!\n");
+		netio_init();
+	}
+    #endif
+	nfs_init();
+	nfs("192.168.0.100:/test");
+	ftpd_start();
+	chargen();
 	return 0;	/* empty */
 }
 #include "finsh.h"
