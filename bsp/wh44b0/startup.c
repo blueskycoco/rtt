@@ -149,7 +149,7 @@ void rtthread_startup(void)
 #endif
 
 	/* init application */
-	rt_application_init();
+	//rt_application_init();
 
 #ifdef RT_USING_FINSH
 	/* init the finsh input */
@@ -317,6 +317,8 @@ void rtthread_startup(void)
 
 
 
+	/* init application */
+	rt_application_init();
 
 	rt_kprintf("init finish\n");
 	/* start scheduler */
