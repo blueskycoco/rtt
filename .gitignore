@@ -10,4 +10,4 @@
 *.idb
 *.ilk
 build
-*~
+xcode-rtthread

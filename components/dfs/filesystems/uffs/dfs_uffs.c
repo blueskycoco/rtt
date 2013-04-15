@@ -28,7 +28,11 @@
 /*
  * RT-Thread DFS Interface for uffs
  */
+#ifndef RT_UFFS_DEVICE_MAX
 #define UFFS_DEVICE_MAX	        2	 /* the max partions on a nand deivce*/
+#else
+#define UFFS_DEVICE_MAX 		RT_UFFS_DEVICE_MAX
+#endif
 #define UFFS_MOUNT_PATH_MAX     128	 /* the mount point max length */
 #define FILE_PATH_MAX	        256	 /* the longest file path */
 
@@ -207,7 +211,7 @@ static int dfs_uffs_unmount(struct dfs_filesystem* fs)
 	return -DFS_STATUS_ENOENT;
 }
 
-static int dfs_uffs_mkfs(rt_device_t dev_id)
+static int dfs_uffs_mkfs(const char* device_name)
 {
 	rt_base_t index;
 	rt_uint32_t block;
@@ -216,13 +220,15 @@ static int dfs_uffs_mkfs(rt_device_t dev_id)
 	/*1. find the device index */
 	for (index = 0; index < UFFS_DEVICE_MAX; index++)
 	{
-		if (nand_part[index].dev == (struct rt_mtd_nand_device *)dev_id)
+		if (rt_strncmp(nand_part[index].dev->parent.parent.name,
+				       device_name, RT_NAME_MAX) == 0)
 			break;
 	}
 
 	if (index == UFFS_DEVICE_MAX)
 	{
 		/* can't find device driver */
+		rt_kprintf("can not find device driver: %s\n", device_name);
 		return -DFS_STATUS_ENOENT;
 	}
 
@@ -654,3 +660,4 @@ int dfs_uffs_init(void)
 	}
 	return -RT_ERROR;
 }
+
