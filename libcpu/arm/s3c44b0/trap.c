@@ -124,7 +124,7 @@ void rt_hw_trap_resv(struct rt_hw_register *regs)
     rt_hw_cpu_shutdown();
 }
 
-extern rt_isr_handler_t isr_table[];
+extern struct rt_irq_desc isr_table[];
 void rt_hw_trap_irq()
 {
 	register unsigned long ispr, intstat;
@@ -144,22 +144,22 @@ void rt_hw_trap_irq()
 	if ( intstat & 0xff ) /* lowest 8bits */
 	{
 		intstat = interrupt_bank0[intstat & 0xff];
-		isr_func = (rt_isr_handler_t)isr_table[ intstat ];
+		isr_func = (rt_isr_handler_t)isr_table[ intstat ].handler;
 	}
 	else if ( intstat & 0xff00 ) /* low 8bits */
 	{
 		intstat = interrupt_bank1[(intstat & 0xff00) >> 8];
-		isr_func = (rt_isr_handler_t)isr_table[ intstat ];
+		isr_func = (rt_isr_handler_t)isr_table[ intstat ].handler;
 	}
 	else if ( intstat & 0xff0000 ) /* high 8bits */
 	{
 		intstat = interrupt_bank2[(intstat & 0xff0000) >> 16];
-		isr_func = (rt_isr_handler_t)isr_table[ intstat ];
+		isr_func = (rt_isr_handler_t)isr_table[ intstat ].handler;
 	}
 	else if ( intstat & 0xff000000 ) /* highest 8bits */
 	{
 		intstat = interrupt_bank3[(intstat & 0xff000000) >> 24];
-		isr_func = (rt_isr_handler_t)isr_table[ intstat ];
+		isr_func = (rt_isr_handler_t)isr_table[ intstat ].handler;
 	}
 	else return;
 
@@ -168,7 +168,7 @@ void rt_hw_trap_irq()
 #endif
 
 	/* turn to interrupt service routine */
-	isr_func(intstat);
+	isr_func(intstat,RT_NULL);
 
 	I_ISPC = ispr;		/* clear interrupt */
 }

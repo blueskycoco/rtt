@@ -701,7 +701,7 @@ static rt_err_t rt_rtl8019_control(rt_device_t dev, rt_uint8_t cmd, void *args)
 	return RT_EOK;
 }
 
-void INTEINT1_handler(int irqno)
+void INTEINT1_handler(int irqno,void *param)
 {
     rt_uint32_t eint_pend;
 
@@ -744,7 +744,7 @@ void rt_hw_rtl8019_init()
 	rtl8019_device.startp=1;
 	eth_device_init(&(rtl8019_device.parent), "e0");
 	/* instal interrupt */
-	rt_hw_interrupt_install(INT_EINT1, INTEINT1_handler, RT_NULL);
+	rt_hw_interrupt_install(INT_EINT1, INTEINT1_handler, RT_NULL,"Eint1 Int Handler");
 	rt_hw_interrupt_umask(INT_EINT1);
 }
 

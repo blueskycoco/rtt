@@ -46,7 +46,7 @@ extern void rt_serial_putc(const char ch);
 /**
  * This function will handle serial
  */
-static void rt_serial0_handler(int vector)
+static void rt_serial0_handler(int vector,void *param)
 {
 	rt_hw_serial_isr(&uart0_device);
 }
@@ -54,7 +54,7 @@ static void rt_serial0_handler(int vector)
 /**
  * This function will handle serial
  */
-static void rt_serial1_handler(int vector)
+static void rt_serial1_handler(int vector,void *param)
 {
 	rt_hw_serial_isr(&uart1_device);
 }
@@ -105,14 +105,14 @@ static void rt_hw_uart_init(void)
 	for (i = 0; i < 100; i++);
 
 	
-	rt_hw_interrupt_install(INT_URXD0, rt_serial0_handler, RT_NULL);
+	rt_hw_interrupt_install(INT_URXD0, rt_serial0_handler, RT_NULL,"URXD0 Int Handler");
 	rt_hw_interrupt_umask(INT_URXD0);
 
-	rt_hw_interrupt_install(INT_URXD1, rt_serial1_handler, RT_NULL);
+	rt_hw_interrupt_install(INT_URXD1, rt_serial1_handler, RT_NULL,"URXD1 Int Handler");
 	rt_hw_interrupt_umask(INT_URXD1);	
 }
 
-void rt_timer_handler(int vector)
+void rt_timer_handler(int vector,void *param)
 {
 #ifdef BOARD_DEBUG
 	rt_kprintf("timer handler, increase a tick\n");
@@ -218,14 +218,14 @@ static  void rt_hw_timer_init()
 	TCON 	|= (0x00000008);
 
 	/* install timer handler */
-	rt_hw_interrupt_install(INT_TIMER0, rt_timer_handler, RT_NULL);
+	rt_hw_interrupt_install(INT_TIMER0, rt_timer_handler, RT_NULL,"Timer0 Int Handler");
 	rt_hw_interrupt_umask(INT_TIMER0);
 
 	/* start timer */
 	TCON 	|=(0x00000001);
 
 }
-void INTEINT4567_handler(int irqno)
+void INTEINT4567_handler(int irqno,void *param)
 {
     rt_uint32_t eint_pend;
 	rt_uint32_t extint_pend;
@@ -274,7 +274,7 @@ void rt_hw_board_init()
 
 	rt_hw_timer_init();
 	
-	rt_hw_interrupt_install(INT_EINT4567, INTEINT4567_handler, RT_NULL);
+	rt_hw_interrupt_install(INT_EINT4567, INTEINT4567_handler, RT_NULL,"Eint4567 Int Handler");
 	rt_hw_interrupt_umask(INT_EINT4567);
 
 }
@@ -320,7 +320,7 @@ void rt_hw_led_flash(void)
 
 #ifdef RT_USING_FINSH
 extern void finsh_notify(void);
-void rt_serial_isr(int vector)
+void rt_serial_isr(int vector,void *param)
 {
 	//finsh_notify();
 }
@@ -328,7 +328,7 @@ void rt_serial_isr(int vector)
 void rt_hw_finsh_init()
 {
 	/* install UART isr */
-	rt_hw_interrupt_install(INT_URXD0, rt_serial_isr, RT_NULL);
+	rt_hw_interrupt_install(INT_URXD0, rt_serial_isr, RT_NULL,"Finish Int Handler");
 	rt_hw_interrupt_umask(INT_URXD0);
 }
 #endif

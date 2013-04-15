@@ -15,6 +15,7 @@
  */
 
 #include <rtthread.h>
+#include <rthw.h>
 #include "s3c44b0.h"
 
 #define MAX_HANDLERS	26
@@ -22,7 +23,7 @@
 extern rt_uint32_t rt_interrupt_nest;
 
 /* exception and interrupt handler table */
-rt_isr_handler_t isr_table[MAX_HANDLERS];
+struct rt_irq_desc isr_table[MAX_HANDLERS];
 rt_uint32_t rt_interrupt_from_thread, rt_interrupt_to_thread;
 rt_uint32_t rt_thread_switch_interrupt_flag;
 
@@ -36,7 +37,7 @@ unsigned char interrupt_bank3[256];
  */
 /*@{*/
 
-void rt_hw_interrupt_handle(int vector)
+static void rt_hw_interrupt_handle(int vector,void *param)
 {
 	rt_kprintf("Unhandled interrupt %d occured!!!\n", vector);
 }
@@ -61,11 +62,17 @@ void rt_hw_interrupt_init()
 	INTMOD = 0x0;
 
 	/* init exceptions table */
-	for(i=0; i<MAX_HANDLERS; i++)
-	{
-		isr_table[i] = rt_hw_interrupt_handle;
-	}
+	//for(i=0; i<MAX_HANDLERS; i++)
+	//{
+	//	isr_table[i] = rt_hw_interrupt_handle;
+	//}
 
+    /* init exceptions table */
+    rt_memset(isr_table, 0x00, sizeof(isr_table));
+    for(i=0; i < MAX_HANDLERS; i++)
+    {
+        isr_table[i].handler = rt_hw_interrupt_handle;
+    }
 	for ( i = 0; i < 256; i++)
 	{
 		interrupt_bank0[i] = 0;
@@ -136,13 +143,34 @@ void rt_hw_interrupt_umask(int vector)
  * @param new_handler the interrupt service routine to be installed
  * @param old_handler the old interrupt service routine
  */
-void rt_hw_interrupt_install(int vector, rt_isr_handler_t new_handler, rt_isr_handler_t *old_handler)
+/*void rt_hw_interrupt_install(int vector, rt_isr_handler_t new_handler, rt_isr_handler_t *old_handler)
 {
 	if(vector < MAX_HANDLERS)
 	{
 		if (old_handler != RT_NULL) *old_handler = isr_table[vector];
 		if (new_handler != RT_NULL) isr_table[vector] = new_handler;
 	}
+}*/
+rt_isr_handler_t rt_hw_interrupt_install(int vector, rt_isr_handler_t handler,
+                                        void *param, char *name)
+{
+    rt_isr_handler_t old_handler = RT_NULL;
+
+    if(vector < MAX_HANDLERS)
+    {
+        old_handler = isr_table[vector].handler;
+
+        if (handler != RT_NULL)
+        {
+#ifdef RT_USING_INTERRUPT_INFO
+		    rt_strncpy(isr_table[vector].name, name, RT_NAME_MAX);
+#endif /* RT_USING_INTERRUPT_INFO */
+		    isr_table[vector].handler = handler;
+            isr_table[vector].param = param;
+        }
+    }
+
+    return old_handler;
 }
 
 /*@}*/
