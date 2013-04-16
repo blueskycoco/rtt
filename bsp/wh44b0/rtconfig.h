@@ -96,7 +96,7 @@
 /* SECTION: C++ support */
 /* Using C++ support*/
 /* #define RT_USING_CPLUSPLUS */
-
+#define RT_USING_ORTP
 /* SECTION: lwip, a lighwight TCP/IP protocol stack */
 /* Using lighweight TCP/IP protocol stack*/
 #define RT_USING_LWIP

@@ -1,0 +1,57 @@
+Import('RTT_ROOT')
+from building import *
+
+src = Split("""
+src/avprofile.c
+src/b64.c
+src/event.c
+src/jitterctl.c
+src/logging.c
+src/netsim.c
+src/ortp.c
+src/ortp_srtp.c
+src/payloadtype.c
+src/port.c
+src/posixtimer.c
+src/rtcp.c
+src/rtcpparse.c
+src/rtpprofile.c
+src/rtpsession.c
+src/rtpsession_inet.c
+src/rtpsignaltable.c
+src/rtptimer.c
+src/scheduler.c
+src/sessionset.c
+src/str_utils.c
+src/stun.c
+src/stun_udp.c
+src/telephonyevents.c
+src/utils.c
+src/zrtp.c
+""")
+
+test_src = Split("""
+tests/mrtprecv.c
+tests/mrtpsend.c
+tests/rtpmemtest.c
+tests/rtprecv.c
+tests/rtpsend.c
+test/rtpsend_stupid.c
+test/test_timer.c
+test/tevmrtprecv.c
+test/tevrtprecv.c
+test/tevrtpsend.c
+""")
+
+
+# The set of source files associated with this SConscript file.
+path = [GetCurrentDir() + '/src',
+    GetCurrentDir() + '/include']
+
+if GetDepend(['RT_ORTP_TEST']):
+    src += test_src
+
+
+group = DefineGroup('ORTP', src, depend = ['RT_USING_ORTP'], CPPPATH = path)
+
+Return('group')
