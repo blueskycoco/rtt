@@ -70,8 +70,8 @@ int sound_init(int format)
 	return -1;
 }
 #endif
-
-int main(int argc, char*argv[])
+#include "finsh.h"
+int rtprecv(int argc, char*argv[])
 {
 	RtpSession *session;
 	unsigned char buffer[160];
@@ -182,3 +182,5 @@ int main(int argc, char*argv[])
 	
 	return 0;
 }
+FINSH_FUNCTION_EXPORT(rtprecv, rtprecv test);
+

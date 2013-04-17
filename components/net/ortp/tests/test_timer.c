@@ -18,10 +18,10 @@
 */
 
 
-#include "../rtptimer.h"
+#include "rtptimer.h"
 #include <stdio.h>
-
-int main(int argc, char *argv[])
+#include "finsh.h"
+int timer_test(int argc, char *argv[])
 {
 	RtpTimer *timer=&posix_timer;
 	int i;
@@ -41,3 +41,5 @@ int main(int argc, char *argv[])
 	timer->timer_uninit();
 	return 0;
 }
+FINSH_FUNCTION_EXPORT(timer_test, rtp timer test);
+

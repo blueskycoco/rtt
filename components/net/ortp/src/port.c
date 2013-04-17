@@ -19,11 +19,7 @@
 */
 
 
-#if defined(WIN32) || defined(_WIN32_WCE)
-#include "ortp-config-win32.h"
-#elif HAVE_CONFIG_H
 #include "ortp-config.h"
-#endif
 #include "ortp/logging.h"
 #include "ortp/port.h"
 #include "ortp/str_utils.h"
@@ -371,9 +367,10 @@ char * WSAAPI gai_strerror(int errnum){
 #endif
 
 #ifndef WIN32
+#if 0
 
-#include <sys/socket.h>
-#include <netdb.h>
+#include <lwip/sockets.h>
+#include <lwip/netdb.h>
 #include <sys/un.h>
 #include <sys/stat.h>
 
@@ -448,7 +445,7 @@ int ortp_pipe_write(ortp_socket_t p, const uint8_t *buf, int len){
 int ortp_client_pipe_close(ortp_socket_t sock){
 	return close(sock);
 }
-
+#endif
 #ifdef HAVE_SYS_SHM_H
 
 void *ortp_shm_open(unsigned int keyid, int size, int create){
@@ -660,7 +657,7 @@ void ortp_get_cur_time(ortpTimeSpec *ret){
 	ret->tv_nsec = time_val.millitm * 1000000LL;
 #else
 	struct timespec ts;
-	if (clock_gettime(CLOCK_MONOTONIC,&ts)<0){
+	if (clock_gettime(CLOCK_REALTIME,&ts)<0){
 		ortp_fatal("clock_gettime() doesn't work: %s",strerror(errno));
 	}
 	ret->tv_sec=ts.tv_sec;

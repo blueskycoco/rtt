@@ -18,11 +18,7 @@
 */
 
 
-#if defined(WIN32) || defined(_WIN32_WCE)
-#include "ortp-config-win32.h"
-#elif HAVE_CONFIG_H
 #include "ortp-config.h"
-#endif
 
 #include "ortp/ortp.h"
 #include "ortp/telephonyevents.h"

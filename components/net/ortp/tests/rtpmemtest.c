@@ -35,20 +35,20 @@
 #else
 //#include <time.h>
 #endif
-
+/*
 int runcond=1;
 
 void stophandler(int signum)
 {
 	runcond=0;
 }
-
+*/
 static char *help="usage: mrtprecv	file_prefix local_port number_of_streams \n"
 		"Receives multiples rtp streams on local_port+2*k, k={0..number_of_streams}\n";
 
 #define STREAMS_COUNT 1000
 
-int rtp2disk(RtpSession *session,uint32_t ts, int fd)
+int rtp2disk1(RtpSession *session,uint32_t ts, int fd)
 {
 	unsigned char buffer[160];
 	int err,havemore=1;
@@ -67,8 +67,8 @@ int rtp2disk(RtpSession *session,uint32_t ts, int fd)
 	return 0;
 }
 
-
-int main(int argc, char *argv[])
+#include "finsh.h"
+int rtpmemtest(int argc, char *argv[])
 {
 	RtpSession *session[STREAMS_COUNT];
 	int i;
@@ -120,10 +120,10 @@ int main(int argc, char *argv[])
 		if (filefd[i]<0) ortp_error("Could not open %s for writing: %s",filename,strerror(errno));
 	}
 	ortp_free(filename);
-	signal(SIGINT,stophandler);
+	//signal(SIGINT,stophandler);
 	/* create a set */
 	set=session_set_new();
-	while(runcond)
+	//while(runcond)
 	{
 		int k;
 
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
 		session_set_select(set,NULL,NULL);
 		for (k=0;k<channels;k++){
 			if (session_set_is_set(set,session[k])){
-				rtp2disk(session[k],user_ts,filefd[k]);
+				rtp2disk1(session[k],user_ts,filefd[k]);
 			}
 		}
 		user_ts+=160;
@@ -150,3 +150,5 @@ int main(int argc, char *argv[])
 	ortp_exit();
 	return 0;
 }
+FINSH_FUNCTION_EXPORT(rtpmemtest, rtpmemtest test);
+

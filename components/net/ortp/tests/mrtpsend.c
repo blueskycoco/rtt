@@ -31,20 +31,21 @@
 #endif
 
 
-int runcond=1;
+//int runcond=1;
 
-void stophandler(int signum)
-{
-	runcond=0;
-}
+//void stophandler(int signum)
+//{
+//	runcond=0;
+//}
 
 static char *help="usage: mrtpsend	filename ip port nstreams [--packet-size size] [--ts-inc value]\n";
 
 #define STREAMS_COUNT 1000
 
 
+#include "finsh.h"
 
-int main(int argc, char *argv[])
+int mrtpsend(int argc, char *argv[])
 {
 	RtpSession *session[STREAMS_COUNT];
 	unsigned char *buffer;
@@ -134,10 +135,10 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	printf("open file\n");
-	signal(SIGINT,stophandler);
+	//signal(SIGINT,stophandler);
 	/* create a set */
 	set=session_set_new();
-	while( ((i=fread(buffer,1,packet_size,infile))>0) && (runcond) )
+	while( ((i=fread(buffer,1,packet_size,infile))>0)/* && (runcond)*/ )
 	{
 		int k;
 		//ortp_message("Sending packet.");
@@ -161,7 +162,7 @@ int main(int argc, char *argv[])
 	printf("close file\n");
 	/*sleep a little to wait last packets to be sent */
 	#ifndef _WIN32
-	sleep(1);
+	rt_thread_delay(1);
 	#else
 	Sleep(1);
 	#endif
@@ -173,3 +174,5 @@ int main(int argc, char *argv[])
 	ortp_global_stats_display();
 	return 0;
 }
+FINSH_FUNCTION_EXPORT(mrtpsend, mrtpsend test);
+

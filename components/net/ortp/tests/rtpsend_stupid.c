@@ -28,17 +28,17 @@
 #endif
 /*defined in library, but not declared in public headers (this method is only useful for tests)*/
 extern int __rtp_session_sendm_with_ts(RtpSession *session, mblk_t *packet, uint32_t packet_ts, uint32_t send_ts);
-
+/*
 int runcond=1;
 
 void stophandler(int signum)
 {
 	runcond=0;
 }
-
+*/
 static char *help="usage: rtpsend	filename dest_ip4addr dest_port [ --with-clockslide <value> ] [ --with-ptime <milliseconds>]\n";
-
-int main(int argc, char *argv[])
+#include "finsh.h"
+int rtpsend_stupid(int argc, char *argv[])
 {
 	RtpSession *session;
 	unsigned char buffer[160];
@@ -102,8 +102,8 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	signal(SIGINT,stophandler);
-	while( ((i=fread(buffer,1,160,infile))>0) && (runcond) )
+	//signal(SIGINT,stophandler);
+	while( ((i=fread(buffer,1,160,infile))>0) /*&& (runcond)*/ )
 	{
 		mblk_t *m=rtp_session_create_packet(session,RTP_FIXED_HEADER_SIZE,buffer,i);
 		__rtp_session_sendm_with_ts(session,m,packet_ts,send_ts);
@@ -124,3 +124,5 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+FINSH_FUNCTION_EXPORT(rtpsend_stupid, rtpsend_stupid test);
+

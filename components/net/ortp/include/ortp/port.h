@@ -26,7 +26,6 @@
 /********************************/
 /* definitions for UNIX flavour */
 /********************************/
-#if 0
 #include <errno.h>
 #include <sys/types.h>
 #include <pthread.h>
@@ -38,8 +37,7 @@
 #include <string.h>
 
 #ifdef __linux
-#include <stdint.h>
-#endif
+//#include <stdint.h>
 #endif
 
 //#include <sys/types.h>
@@ -52,13 +50,20 @@
 #include <lwip/inet.h>
 #endif
 
-#include <pthread.h>
+typedef	rt_int8_t		int8_t;
+typedef	rt_uint8_t		uint8_t;
+typedef	rt_int16_t		int16_t;
+typedef	rt_uint16_t		uint16_t;
+typedef	rt_int32_t		int32_t;
+typedef	rt_uint32_t		uint32_t;
+typedef long long		int64_t;
+typedef unsigned long long uint64_t;
 
 
 //#include <sys/time.h>
 
 #ifdef ORTP_INET6
-#include <netdb.h>
+#include <lwip/netdb.h>
 #endif
 
 typedef int ortp_socket_t;

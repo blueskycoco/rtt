@@ -20,11 +20,7 @@
 
 #define _GNU_SOURCE
 
-#if defined(WIN32) || defined(_WIN32_WCE)
-#include "ortp-config-win32.h"
-#elif HAVE_CONFIG_H
 #include "ortp-config.h" /*needed for HAVE_SYS_UIO_H */
-#endif
 #include "ortp/ortp.h"
 #include "utils.h"
 #include "ortp/rtpsession.h"
@@ -348,7 +344,7 @@ rtp_session_set_local_addr (RtpSession * session, const char * addr, int rtp_por
 	return -1;
 }
 
-
+#if 0
 /**
  *rtp_session_set_pktinfo:
  *@session: a rtp session
@@ -410,7 +406,7 @@ int rtp_session_set_pktinfo(RtpSession *session, int activate)
 	return retval;
 }
 
-
+#endif
 /**
  *rtp_session_set_multicast_ttl:
  *@session: a rtp session
@@ -1085,6 +1081,8 @@ rtp_session_rtcp_send (RtpSession * session, mblk_t * m)
 }
 
 int rtp_session_rtp_recv_abstract(ortp_socket_t socket, mblk_t *msg, int flags, struct sockaddr *from, socklen_t *fromlen) {
+#if 0
+
 	int ret;
 	int bufsz = (int) (msg->b_datap->db_lim - msg->b_datap->db_base);
 #ifndef _WIN32
@@ -1179,6 +1177,8 @@ int rtp_session_rtp_recv_abstract(ortp_socket_t socket, mblk_t *msg, int flags, 
 		}
 	}
 	return ret;
+	#endif
+	return 0;
 }
 
 int rtp_session_rtp_recv (RtpSession * session, uint32_t user_ts)

@@ -26,17 +26,17 @@
 #include <sys/time.h>
 #include <stdio.h>
 #endif
-
+/*
 int runcond=1;
 
 void stophandler(int signum)
 {
 	runcond=0;
-}
+}*/
 
 static const char *help="usage: rtpsend	filename dest_ip4addr dest_port [ --with-clockslide <value> ] [ --with-jitter <milliseconds>]\n";
-
-int main(int argc, char *argv[])
+#include "finsh.h"
+int rtpsend(int argc, char *argv[])
 {
 	RtpSession *session;
 	unsigned char buffer[160];
@@ -98,8 +98,8 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	signal(SIGINT,stophandler);
-	while( ((i=fread(buffer,1,160,infile))>0) && (runcond) )
+	//signal(SIGINT,stophandler);
+	while( ((i=fread(buffer,1,160,infile))>0)/* && (runcond)*/ )
 	{
 		rtp_session_send_with_ts(session,buffer,i,user_ts);
 		user_ts+=160;
@@ -113,9 +113,9 @@ int main(int argc, char *argv[])
 			ortp_message("Simulating late packets now (%i milliseconds)",jitter);
 			pausetime.tv_sec=jitter/1000;
 			pausetime.tv_nsec=(jitter%1000)*1000000;
-			while(nanosleep(&pausetime,&remtime)==-1 && errno==EINTR){
-				pausetime=remtime;
-			}
+			//while(nanosleep(&pausetime,&remtime)==-1 && errno==EINTR){
+				//pausetime=remtime;
+			//}
 		}
 	}
 
@@ -126,3 +126,5 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+FINSH_FUNCTION_EXPORT(rtpsend, rtpsend test);
+

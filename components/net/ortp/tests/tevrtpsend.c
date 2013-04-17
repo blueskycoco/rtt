@@ -28,17 +28,17 @@
 #include <time.h>
 #endif
 #include <stdio.h>
-
+/*
 int runcond=1;
 
 void stophandler(int signum)
 {
 	runcond=0;
-}
+}*/
 
 static char *help="usage: test_tevsend	filename dest_ip4addr dest_port\n";
-
-int main(int argc, char *argv[])
+#include "finsh.h"
+int tevrtpsend(int argc, char *argv[])
 {
 	RtpSession *session;
 	unsigned char buffer[160];
@@ -77,8 +77,8 @@ int main(int argc, char *argv[])
 		perror("Cannot open file");
 		return -1;
 	}
-	signal(SIGINT,stophandler);
-	while( ((i=fread(buffer,1,160,infile))>0) && (runcond) )
+	//signal(SIGINT,stophandler);
+	while( ((i=fread(buffer,1,160,infile))>0)/* && (runcond)*/ )
 	{
 		//ortp_message("Sending packet.");
 		rtp_session_send_with_ts(session,buffer,i,user_ts);
@@ -97,3 +97,5 @@ int main(int argc, char *argv[])
 	ortp_global_stats_display();
 	return 0;
 }
+FINSH_FUNCTION_EXPORT(tevrtpsend, tevrtpsend test);
+

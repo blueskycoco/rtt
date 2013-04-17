@@ -29,15 +29,17 @@
 #include <time.h>
 #endif
 #include <stdio.h>
-
+/*
 int runcond=1;
 
-static int dtmf_tab[16]={'0','1','2','3','4','5','6','7','8','9','*','#','A','B','C','D'};
 
 void stophandler(int signum)
 {
 	runcond=0;
 }
+*/
+	
+static int dtmf_tab[16]={'0','1','2','3','4','5','6','7','8','9','*','#','A','B','C','D'};
 
 static char *help="usage: test_tevrecv	filename loc_port\n";
 
@@ -49,8 +51,8 @@ void recv_tev_cb(RtpSession *session,int type,long user_data)
 	if (type<16) printf("This is dtmf %c\n",dtmf_tab[type]);
 	dtmf_count++;
 }
-
-int main(int argc, char *argv[])
+#include "finsh.h"
+int tevrtprecv(int argc, char *argv[])
 {
 	RtpSession *session;
 	unsigned char buffer[160];
@@ -85,8 +87,8 @@ int main(int argc, char *argv[])
 		perror("Cannot open file");
 		return -1;
 	}
-	signal(SIGINT,stophandler);
-	while(runcond)
+	//signal(SIGINT,stophandler);
+	//while(runcond)
 	{
 		have_more=1;
 		while (have_more){
@@ -106,3 +108,5 @@ int main(int argc, char *argv[])
 	printf("Total dtmf events received: %i\n",dtmf_count);
 	return 0;
 }
+FINSH_FUNCTION_EXPORT(tevrtprecv, tevrtprecv test);
+

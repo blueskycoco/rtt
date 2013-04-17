@@ -15,6 +15,7 @@ src/port.c
 src/posixtimer.c
 src/rtcp.c
 src/rtcpparse.c
+src/rtpparse.c
 src/rtpprofile.c
 src/rtpsession.c
 src/rtpsession_inet.c
@@ -23,11 +24,10 @@ src/rtptimer.c
 src/scheduler.c
 src/sessionset.c
 src/str_utils.c
-src/stun.c
-src/stun_udp.c
 src/telephonyevents.c
 src/utils.c
 src/zrtp.c
+src/rand.c
 """)
 
 test_src = Split("""
@@ -36,11 +36,11 @@ tests/mrtpsend.c
 tests/rtpmemtest.c
 tests/rtprecv.c
 tests/rtpsend.c
-test/rtpsend_stupid.c
-test/test_timer.c
-test/tevmrtprecv.c
-test/tevrtprecv.c
-test/tevrtpsend.c
+tests/rtpsend_stupid.c
+tests/test_timer.c
+tests/tevmrtprecv.c
+tests/tevrtprecv.c
+tests/tevrtpsend.c
 """)
 
 

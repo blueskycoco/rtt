@@ -38,19 +38,19 @@
 #endif
 
 #include <ortp/telephonyevents.h>
-
+/*
 int runcond=1;
 
 void stophandler(int signum)
 {
 	runcond=0;
 }
-
+*/
 static int dtmf_tab[16]={'0','1','2','3','4','5','6','7','8','9','*','#','A','B','C','D'};
 
 static int *p_channel_id;
 
-int dtmf_count=0;
+int dtmf_count1=0;
 
 static char *help="usage: tevmrtprecv	file_prefix local_port number_of_streams \n"
 		"Receives multiples rtp streams with telephone events on local_port+2*k, k={0..number_of_streams}\n";
@@ -58,14 +58,14 @@ static char *help="usage: tevmrtprecv	file_prefix local_port number_of_streams \
 #define STREAMS_COUNT 1000
 
 
-void recv_tev_cb(RtpSession *session,int type,long user_data)
+void recv_tev_cb1(RtpSession *session,int type,long user_data)
 {
         //printf("Receiving telephony event:%i\n",type);
         if (type<16) printf("This is dtmf %c on channel %d\n",dtmf_tab[type],*(int *)user_data);
-        dtmf_count++;
+        dtmf_count1++;
 }
 
-int rtp2disk(RtpSession *session,uint32_t ts, int fd)
+int rtp2disk2(RtpSession *session,uint32_t ts, int fd)
 {
 	unsigned char buffer[160];
 	int err,havemore=1;
@@ -84,8 +84,8 @@ int rtp2disk(RtpSession *session,uint32_t ts, int fd)
 	return 0;
 }
 
-
-int main(int argc, char *argv[])
+#include "finsh.h"
+int tevmrtprecv(int argc, char *argv[])
 {
 	RtpSession *session[STREAMS_COUNT];
 	int i;
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 
 		p_channel_id[i] = i;
 		/* register for telephony events */
-		rtp_session_signal_connect(session[i],"telephone-event",(RtpCallback)recv_tev_cb,(long)&p_channel_id[i]);
+		rtp_session_signal_connect(session[i],"telephone-event",(RtpCallback)recv_tev_cb1,(long)&p_channel_id[i]);
 
 		port+=2;
 	}
@@ -141,10 +141,10 @@ int main(int argc, char *argv[])
 		#endif
 		if (filefd[i]<0) ortp_error("Could not open %s for writing: %s",filename,strerror(errno));
 	}
-	signal(SIGINT,stophandler);
+	//signal(SIGINT,stophandler);
 	/* create a set */
 	set=session_set_new();
-	while(runcond)
+	//while(runcond)
 	{
 		int k;
 		
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 		session_set_select(set,NULL,NULL);
 		for (k=0;k<channels;k++){
 			if (session_set_is_set(set,session[k])){
-				rtp2disk(session[k],user_ts,filefd[k]);
+				rtp2disk2(session[k],user_ts,filefd[k]);
 			}
 		}
 		user_ts+=160;
@@ -173,3 +173,5 @@ int main(int argc, char *argv[])
 	ortp_global_stats_display();
 	return 0;
 }
+FINSH_FUNCTION_EXPORT(tevmrtprecv, tevmrtprecv test);
+

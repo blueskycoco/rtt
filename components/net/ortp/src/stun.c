@@ -67,9 +67,8 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include "ortp-config.h"
-#endif
+
 
 #ifndef _WIN32_WCE
 #include <errno.h>

@@ -35,12 +35,12 @@
 #include <sys/stat.h>
 #endif
 
-int runcond=1;
+//int runcond=1;
 
-void stophandler(int signum)
-{
-	runcond=0;
-}
+//void stophandler(int signum)
+//{
+//	runcond=0;
+//}
 
 static char *help="usage: mrtprecv	file_prefix local_port number_of_streams \n"
 		"Receives multiples rtp streams on local_port+2*k, k={0..number_of_streams}\n";
@@ -69,8 +69,8 @@ int rtp2disk(RtpSession *session,uint32_t ts, int fd)
 	return 0;
 }
 
-
-int main(int argc, char *argv[])
+#include "finsh.h"
+int mrtprecv(int argc, char *argv[])
 {
 	RtpSession *session[STREAMS_COUNT];
 	int i;
@@ -120,10 +120,10 @@ int main(int argc, char *argv[])
 		#endif
 		if (filefd[i]<0) ortp_error("Could not open %s for writing: %s",filename,strerror(errno));
 	}
-	signal(SIGINT,stophandler);
+	//signal(SIGINT,stophandler);
 	/* create a set */
 	set=session_set_new();
-	while(runcond)
+	//while(runcond)
 	{
 		int k;
 		
@@ -157,3 +157,4 @@ int main(int argc, char *argv[])
 	ortp_free(recvbuf);
 	return 0;
 }
+FINSH_FUNCTION_EXPORT(mrtprecv, mrtpecv test);

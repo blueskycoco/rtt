@@ -97,6 +97,7 @@
 /* Using C++ support*/
 /* #define RT_USING_CPLUSPLUS */
 #define RT_USING_ORTP
+#define RT_ORTP_TEST
 /* SECTION: lwip, a lighwight TCP/IP protocol stack */
 /* Using lighweight TCP/IP protocol stack*/
 #define RT_USING_LWIP
@@ -122,7 +123,7 @@
 #define RT_LWIP_ICMP
 
 /* Enable IGMP protocol*/
-/*#define RT_LWIP_IGMP*/
+#define RT_LWIP_IGMP
 
 /* Enable UDP protocol*/
 #define RT_LWIP_UDP
