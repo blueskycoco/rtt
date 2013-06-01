@@ -94,21 +94,26 @@ unsigned char i2c_ReceiveData(void)
 /*cm_PowerOn the first lowlevel function will be called*/
 void cm_PowerOn(void)
 {
+	static BOOL flag=FALSE;
     int i=0;
-    /* init SIO low-level abstraction layer */
-    i2c_init();
-    /* set the clock and data lines to the proper states */
-    i2c_scl_set(1);
-    i2c_sda_set(1);
-    sleep_ms(10);
-    for(i=0;i<6;i++)
-    {
-        i2c_scl_set(1);
-        sleep_ms(1);
-        i2c_scl_set(0);
-        sleep_ms(1);
-    }
-    i2c_scl_set(1);
+	if(flag==FALSE)
+	{
+	    /* init SIO low-level abstraction layer */
+	    i2c_init();
+	    /* set the clock and data lines to the proper states */
+	    i2c_scl_set(1);
+	    i2c_sda_set(1);
+	    sleep_ms(10);
+	    for(i=0;i<6;i++)
+	    {
+	        i2c_scl_set(1);
+	        sleep_ms(1);
+	        i2c_scl_set(0);
+	        sleep_ms(1);
+	    }
+	    i2c_scl_set(1);
+		flag=TRUE;
+	}
 }
 BOOL cm_Read(unsigned char Command, unsigned char Addr1, unsigned char Addr2,unsigned char Nbytes,unsigned char *pBuffer)
 {
@@ -1086,9 +1091,6 @@ BOOL auth(pge p,callback_t cb)
     {
     	if(p->user_zone[i]!=user_zone[i])
 			return FALSE;
-        //if(i%8==0 && i!=0)
-            //AT88DBG("\n");
-        //AT88DBG("%4X ",user_zone[i]);		
     }
 	cb();
     return TRUE;
@@ -1116,13 +1118,6 @@ BOOL read_userzone(pge p)
         //AT88DBG("At88sc_Read failed %d\n",p->zone_index);
         return FALSE;
     }
-    /*for(i=0;i<32;i++)
-    {
-        if(i%8==0 && i!=0)
-            AT88DBG("\n");
-        AT88DBG("%4X ",p->user_zone[i]);		
-    }*/
-	
     return TRUE;
 }
 
