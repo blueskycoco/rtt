@@ -166,6 +166,10 @@ void bf(void)
 	burn(p);
 }
 FINSH_FUNCTION_EXPORT(bf, test at88sc burn from file);
+void cb()
+{
+	rt_kprintf("Call back called\r\n");
+}
 void a(unsigned char zone)
 {
 	ge p;
@@ -201,7 +205,7 @@ void a(unsigned char zone)
 		return;
 	}
 	close(fd);
-	auth(&p);
+	auth(&p,(callback_t)cb);
 }
 FINSH_FUNCTION_EXPORT(a, a(1).test at88sc auth);
 void af(void)
@@ -222,7 +226,7 @@ void af(void)
 		return;
 	}
 	close(fd);
-	auth(&p);
+	auth(&p,(callback_t)cb);
 }
 FINSH_FUNCTION_EXPORT(af, test at88sc auth from file);
 /** @} */

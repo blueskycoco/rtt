@@ -93,7 +93,7 @@ unsigned char i2c_sda_get(void);
 void i2c_sda_input(void);
 void i2c_sda_output(void);
 void sleep_ms(unsigned long n);
-
+typedef void (*callback_t)(void);
 typedef struct {
 	unsigned char user_zone[4][32];
 	unsigned char ar[4][2];
