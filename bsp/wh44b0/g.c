@@ -8,7 +8,7 @@
  #define DELAY 10
  void i2c_init(void)
 {
-  PCONE = PCONE & ~(0x3<<14);
+	PCONE = PCONE & ~(0x3<<14);
 	PCONE = PCONE | (0x1<<14);
 	PCONF = PCONF & ~(0x7<<16);
 	PCONF = PCONF | (0x1<<16);
@@ -59,22 +59,14 @@ void i2c_sda_input(void)
 /*config sda dir output*/
 void i2c_sda_output(void)
 {
-		PCONE = PCONE & ~(0x3<<14);
-    PCONE = PCONE | (0x1<<14);
+	PCONE = PCONE & ~(0x3<<14);
+	PCONE = PCONE | (0x1<<14);
 }
 /*sleep function*/
 void sleep_ms(unsigned long n)
 {
-    //rt_thread_delay(n/10);
-    #if 1
-    volatile long i,j;
-
-  
-   for(i=0;i<n;i++)
-    for(j=0;j<DELAY;j++)
-     ;
-  #endif
+	volatile long i,j;
+	for(i=0;i<n;i++)
+	for(j=0;j<DELAY;j++)
+	;
 }
-
- 
- 

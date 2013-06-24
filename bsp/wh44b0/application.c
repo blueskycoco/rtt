@@ -142,7 +142,7 @@ void b(unsigned char zone)
 		return;
 	}
 	close(fd);
-	burn(p);
+	//burn(p);
 }
 FINSH_FUNCTION_EXPORT(b, test at88sc burn);
 void bf(void)

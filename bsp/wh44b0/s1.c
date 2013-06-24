@@ -632,7 +632,7 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
         {
        		if(Ci[i]!=NewCi[i])
        	 	{
-       	 		AT88DBG("Ci[%d] = %x ,NewCi[%d] = %x\n",i,Ci[i],i,NewCi[i]);
+       	 		AT88DBG("Failed Auth %x %x\n",Ci[i],NewCi[i]);
        	 		needDecry=FALSE;
             	needAuth=FALSE;
        	 		return FALSE;
@@ -690,7 +690,7 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
 	  {
 		if(Ci[i]!=NewCi[i])
 		{
-			AT88DBG("Ci[%d] = %x ,NewCi[%d] = %x\n",i,Ci[i],i,NewCi[i]);
+			AT88DBG("Failed Encryption %x %x\n",Ci[i],NewCi[i]);
 			return FALSE;
 		}
 	  }         
@@ -711,28 +711,29 @@ BOOL auth(pge p,callback_t cb)
     ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, p->use_g, p->g);
     if (ucReturn != TRUE){
         AT88DBG("cm_VerifyCrypto failed1\n");
-        return FALSE;
+        while(1);
     }
 	ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 0);
     if (ucReturn != TRUE)  {
         AT88DBG("cm_VerifyPassword failed\n");
-        return FALSE;
+        while(1);
     }
     cm_SetUserZone(DEFAULT_ADDRESS, p->zone_index, FALSE);
     memset(user_zone,0xff,32*sizeof(unsigned char));
     ucReturn = cm_ReadUserZone(DEFAULT_ADDRESS, 0, user_zone, 32);
     if (ucReturn != TRUE){
         AT88DBG("At88sc_Read failed %d\n",p->zone_index);
-        return FALSE;
+        while(1);
     }
     for(i=0;i<32;i++)
     {
     	if(p->user_zone[i]!=user_zone[i])
-			return FALSE;
-        if(i%8==0 && i!=0)
-            AT88DBG("\n");
-        AT88DBG("%4X ",p->user_zone[i]);		
+			while(1);
+        //if(i%8==0 && i!=0)
+            //AT88DBG("\n");
+        //AT88DBG("%4X ",p->user_zone[i]);		
     }
+	if(cb!=NULL)
 	cb();
     return TRUE;
 }
