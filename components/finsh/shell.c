@@ -116,7 +116,16 @@ void finsh_set_device(const char* device_name)
 
 	RT_ASSERT(shell != RT_NULL);
 	dev = rt_device_find(device_name);
-	if (dev != RT_NULL && rt_device_open(dev, RT_DEVICE_OFLAG_RDWR) == RT_EOK)
+	if (dev == RT_NULL)
+	{
+		rt_kprintf("finsh: can not find device: %s\n", device_name);
+		return;
+	}
+
+	/* check whether it's a same device */
+	if (dev == shell->device) return;
+	/* open this device and set the new device in finsh shell */
+	if (rt_device_open(dev, RT_DEVICE_OFLAG_RDWR) == RT_EOK)
 	{
 		if (shell->device != RT_NULL)
 		{
@@ -126,10 +135,6 @@ void finsh_set_device(const char* device_name)
 
 		shell->device = dev;
 		rt_device_set_rx_indicate(dev, finsh_rx_ind);
-	}
-	else
-	{
-		rt_kprintf("finsh: can not find device:%s\n", device_name);
 	}
 }
 
@@ -511,7 +516,7 @@ __declspec(allocate("FSymTab$z")) const struct finsh_syscall __fsym_end =
  *
  * This function will initialize finsh shell
  */
-void finsh_system_init(void)
+int finsh_system_init(void)
 {
 	rt_err_t result;
 
@@ -528,7 +533,8 @@ void finsh_system_init(void)
                                __section_end("FSymTab"));
     finsh_system_var_init(__section_begin("VSymTab"),
                           __section_end("VSymTab"));
-#elif defined (__GNUC__)        /* GNU GCC Compiler */
+#elif defined (__GNUC__) || defined(__TI_COMPILER_VERSION__)
+    /* GNU GCC Compiler and TI CCS */
 	extern const int __fsymtab_start;
 	extern const int __fsymtab_end;
 	extern const int __vsymtab_start;
@@ -560,7 +566,7 @@ void finsh_system_init(void)
 	if (shell == RT_NULL)
 	{
 		rt_kprintf("no memory for shell\n");
-		return;
+		return -1;
 	}
 	
 	memset(shell, 0, sizeof(struct finsh_shell));
@@ -574,4 +580,7 @@ void finsh_system_init(void)
 
 	if (result == RT_EOK)
 		rt_thread_startup(&finsh_thread);
+	return 0;
 }
+INIT_COMPONENT_EXPORT(finsh_system_init);
+

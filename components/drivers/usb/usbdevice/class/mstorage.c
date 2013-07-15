@@ -3,9 +3,19 @@
  * This file is part of RT-Thread RTOS
  * COPYRIGHT (C) 2012, RT-Thread Development Team
  *
- * The license and distribution terms for this file may be
- * found in the file LICENSE in this distribution or at
- * http://www.rt-thread.org/license/LICENSE
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Change Logs:
  * Date           Author       Notes
@@ -33,6 +43,7 @@ static rt_device_t disk;
 static rt_uint32_t _block;
 static rt_uint32_t _count, _size;
 static struct rt_device_blk_geometry geometry;
+static rt_uint32_t _removed = 0;
 
 static struct udevice_descriptor dev_desc =
 {
@@ -126,13 +137,13 @@ static rt_err_t _request_sense(udevice_t device, uep_t ep_in)
 
     data.ErrorCode = 0x70;
     data.Valid     = 0;
-    data.SenseKey  = 5;
+    data.SenseKey  = 2; //TODO
     data.Information[0] = 0;
     data.Information[1] = 0;
     data.Information[2] = 0;
     data.Information[3] = 0;
-    data.AdditionalSenseLength = 0x0b;
-    data.AdditionalSenseCode   = 0x20;
+    data.AdditionalSenseLength = 0x0a;
+    data.AdditionalSenseCode   = 0x3a; //TODO
     data.AdditionalSenseCodeQualifier =0;
 
     dcd_ep_write(device->dcd, ep_in, (rt_uint8_t*)&data, sizeof(struct request_sense_data));
@@ -299,6 +310,19 @@ static rt_err_t _verify_10(udevice_t device)
     return RT_EOK;
 }
 
+static void _send_status(udevice_t device, mass_eps_t eps, ustorage_csw_t csw)
+{
+    dcd_ep_write(device->dcd, eps->ep_in, (rt_uint8_t*)csw, SIZEOF_CSW);
+    dcd_ep_read(device->dcd, eps->ep_out, eps->ep_out->buffer, SIZEOF_CBW);
+    status = STATUS_CBW;   
+}
+
+static void _start_stop(ustorage_cbw_t cbw)
+{
+    //TODO
+    _removed = 1;
+}
+
 /**
  * This function will handle mass storage bulk in endpoint request.
  *
@@ -313,13 +337,11 @@ static rt_err_t _ep_in_handler(udevice_t device, uclass_t cls, rt_size_t size)
     RT_ASSERT(device != RT_NULL);
 
     eps = cls->eps;
-    if(status == STATUS_CSW)
+    if (status == STATUS_CSW)
     {
-        dcd_ep_write(device->dcd, eps->ep_in, (rt_uint8_t*)&csw, SIZEOF_CSW);
-        status = STATUS_CBW;
-        dcd_ep_read(device->dcd, eps->ep_out, eps->ep_out->buffer, SIZEOF_CBW);
+        _send_status(device, eps, &csw);
     }
-    if(status == STATUS_SEND)
+    else if (status == STATUS_SEND)
     {
         rt_device_read(disk, _block, eps->ep_in->buffer, 1);
         dcd_ep_write(device->dcd, eps->ep_in, eps->ep_in->buffer,
@@ -388,8 +410,8 @@ static rt_err_t _ep_out_handler(udevice_t device, uclass_t cls, rt_size_t size)
         switch(cbw->cb[0])
         {
         case SCSI_TEST_UNIT_READY:
-            dcd_ep_write(device->dcd, eps->ep_in, (rt_uint8_t*)&csw, SIZEOF_CSW);
-            dcd_ep_read(device->dcd, eps->ep_out, eps->ep_out->buffer, SIZEOF_CBW);
+            csw.status = _removed;
+            _send_status(device, eps, &csw);
             break;
         case SCSI_REQUEST_SENSE:
             _request_sense(device, eps->ep_in);
@@ -404,8 +426,7 @@ static rt_err_t _ep_out_handler(udevice_t device, uclass_t cls, rt_size_t size)
             status = STATUS_CSW;
             break;
         case SCSI_ALLOW_MEDIUM_REMOVAL:
-            dcd_ep_write(device->dcd, eps->ep_in, (rt_uint8_t*)&csw, SIZEOF_CSW);
-            dcd_ep_read(device->dcd, eps->ep_out, eps->ep_out->buffer, SIZEOF_CBW);
+            _send_status(device, eps, &csw);
             break;
         case SCSI_READ_CAPACITIES:
             _read_capacities(device, eps->ep_in);
@@ -425,6 +446,10 @@ static rt_err_t _ep_out_handler(udevice_t device, uclass_t cls, rt_size_t size)
         case SCSI_VERIFY_10:
             _verify_10(device);
             break;
+        case SCSI_START_STOP:
+            _start_stop(cbw);
+            _send_status(device, eps, &csw);
+            break;
         }
     }
     else if(status == STATUS_RECEIVE)
@@ -439,9 +464,7 @@ static rt_err_t _ep_out_handler(udevice_t device, uclass_t cls, rt_size_t size)
         _block ++;
         if(_size == 0)
         {
-            dcd_ep_write(device->dcd, eps->ep_in, (rt_uint8_t*)&csw, SIZEOF_CSW);
-            dcd_ep_read(device->dcd, eps->ep_out, eps->ep_out->buffer, SIZEOF_CBW);
-            status = STATUS_CBW;
+            _send_status(device, eps, &csw);
         }
         else
         {

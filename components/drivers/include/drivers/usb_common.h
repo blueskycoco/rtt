@@ -3,9 +3,19 @@
  * This file is part of RT-Thread RTOS
  * COPYRIGHT (C) 2012, RT-Thread Development Team
  *
- * The license and distribution terms for this file may be
- * found in the file LICENSE in this distribution or at
- * http://www.rt-thread.org/license/LICENSE
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Change Logs:
  * Date           Author       Notes
@@ -207,6 +217,18 @@ extern "C" {
     (((rt_uint16_t)(*(((rt_uint8_t *)(x)) + 1))) << 8))
 
 typedef void (*func_callback)(void *context);
+typedef enum
+{
+    USB_STATE_NOTATTACHED = 0,
+    USB_STATE_ATTACHED,
+    USB_STATE_POWERED,
+    USB_STATE_RECONNECTING,
+    USB_STATE_UNAUTHENTICATED,
+    USB_STATE_DEFAULT,
+    USB_STATE_ADDRESS,
+    USB_STATE_CONFIGURED,
+    USB_STATE_SUSPENDED
+}udevice_state_t;
 
 #pragma pack(1)
 
@@ -310,6 +332,21 @@ struct uhub_descriptor
 };
 typedef struct uhub_descriptor* uhub_desc_t;
 
+struct uhid_descriptor
+{
+    rt_uint8_t bLength;
+    rt_uint8_t type;
+    rt_uint16_t bcdHID;
+    rt_uint8_t bCountryCode;
+    rt_uint8_t bNumDescriptors;
+    struct hid_descriptor_list
+    {
+        rt_uint8_t type;
+        rt_uint16_t wLength;
+    }Descriptor[1];
+};
+typedef struct uhid_descriptor* uhid_desc_t;
+
 struct ureqest
 {
     rt_uint8_t request_type;
@@ -341,6 +378,7 @@ typedef struct ureqest* ureq_t;
 #define SCSI_INQUIRY_CMD                0x12
 #define SCSI_ALLOW_MEDIUM_REMOVAL       0x1e
 #define SCSI_MODE_SENSE_6               0x1a
+#define SCSI_START_STOP                 0x1b
 #define SCSI_READ_CAPACITIES            0x23
 #define SCSI_READ_CAPACITY              0x25
 #define SCSI_READ_10                    0x28
@@ -373,6 +411,20 @@ struct ustorage_csw
 typedef struct ustorage_csw* ustorage_csw_t;
 
 #pragma pack()
+
+/*
+ * USB device event loop thread configurations
+ */
+/* the stack size of USB thread */
+#ifndef RT_USBD_THREAD_STACK_SZ
+#define RT_USBD_THREAD_STACK_SZ 2048
+#endif
+
+/* the priority of USB thread */
+#ifndef RT_USBD_THREAD_PRIO
+#define RT_USBD_THREAD_PRIO 8
+#endif
+
 
 #ifdef __cplusplus
 }

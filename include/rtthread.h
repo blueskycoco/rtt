@@ -3,9 +3,19 @@
  * This file is part of RT-Thread RTOS
  * COPYRIGHT (C) 2006 - 2012, RT-Thread Development Team
  *
- * The license and distribution terms for this file may be
- * found in the file LICENSE in this distribution or at
- * http://www.rt-thread.org/license/LICENSE
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  * Change Logs:
  * Date           Author       Notes
@@ -15,6 +25,7 @@
  * 2007-01-28     Bernard      rename RT_OBJECT_Class_Static to RT_Object_Class_Static
  * 2007-03-03     Bernard      clean up the definitions to rtdef.h
  * 2010-04-11     yi.qiu       add module feature
+ * 2013-06-24     Bernard      add rt_kprintf re-define when not use RT_USING_CONSOLE.
  */
 
 #ifndef __RT_THREAD_H__
@@ -242,6 +253,7 @@ rt_err_t rt_memheap_init(struct rt_memheap *memheap,
                          rt_uint32_t        size);
 rt_err_t rt_memheap_detach(struct rt_memheap *heap);
 void* rt_memheap_alloc(struct rt_memheap *heap, rt_uint32_t size);
+void *rt_memheap_realloc(struct rt_memheap* heap, void* ptr, rt_size_t newsize);
 void rt_memheap_free(void *ptr);
 #endif
 
@@ -421,7 +433,7 @@ void rt_module_unload_sethook(void (*hook)(rt_module_t module));
 
 /*@}*/
 #endif
- 
+
 /*
  * interrupt service
  */
@@ -451,7 +463,11 @@ void rt_system_module_init(void);
 /*
  * general kernel service
  */
+#ifndef RT_USING_CONSOLE
+#define rt_kprintf(...)
+#else
 void rt_kprintf(const char *fmt, ...);
+#endif
 rt_int32_t rt_vsprintf(char *dest, const char *format, va_list arg_ptr);
 rt_int32_t rt_sprintf(char *buf ,const char *format, ...);
 rt_int32_t rt_snprintf(char *buf, rt_size_t size, const char *format, ...);
