@@ -175,6 +175,10 @@ void a(unsigned char zone)
 	ge p;
 	int i,fd,length;
 	memset(&p,0xff,sizeof(ge));
+	for(i=0;i<32;i++)
+	{
+		p.user_zone[i]=i;
+	}
 	for(i=0;i<3;i++)
 	{
 		p.pw[i]=i;
@@ -205,7 +209,7 @@ void a(unsigned char zone)
 		return;
 	}
 	close(fd);
-	auth(&p,(callback_t)cb);
+	auth(&p,(callback_t *)cb);
 }
 FINSH_FUNCTION_EXPORT(a, a(1).test at88sc auth);
 void af(void)
