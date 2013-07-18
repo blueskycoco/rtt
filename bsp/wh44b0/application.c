@@ -105,7 +105,7 @@ void nfs(const char *folder)
 #endif
 }
 FINSH_FUNCTION_EXPORT(nfs, mount nfs);
-void b(unsigned char zone)
+void b(unsigned char zone,unsigned char flag)
 {
 	pe p;
 	int i;
@@ -122,6 +122,15 @@ void b(unsigned char zone)
 		p.ci[zone][i]=i;
 		if(i!=3)
 			p.pw[zone][i]=i;
+	}
+	
+	p.flag=flag;
+	if(flag)
+	{
+		for(i=0;i<8;i++)
+			p.auth_g[i]=i;
+		for(i=0;i<3;i++)
+			p.auth_pw[i]=i;
 	}
 	for(i=0;i<8;i++)
 	{
@@ -142,7 +151,7 @@ void b(unsigned char zone)
 		return;
 	}
 	close(fd);
-	//burn(p);
+	burn(p,zone);
 }
 FINSH_FUNCTION_EXPORT(b, test at88sc burn);
 void bf(void)
@@ -187,13 +196,15 @@ void a(unsigned char zone)
 	{
 		p.g[i]=i;
 	}
-	if(zone==0){
+	/*if(zone==0){
 		p.use_g=1;
 		p.use_pw=1;
 	}else{
 		p.use_g=zone;
 		p.use_pw=zone;
-	}
+	}*/
+	p.use_g=zone;
+		p.use_pw=zone;
 	p.zone_index=zone;
 	fd = open("/nor/auth.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
 	if (fd < 0)

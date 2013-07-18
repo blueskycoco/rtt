@@ -101,6 +101,9 @@ typedef struct {
 	unsigned char g[4][8];
 	unsigned char pw[8][7];
 	unsigned char fuse;
+	unsigned char flag;//0 no need auth , 1 need auth
+	unsigned char auth_g[8];
+	unsigned char auth_pw[3];
 }pe,*ppe;
 
 typedef struct {

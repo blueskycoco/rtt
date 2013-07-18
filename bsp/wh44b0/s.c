@@ -374,6 +374,7 @@ BOOL cm_SendChecksum(unsigned char ucDevAddr)
         clock_gpaXtimes(0x00,5);
         pucChkSum[1] = Gpa_byte;
     }
+	//AT88DBG("<cm_SendChecksum>%x %x\r\n",pucChkSum[0],pucChkSum[1]);
     if(cm_Write((ucDevAddr<<4)|0x04, 0x02, 0x00,0x02,pucChkSum)!=0x02)
         return FALSE;
     else
@@ -412,7 +413,7 @@ BOOL cm_WriteConfigZone(unsigned char ucDevAddr, unsigned char ucCryptoAddr, uns
 {
 
     int i;
-
+	unsigned char tmp;
     if(needAuth)
     {
         clock_gpaXtimes(0x00, 5);
@@ -423,10 +424,12 @@ BOOL cm_WriteConfigZone(unsigned char ucDevAddr, unsigned char ucCryptoAddr, uns
         for(i=0;i<ucCount;i++)
         {
             clock_gpaXtimes(0x00,5);
+			tmp=pucBuffer[i];
             //we need encrypt password zone
             if((ucCryptoAddr+i) <= (AT88SC_R7+2) && (ucCryptoAddr+i)>=AT88SC_PACW0)
                 pucBuffer[i] = pucBuffer[i] ^ Gpa_byte;
-            clock_gpaXtimes(pucBuffer[i],1);
+			
+            clock_gpaXtimes(tmp,1);	
         }
     }
 
@@ -542,7 +545,7 @@ BOOL cm_VerifyPassword(unsigned char ucDevAddr, unsigned char* pucPassword, unsi
     else
     {
         //if(needAuth)
-        cm_AckPolling((ucDevAddr<<4)|0x02);
+			cm_AckPolling((ucDevAddr<<4)|0x02);
         cm_ReadConfigZone(ucDevAddr, ucSetAddr, &verifyok, 1);
         if(verifyok!=0xff)
         {
@@ -553,56 +556,6 @@ BOOL cm_VerifyPassword(unsigned char ucDevAddr, unsigned char* pucPassword, unsi
 
     }
     return TRUE;
-}
-BOOL cm_SetUserZone(unsigned char ucDevAddr, unsigned char ucZoneNumber, 
-        unsigned char ucAntiTearing)
-{
-    if(needAuth)
-        clock_gpaXtimes(ucZoneNumber,1);
-    cm_Write((ucDevAddr<<4)|0x04, 0x03, ucZoneNumber,0x00,NULL);
-    return TRUE;
-
-}
-BOOL cm_WriteUserZone(unsigned char ucDevAddr, unsigned int uiCryptoAddr, 
-        unsigned char* pucBuffer, unsigned char ucCount)
-{
-
-    int i;
-
-    if(needAuth)
-    {
-        clock_gpaXtimes(0x00, 5);
-        clock_gpaXtimes(uiCryptoAddr,1);
-        clock_gpaXtimes(0x00,5);
-        clock_gpaXtimes(ucCount,1);
-
-        for(i=0;i<ucCount;i++)
-        {
-            clock_gpaXtimes(0x00,5);
-            if(needDecry)
-                pucBuffer[i] = pucBuffer[i] ^ Gpa_byte;
-            clock_gpaXtimes(pucBuffer[i],1);
-        }
-    }
-
-    if(cm_Write((ucDevAddr<<4)|0x00, 0x00, uiCryptoAddr,ucCount,pucBuffer)!=ucCount)
-        return FALSE;
-    if(needAuth)
-        cm_SendChecksum(ucDevAddr);
-    else
-        cm_AckPolling((ucDevAddr<<4)|0x02);
-    return TRUE;
-
-}
-BOOL cm_ReadFuse(unsigned char ucDevAddr, unsigned char* pucFuze)
-{
-    return cm_Read((ucDevAddr<<4)|0x06, 0x01, 0x00,0x01,pucFuze);
-}
-BOOL cm_WriteFuse(unsigned char ucDevAddr, unsigned char* pucFuze)
-{
-    BOOL result = cm_Write((ucDevAddr<<4)|0x06, 0x01, *pucFuze,0x00,NULL);
-    cm_AckPolling((ucDevAddr<<4)|0x02);
-    return result;
 }
 BOOL cm_ReadChecksum(unsigned char ucDevAddr)
 {
@@ -622,6 +575,8 @@ BOOL cm_ReadChecksum(unsigned char ucDevAddr)
         return FALSE;
     else
     {
+		
+		AT88DBG("<cm_ReadChecksum>%x %x\r\n",pucChkSum[0],pucChkSum[1]);
         cm_ReadConfigZone(ucDevAddr, AT88SC_DCR, &dcr, 1);
         if(dcr & 0x40)
         {
@@ -631,6 +586,68 @@ BOOL cm_ReadChecksum(unsigned char ucDevAddr)
     }
     return TRUE;
 }
+BOOL cm_SetUserZone(unsigned char ucDevAddr, unsigned char ucZoneNumber, 
+        unsigned char ucAntiTearing)
+{
+    if(needAuth)
+        clock_gpaXtimes(ucZoneNumber,1);
+    cm_Write((ucDevAddr<<4)|0x04, 0x03, ucZoneNumber,0x00,NULL);
+    return TRUE;
+
+}
+BOOL cm_WriteUserZone(unsigned char ucDevAddr, unsigned int uiCryptoAddr, 
+        unsigned char* pucBuffer, unsigned char ucCount)
+{
+
+    int i;
+	unsigned char tmp;
+    if(needAuth)
+    {
+        clock_gpaXtimes(0x00, 5);
+        clock_gpaXtimes(uiCryptoAddr,1);
+        clock_gpaXtimes(0x00,5);
+        clock_gpaXtimes(ucCount,1);
+
+        for(i=0;i<ucCount;i++)
+        {
+            clock_gpaXtimes(0x00,5);
+			tmp=pucBuffer[i];
+            if(needDecry)
+                pucBuffer[i] = pucBuffer[i] ^ Gpa_byte;					
+            clock_gpaXtimes(tmp,1);
+        }
+    }
+
+    if(cm_Write((ucDevAddr<<4)|0x00, 0x00, uiCryptoAddr,ucCount,pucBuffer)!=ucCount)
+        return FALSE;
+    if(needAuth)
+    {
+		if(!cm_SendChecksum(ucDevAddr))
+			return FALSE;
+	}
+    else
+        cm_AckPolling((ucDevAddr<<4)|0x02);
+    return TRUE;
+
+}
+BOOL cm_ReadFuse(unsigned char ucDevAddr, unsigned char* pucFuze)
+{
+	clock_gpaXtimes(0x00, 5);
+	clock_gpaXtimes(0x00, 1);
+	clock_gpaXtimes(0x00, 5);
+	clock_gpaXtimes(0x01, 1);
+    cm_Read((ucDevAddr<<4)|0x06, 0x01, 0x00,0x01,pucFuze);
+	clock_gpaXtimes(*pucFuze, 1);
+	clock_gpaXtimes(0x00, 5);
+	return TRUE;
+}
+BOOL cm_WriteFuse(unsigned char ucDevAddr, unsigned char* pucFuze)
+{
+    BOOL result = cm_Write((ucDevAddr<<4)|0x06, 0x01, *pucFuze,0x00,NULL);
+    cm_AckPolling((ucDevAddr<<4)|0x02);
+    return result;
+}
+
 
 BOOL cm_ReadUserZone(unsigned char ucDevAddr, unsigned int uiCryptoAddr, 
         unsigned char* pucBuffer, unsigned char ucCount)
@@ -815,14 +832,17 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
     return TRUE;
 }
 
-BOOL burn(pe p)
+BOOL burn(pe p,int zone)
 {
     unsigned char ucData[240];
     unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
+	unsigned char Def_SecureCode2[3] = {0xff,0xff,0xff};
+	unsigned char g[8]={0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
+	unsigned char pw[3]={0xff,0xff,0xff};
     BOOL ucReturn;
-    unsigned char i,addr;		
+    unsigned char i,addr;	
     cm_PowerOn();    
-    //test iic bus
+    //1 test iic bus
     ucData[0] = 0x77;
     ucData[1] = 0x33;
     ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_MTZ, ucData, 2, FALSE);
@@ -837,11 +857,24 @@ BOOL burn(pe p)
     if (ucReturn != TRUE || ucData[0]!=0x77 || ucData[1]!=0x33) {
         AT88DBG("Read Config Zone MTZ failed\n");
         return FALSE;
-    }
-   
-    //write user zone
-    memset(ucData,0xff,240*sizeof(unsigned char));
-    for(i=0;i<4;i++)
+    }   
+	
+	memset(ucData,0xff,240*sizeof(unsigned char));	
+    if(p.flag)
+   {//3 burn chip second time,need auth
+		ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, zone,p.auth_g);
+		if (ucReturn != TRUE){
+			AT88DBG("cm_VerifyCrypto failed1\n");
+			return FALSE;
+		}	
+		ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p.auth_pw,zone, 0);
+		if (ucReturn != TRUE)  {
+			AT88DBG("cm_VerifyPassword failed\n");
+			return FALSE;
+		}
+   }
+	//4 write user zone
+   for(i=0;i<4;i++)
     {
         if(memcmp(p.user_zone[i],ucData,32)!=0)
         {
@@ -858,14 +891,28 @@ BOOL burn(pe p)
             }
         }
     }
-    //unlock config zone
+	
+   //5 unlock config zone , begin to write config zone
     ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, Def_SecureCode,7, 0);
     if (ucReturn != TRUE)  {
         AT88DBG("cm_VerifyPassword failed\n");
         return FALSE;
     }
-    //memset(ucData,0xff,32);
-    //write pw
+	ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, ucData, 0xf0);
+    if (ucReturn != TRUE) {
+        AT88DBG("cm_ReadConfigZone failed\n");
+        return FALSE;
+    }
+    AT88DBG("\nRead all config data fist time\n");
+    for(i=0;i<0xf0;i++)
+    {
+        if(i%8==0 && i!=0)
+            AT88DBG("\n");
+        AT88DBG("%4X ",ucData[i]);		
+    }
+	
+    memset(ucData,0xff,240*sizeof(unsigned char));	
+    //6 write pw
     for(i=0;i<8;i++)
     {
         if(memcmp(p.pw[i],ucData,7)!=0)
@@ -893,7 +940,7 @@ BOOL burn(pe p)
             }
         }
     }
-    //write G
+    //7 write G
     for(i=0;i<4;i++)
     {
         if(memcmp(p.g[i],ucData,8)!=0)
@@ -905,7 +952,7 @@ BOOL burn(pe p)
             }
         }
     }
-    //write Ci
+    //8 write Ci
     for(i=0;i<4;i++)
     {
         if(memcmp(p.ci[i],ucData,7)!=0)
@@ -925,7 +972,7 @@ BOOL burn(pe p)
             }
         }
     }
-    //write ar
+    //9 write ar
     for(i=0;i<4;i++)
     {
         if(memcmp(p.ar[i],ucData,2)!=0)
@@ -938,7 +985,7 @@ BOOL burn(pe p)
         }
     }
     if(p.fuse==TRUE)
-    {
+    {//10 fuse chip or not
         //set fuse
         unsigned char fuse;
 		//update Def_SecureCode before fuse
@@ -1000,11 +1047,11 @@ BOOL auth(pge p,callback_t cb)
     }
     for(i=0;i<32;i++)
     {
-    	if(p->user_zone[i]!=user_zone[i])
-			return FALSE;
+    	//if(p->user_zone[i]!=user_zone[i])
+		//	return FALSE;
         if(i%8==0 && i!=0)
             AT88DBG("\n");
-        AT88DBG("%4X ",p->user_zone[i]);		
+        AT88DBG("%4X ",user_zone[i]);		
     }
 	cb();
     return TRUE;
