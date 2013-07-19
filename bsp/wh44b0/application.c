@@ -113,7 +113,7 @@ void b(unsigned char zone,unsigned char flag)
 	memset(&p,0xff,sizeof(pe));
 	for(i=0;i<32;i++)
 	{
-		p.user_zone[zone][i]=i;
+		p.user_zone[zone][i]=zone;
 	}
 	p.ar[zone][0]=0x17;//normal auth,encrypted
 	p.ar[zone][1]=(zone<<6)|(zone&0x3);//use g[zone],pw[zone]
@@ -190,7 +190,7 @@ void a(unsigned char zone)
 	memset(&p,0xff,sizeof(ge));
 	for(i=0;i<32;i++)
 	{
-		p.user_zone[i]=i;
+		p.user_zone[i]=zone;
 	}
 	for(i=0;i<3;i++)
 	{

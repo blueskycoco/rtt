@@ -865,6 +865,7 @@ BOOL burn(pe p)
 	memset(ucData,0xff,240*sizeof(unsigned char));	
     if(p.flag)
     {//3 burn chip second time,need auth
+		AT88DBG("to VeriyCrypto\n");
 		for(i=0;i<4;i++)
 		{
 			if(memcmp(p.user_zone[i],ucData,32)!=0)
