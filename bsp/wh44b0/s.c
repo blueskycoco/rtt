@@ -564,10 +564,11 @@ BOOL cm_ReadChecksum(unsigned char ucDevAddr)
 
     if(needAuth)
     {
-        clock_gpaXtimes(0x00,15);
+        clock_gpaXtimes(0x00,10);
         pucChkSum[0] = Gpa_byte;
         clock_gpaXtimes(0x00,5);
         pucChkSum[1] = Gpa_byte;
+		clock_gpaXtimes(0x00,5);
         AT88DBG("Computed CheckSum is %x %x \n",pucChkSum[0],pucChkSum[1]);
     }
 
