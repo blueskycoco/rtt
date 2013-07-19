@@ -2,6 +2,7 @@
  * brife: at88sc_config.h , config at88sc and lowlevel gpio control
  */ 
 #include <rtthread.h>
+#include <string.h>
 #ifndef BOOL
 #define BOOL rt_bool_t
 #endif
@@ -100,6 +101,7 @@ typedef struct {
 	unsigned char ci[4][7];
 	unsigned char g[4][8];
 	unsigned char pw[8][7];
+	unsigned char id[7];
 	unsigned char fuse;
 	unsigned char flag;//0 no need auth , 1 need auth
 	unsigned char auth_g[8];

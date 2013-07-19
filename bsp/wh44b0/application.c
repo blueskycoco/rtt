@@ -116,7 +116,7 @@ void b(unsigned char zone,unsigned char flag)
 		p.user_zone[zone][i]=i;
 	}
 	p.ar[zone][0]=0x17;//normal auth,encrypted
-	p.ar[zone][1]=(zone<<6)|(zone&0x3);//use g1,pw1
+	p.ar[zone][1]=(zone<<6)|(zone&0x3);//use g[zone],pw[zone]
 	for(i=0;i<7;i++)
 	{
 		p.ci[zone][i]=i;
@@ -136,6 +136,10 @@ void b(unsigned char zone,unsigned char flag)
 	{
 		p.g[zone][i]=i;
 	}
+	for(i=0;i<7;i++)
+	{
+		p.id[i]=0xdd;//assign id
+	}
 	p.fuse=0x00;
 	fd = open("/nor/burn.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
 	if (fd < 0)
@@ -151,7 +155,7 @@ void b(unsigned char zone,unsigned char flag)
 		return;
 	}
 	close(fd);
-	burn(p,zone);
+	burn(p);
 }
 FINSH_FUNCTION_EXPORT(b, test at88sc burn);
 void bf(void)
@@ -177,12 +181,12 @@ void bf(void)
 FINSH_FUNCTION_EXPORT(bf, test at88sc burn from file);
 void cb()
 {
-	rt_kprintf("Call back called\r\n");
+	rt_kprintf("\r\nCall back called\r\n");
 }
 void a(unsigned char zone)
 {
 	ge p;
-	int i,fd,length;
+	int i;
 	memset(&p,0xff,sizeof(ge));
 	for(i=0;i<32;i++)
 	{
@@ -196,52 +200,41 @@ void a(unsigned char zone)
 	{
 		p.g[i]=i;
 	}
-	/*if(zone==0){
-		p.use_g=1;
-		p.use_pw=1;
-	}else{
-		p.use_g=zone;
-		p.use_pw=zone;
-	}*/
 	p.use_g=zone;
-		p.use_pw=zone;
+	p.use_pw=zone;
 	p.zone_index=zone;
-	fd = open("/nor/auth.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
-	if (fd < 0)
-	{
-		rt_kprintf("open file for write failed\n");
-		return;
-	}
-	length = write(fd, &p, sizeof(ge));
-	if (length != sizeof(ge))
-	{
-		rt_kprintf("write data failed\n");
-		close(fd);
-		return;
-	}
-	close(fd);
 	auth(&p,(callback_t *)cb);
 }
 FINSH_FUNCTION_EXPORT(a, a(1).test at88sc auth);
-void af(void)
+void r(unsigned char zone)
 {
 	ge p;
-	int fd,length;
-	fd = open("/nor/auth.txt", O_RDONLY, 0);
-	if (fd < 0)
+	int i;
+	memset(&p,0xff,sizeof(ge));
+	for(i=0;i<3;i++)
 	{
-		rt_kprintf("check: open file for read failed\n");
-		return;
+		p.pw[i]=i;
 	}
-	length = read(fd, &p, sizeof(ge));
-	if (length != sizeof(ge))
+	for(i=0;i<8;i++)
 	{
-		rt_kprintf("check: read file failed\n");
-		close(fd);
-		return;
+		p.g[i]=i;
 	}
-	close(fd);
-	auth(&p,(callback_t)cb);
+	p.use_g=zone;
+	p.use_pw=zone;
+	p.zone_index=zone;
+	if(read_userzone(&p))
+	{
+		for(i=0;i<32;i++)
+		{
+			if(i%8==0 && i!=0)
+				AT88DBG("\n");
+			AT88DBG("%4X ",p.user_zone[i]);		
+		}
+	}
+	else
+	{
+		AT88DBG("read user zone failed "); 	
+	}
 }
-FINSH_FUNCTION_EXPORT(af, test at88sc auth from file);
+FINSH_FUNCTION_EXPORT(r, read user zone);
 /** @} */
