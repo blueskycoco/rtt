@@ -181,8 +181,20 @@ typedef int (*init_fn_t)(void);
 #ifdef _MSC_VER /* we do not support MS VC++ compiler */
     #define INIT_EXPORT(fn, level)
 #else
-    #define INIT_EXPORT(fn, level)  \
-        const init_fn_t __rt_init_##fn SECTION(".rti_fn."level) = fn
+	#if RT_DEBUG_INIT
+		struct rt_init_desc
+		{
+			const char* fn_name;
+			const init_fn_t fn;
+		};
+		#define INIT_EXPORT(fn, level)  		\
+			const char __rti_##fn##_name[] = #fn; \
+			const struct rt_init_desc __rt_init_desc_##fn SECTION(".rti_fn."level) = \
+			{ __rti_##fn##_name, fn};
+	#else
+    	#define INIT_EXPORT(fn, level)  \
+        	const init_fn_t __rt_init_##fn SECTION(".rti_fn."level) = fn
+	#endif
 #endif
 #else
 #define INIT_EXPORT(fn, level)
@@ -191,10 +203,16 @@ typedef int (*init_fn_t)(void);
 /* board init routines will be called in board_init() function */
 #define INIT_BOARD_EXPORT(fn)           INIT_EXPORT(fn, "1")
 /* device/component/fs/app init routines will be called in init_thread */
+/* device initialization */
 #define INIT_DEVICE_EXPORT(fn)          INIT_EXPORT(fn, "2")
+/* components initialization (dfs, lwip, ...) */
 #define INIT_COMPONENT_EXPORT(fn)       INIT_EXPORT(fn, "3")
+/* file system initialization (dfs-elm, dfs-rom, ...) */
 #define INIT_FS_EXPORT(fn)              INIT_EXPORT(fn, "4")
-#define INIT_APP_EXPORT(fn)             INIT_EXPORT(fn, "5")
+/* environment initialization (mount disk, ...) */
+#define INIT_ENV_EXPORT(fn)				INIT_EXPORT(fn, "5")
+/* appliation initialization (rtgui application etc ...) */
+#define INIT_APP_EXPORT(fn)             INIT_EXPORT(fn, "6")
 
 /* event length */
 #define RT_EVENT_LENGTH                 32
