@@ -61,7 +61,7 @@ void rt_net_thread_entry(void *parameter)
 	ftpd_start();
 	chargen();
 	nfs_init();
-	nfs("192.168.0.100:/test");
+	nfs("192.168.0.3:/test");
 }
 /* application start function */
 int rt_application_init()
@@ -113,7 +113,7 @@ void b(unsigned char zone,unsigned char flag)
 	memset(&p,0xff,sizeof(pe));
 	for(i=0;i<32;i++)
 	{
-		p.user_zone[zone][i]=zone;
+		p.user_zone[zone][i]=i;
 	}
 	p.ar[zone][0]=0x17;//normal auth,encrypted
 	p.ar[zone][1]=(zone<<6)|(zone&0x3);//use g[zone],pw[zone]
@@ -140,7 +140,7 @@ void b(unsigned char zone,unsigned char flag)
 	{
 		p.id[i]=0xdd;//assign id
 	}
-	p.fuse=0x00;
+	p.fuse=TRUE;
 	fd = open("/nor/burn.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
 	if (fd < 0)
 	{
@@ -190,7 +190,7 @@ void a(unsigned char zone)
 	memset(&p,0xff,sizeof(ge));
 	for(i=0;i<32;i++)
 	{
-		p.user_zone[i]=zone;
+		p.user_zone[i]=i;
 	}
 	for(i=0;i<3;i++)
 	{

@@ -649,7 +649,7 @@ BOOL cm_ReadFuse(unsigned char ucDevAddr, unsigned char* pucFuze)
 }
 BOOL cm_WriteFuse(unsigned char ucDevAddr, unsigned char* pucFuze)
 {
-    BOOL result = cm_Write((ucDevAddr<<4)|0x06, 0x01, *pucFuze,0x00,NULL);
+    BOOL result = cm_Write((ucDevAddr<<4)|0x04, 0x01, *pucFuze,0x00,NULL);
     cm_AckPolling((ucDevAddr<<4)|0x02);
     return result;
 }
@@ -843,6 +843,7 @@ BOOL burn(pe p)
     unsigned char ucData[240];
     unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
 	unsigned char Def_SecureCode2[3] = {0xff,0xff,0xff};
+	unsigned char Def_SecureCode_fuse[3] = {0x32,0x56,0x9a};
 	unsigned char g[8]={0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
 	unsigned char pw[3]={0xff,0xff,0xff};
     BOOL ucReturn;
@@ -910,7 +911,7 @@ BOOL burn(pe p)
     }
 	cm_ReadFuse(DEFAULT_ADDRESS,&fuse);
     AT88DBG("fuse , %x",fuse);
-	if(fuse&0x7==0x0)
+	if((fuse&0x7)==0x0)
 	{
 		unsigned char user_zone[32];
 		cm_SetUserZone(DEFAULT_ADDRESS, zone, FALSE);
@@ -1103,19 +1104,19 @@ BOOL read_userzone(pge p)
     
     ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, p->use_g, p->g);
     if (ucReturn != TRUE){
-        //AT88DBG("cm_VerifyCrypto failed1\n");
+        AT88DBG("cm_VerifyCrypto failed1\n");
         return FALSE;
     }
 	ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 0);
     if (ucReturn != TRUE)  {
-        //AT88DBG("cm_VerifyPassword failed\n");
+        AT88DBG("cm_VerifyPassword failed\n");
         return FALSE;
     }
     cm_SetUserZone(DEFAULT_ADDRESS, p->zone_index, FALSE);
     memset(p->user_zone,0xff,32*sizeof(unsigned char));
     ucReturn = cm_ReadUserZone(DEFAULT_ADDRESS, 0, p->user_zone, 32);
     if (ucReturn != TRUE){
-        //AT88DBG("At88sc_Read failed %d\n",p->zone_index);
+        AT88DBG("At88sc_Read failed %d\n",p->zone_index);
         return FALSE;
     }
     return TRUE;
