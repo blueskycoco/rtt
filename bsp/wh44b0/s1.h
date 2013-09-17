@@ -116,3 +116,6 @@ typedef struct {
 	unsigned char use_pw;
 	unsigned char zone_index;
 }ge,*pge;
+
+BOOL auth(pge p,callback_t cb);
+BOOL read_userzone(pge p);

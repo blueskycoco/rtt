@@ -1,8 +1,8 @@
 /* RT-Thread config file */
 #ifndef __RTTHREAD_CFG_H__
 #define __RTTHREAD_CFG_H__
-//#define RT_DEBUG
-//#define RT_DEBUG_SCHEDULER 1
+/*#define RT_DEBUG*/
+/*#define RT_DEBUG_SCHEDULER 1*/
 
 /* RT_NAME_MAX*/
 #define RT_NAME_MAX	8
@@ -21,12 +21,12 @@
 /* SECTION: RT_DEBUG */
 /* Thread Debug*/
 /* #define RT_THREAD_DEBUG */
-//#define DFS_DEBUG 1
+/*#define DFS_DEBUG 1*/
 #define RT_USING_DFS
 #define RT_USING_DFS_DEVFS
 #define RT_USING_DFS_ROMFS
-//#define RT_USING_MTD_NOR
-//#define RT_USING_DFS_JFFS2
+/*#define RT_USING_MTD_NOR*/
+/*#define RT_USING_DFS_JFFS2*/
 #define RT_USING_MTD_NAND
 #define RT_USING_DFS_UFFS
 #define RT_USING_DFS_NFS

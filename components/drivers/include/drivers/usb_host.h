@@ -170,7 +170,7 @@ struct uhost_msg
 typedef struct uhost_msg* uhost_msg_t;
 
 /* usb host system interface */
-void rt_usb_host_init(void);
+int rt_usb_host_init(void);
 void rt_usb_hub_thread(void);
 
 /* usb host core interface */
