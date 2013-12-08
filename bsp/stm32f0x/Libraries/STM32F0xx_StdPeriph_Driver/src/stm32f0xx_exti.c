@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file    stm32f0xx_exti.c
   * @author  MCD Application Team
-  * @version V1.0.0
-  * @date    23-March-2012
+  * @version V1.2.1
+  * @date    22-November-2013
   * @brief   This file provides firmware functions to manage the following 
   *          functionalities of the EXTI peripheral:
   *           + Initialization and Configuration
@@ -45,7 +45,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT 2013 STMicroelectronics</center></h2>
   *
   * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
   * You may not use this file except in compliance with the License.
@@ -117,11 +117,6 @@ void EXTI_DeInit(void)
 /**
   * @brief  Initializes the EXTI peripheral according to the specified
   *         parameters in the EXTI_InitStruct.
-  *    EXTI_Line specifies the EXTI line (EXTI0....EXTI27).
-  *    EXTI_Mode specifies which EXTI line is used as interrupt or an event.
-  *    EXTI_Trigger selects the trigger. When the trigger occurs, interrupt
-  *                 pending bit will be set.
-  *    EXTI_LineCmd controls (Enable/Disable) the EXTI line.
   * @param  EXTI_InitStruct: pointer to a EXTI_InitTypeDef structure that 
   *         contains the configuration information for the EXTI peripheral.
   * @retval None
@@ -194,7 +189,7 @@ void EXTI_StructInit(EXTI_InitTypeDef* EXTI_InitStruct)
   * @brief  Generates a Software interrupt on selected EXTI line.
   * @param  EXTI_Line: specifies the EXTI line on which the software interrupt
   *         will be generated.
-  *   This parameter can be any combination of EXTI_Linex where x can be (0..19)
+  *          This parameter can be any combination of EXTI_Linex where x can be (0..27).
   * @retval None
   */
 void EXTI_GenerateSWInterrupt(uint32_t EXTI_Line)
@@ -224,8 +219,7 @@ void EXTI_GenerateSWInterrupt(uint32_t EXTI_Line)
 /**
   * @brief  Checks whether the specified EXTI line flag is set or not.
   * @param  EXTI_Line: specifies the EXTI line flag to check.
-  *   This parameter can be:
-  *   EXTI_Linex: External interrupt line x where x(0..19).
+  *          This parameter can be EXTI_Linex where x can be (0..27).
   * @retval The new state of EXTI_Line (SET or RESET).
   */
 FlagStatus EXTI_GetFlagStatus(uint32_t EXTI_Line)
@@ -248,7 +242,7 @@ FlagStatus EXTI_GetFlagStatus(uint32_t EXTI_Line)
 /**
   * @brief  Clears the EXTI's line pending flags.
   * @param  EXTI_Line: specifies the EXTI lines flags to clear.
-  *   This parameter can be any combination of EXTI_Linex where x can be (0..19)
+  *          This parameter can be any combination of EXTI_Linex where x can be (0..27).
   * @retval None
   */
 void EXTI_ClearFlag(uint32_t EXTI_Line)
@@ -262,19 +256,16 @@ void EXTI_ClearFlag(uint32_t EXTI_Line)
 /**
   * @brief  Checks whether the specified EXTI line is asserted or not.
   * @param  EXTI_Line: specifies the EXTI line to check.
-  *   This parameter can be:
-  *   EXTI_Linex: External interrupt line x where x(0..19).
+  *          This parameter can be EXTI_Linex where x can be (0..27).
   * @retval The new state of EXTI_Line (SET or RESET).
   */
 ITStatus EXTI_GetITStatus(uint32_t EXTI_Line)
 {
-  ITStatus bitstatus = RESET;
-  uint32_t enablestatus = 0;
+   ITStatus bitstatus = RESET;
   /* Check the parameters */
   assert_param(IS_GET_EXTI_LINE(EXTI_Line));
 
-  enablestatus =  EXTI->IMR & EXTI_Line;
-  if (((EXTI->PR & EXTI_Line) != (uint32_t)RESET) && (enablestatus != (uint32_t)RESET))
+  if ((EXTI->PR & EXTI_Line) != (uint32_t)RESET)
   {
     bitstatus = SET;
   }
@@ -283,13 +274,13 @@ ITStatus EXTI_GetITStatus(uint32_t EXTI_Line)
     bitstatus = RESET;
   }
   return bitstatus;
-  
+    
 }
 
 /**
   * @brief  Clears the EXTI's line pending bits.
   * @param  EXTI_Line: specifies the EXTI lines to clear.
-  *   This parameter can be any combination of EXTI_Linex where x can be (0..19).
+  *          This parameter can be any combination of EXTI_Linex where x can be (0..27).
   * @retval None
   */
 void EXTI_ClearITPendingBit(uint32_t EXTI_Line)
