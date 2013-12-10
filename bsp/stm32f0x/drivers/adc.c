@@ -84,7 +84,7 @@ uint16_t adc(void)
 
     /* Compute the voltage */
     ADC1ConvertedVoltage = (ADC1ConvertedValue *3300)/0xFFF;
-
+    rt_kprintf("Voltage %d ==> %d\r\n",ADC1ConvertedVoltage,ADC1ConvertedValue);
     return ADC1ConvertedVoltage;
 }
 FINSH_FUNCTION_EXPORT(adc, read adc);

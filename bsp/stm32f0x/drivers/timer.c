@@ -37,14 +37,14 @@ void rt_hw_timer_init(void)
     TIM_OCInitTypeDef        TIM_OCInitStructure;
     uint16_t PrescalerValue = 0;
 
-    PrescalerValue = (uint16_t) (SystemCoreClock  / 6000000) - 1;
+    PrescalerValue = (uint16_t) (SystemCoreClock  / 10000) - 1;
     RCC_Configuration();
     /* TIM2 Configuration */
     TIM_DeInit(TIM3);
     TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
     TIM_OCStructInit(&TIM_OCInitStructure);  
     /* Time base configuration */
-    TIM_TimeBaseStructure.TIM_Period = 0xFF;
+    TIM_TimeBaseStructure.TIM_Period = 65535;
     TIM_TimeBaseStructure.TIM_Prescaler = 0x0;       
     TIM_TimeBaseStructure.TIM_ClockDivision = 0x0;    
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;  
@@ -54,7 +54,7 @@ void rt_hw_timer_init(void)
     /* Output Compare PWM Mode configuration */
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_Timing;
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;           
-    TIM_OCInitStructure.TIM_Pulse = 0x01;
+    TIM_OCInitStructure.TIM_Pulse = 1000;
     TIM_OC4Init(TIM3, &TIM_OCInitStructure);
 
     TIM_OC4PreloadConfig(TIM3, TIM_OCPreload_Disable);
@@ -73,8 +73,9 @@ void TIM3_IRQHandler(void)
         TIM_ClearITPendingBit(TIM3, TIM_IT_CC4);
 
         rt_kprintf("timer int\r\n");
+        adc();
         capture = TIM_GetCapture4(TIM3);
-        TIM_SetCompare4(TIM3, capture + 1);
+        TIM_SetCompare4(TIM3, capture + 1000);
     }
     rt_interrupt_leave();
 }
