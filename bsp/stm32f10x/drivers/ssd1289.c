@@ -39,25 +39,25 @@ static void LCD_FSMCConfig(void)
     {
         GPIO_InitTypeDef GPIO_InitStructure;
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOE | RCC_APB2Periph_GPIOF
-                               | RCC_APB2Periph_GPIOG, ENABLE);
+                | RCC_APB2Periph_GPIOG, ENABLE);
         RCC_AHBPeriphClockCmd(RCC_AHBPeriph_FSMC, ENABLE);
 
         GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF_PP;
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 
         /*
-        FSMC_D0 ~ FSMC_D3
-        PD14 FSMC_D0   PD15 FSMC_D1   PD0  FSMC_D2   PD1  FSMC_D3
-        */
+           FSMC_D0 ~ FSMC_D3
+           PD14 FSMC_D0   PD15 FSMC_D1   PD0  FSMC_D2   PD1  FSMC_D3
+           */
         GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_14 | GPIO_Pin_15;
         GPIO_Init(GPIOD,&GPIO_InitStructure);
 
         /*
-        FSMC_D4 ~ FSMC_D12
-        PE7 ~ PE15  FSMC_D4 ~ FSMC_D12
-        */
+           FSMC_D4 ~ FSMC_D12
+           PE7 ~ PE15  FSMC_D4 ~ FSMC_D12
+           */
         GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10
-                                      | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
+            | GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
         GPIO_Init(GPIOE,&GPIO_InitStructure);
 
         /* FSMC_D13 ~ FSMC_D15   PD8 ~ PD10 */
@@ -65,11 +65,11 @@ static void LCD_FSMCConfig(void)
         GPIO_Init(GPIOD,&GPIO_InitStructure);
 
         /*
-        FSMC_A0 ~ FSMC_A5   FSMC_A6 ~ FSMC_A9
-        PF0     ~ PF5       PF12    ~ PF15
-        */
+           FSMC_A0 ~ FSMC_A5   FSMC_A6 ~ FSMC_A9
+           PF0     ~ PF5       PF12    ~ PF15
+           */
         GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3
-                                      | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
+            | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
         GPIO_Init(GPIOF,&GPIO_InitStructure);
 
         /* FSMC_A10 ~ FSMC_A15  PG0 ~ PG5 */
@@ -120,12 +120,12 @@ static void LCD_FSMCConfig(void)
 
     /* Color LCD configuration ------------------------------------
        LCD configured as follow:
-          - Data/Address MUX = Disable
-          - Memory Type = SRAM
-          - Data Width = 16bit
-          - Write Operation = Enable
-          - Extended Mode = Enable
-          - Asynchronous Wait = Disable */
+       - Data/Address MUX = Disable
+       - Memory Type = SRAM
+       - Data Width = 16bit
+       - Write Operation = Enable
+       - Extended Mode = Enable
+       - Asynchronous Wait = Disable */
     FSMC_NORSRAMInitStructure.FSMC_Bank = FSMC_Bank1_NORSRAM2;
     FSMC_NORSRAMInitStructure.FSMC_DataAddressMux = FSMC_DataAddressMux_Disable;
     FSMC_NORSRAMInitStructure.FSMC_MemoryType = FSMC_MemoryType_SRAM;
@@ -237,8 +237,8 @@ static void lcd_data_bus_test(void)
 {
     unsigned short temp1;
     unsigned short temp2;
-//    /* [5:4]-ID~ID0 [3]-AM-1垂直-0水平 */
-//    write_reg(0x0003,(1<<12)|(1<<5)|(1<<4) | (0<<3) );
+    //    /* [5:4]-ID~ID0 [3]-AM-1垂直-0水平 */
+    //    write_reg(0x0003,(1<<12)|(1<<5)|(1<<4) | (0<<3) );
 
     /* wirte */
     lcd_SetCursor(0,0);
@@ -349,7 +349,7 @@ void ssd1289_init(void)
     //数据总线测试,用于测试硬件连接是否正常.
     lcd_data_bus_test();
     //GRAM测试,此测试可以测试LCD控制器内部GRAM.测试通过保证硬件正常
-//    lcd_gram_test();
+    //    lcd_gram_test();
 
     //清屏
     lcd_clear( Blue );
@@ -367,7 +367,7 @@ void ssd1289_lcd_set_pixel(const char* pixel, int x, int y)
 /* 获取像素点颜色 */
 void ssd1289_lcd_get_pixel(char* pixel, int x, int y)
 {
-	*(rt_uint16_t*)pixel = lcd_read_gram(x, y);
+    *(rt_uint16_t*)pixel = lcd_read_gram(x, y);
 }
 
 /* 画水平线 */
@@ -403,9 +403,9 @@ void ssd1289_lcd_draw_vline(const char* pixel, int x, int y1, int y2)
 /* blit a line */
 void ssd1289_lcd_blit_line(const char* pixels, int x, int y, rt_size_t size)
 {
-	rt_uint16_t *ptr;
+    rt_uint16_t *ptr;
 
-	ptr = (rt_uint16_t*)pixels;
+    ptr = (rt_uint16_t*)pixels;
 
     /* [5:4]-ID~ID0 [3]-AM-1垂直-0水平 */
     write_reg(0x0011,0x6070 | (0<<3)); // AM=0 hline
@@ -415,63 +415,63 @@ void ssd1289_lcd_blit_line(const char* pixels, int x, int y, rt_size_t size)
     while (size)
     {
         write_data(*ptr ++);
-		size --;
+        size --;
     }
 }
 
 struct rt_device_graphic_ops ssd1289_ops =
 {
-	ssd1289_lcd_set_pixel,
-	ssd1289_lcd_get_pixel,
-	ssd1289_lcd_draw_hline,
-	ssd1289_lcd_draw_vline,
-	ssd1289_lcd_blit_line
+    ssd1289_lcd_set_pixel,
+    ssd1289_lcd_get_pixel,
+    ssd1289_lcd_draw_hline,
+    ssd1289_lcd_draw_vline,
+    ssd1289_lcd_blit_line
 };
 
 struct rt_device _lcd_device;
 static rt_err_t lcd_init(rt_device_t dev)
 {
-	return RT_EOK;
+    return RT_EOK;
 }
 
 static rt_err_t lcd_open(rt_device_t dev, rt_uint16_t oflag)
 {
-	return RT_EOK;
+    return RT_EOK;
 }
 
 static rt_err_t lcd_close(rt_device_t dev)
 {
-	return RT_EOK;
+    return RT_EOK;
 }
 
 static rt_err_t lcd_control(rt_device_t dev, rt_uint8_t cmd, void *args)
 {
-	switch (cmd)
-	{
-	case RTGRAPHIC_CTRL_GET_INFO:
-		{
-			struct rt_device_graphic_info *info;
+    switch (cmd)
+    {
+        case RTGRAPHIC_CTRL_GET_INFO:
+            {
+                struct rt_device_graphic_info *info;
 
-			info = (struct rt_device_graphic_info*) args;
-			RT_ASSERT(info != RT_NULL);
+                info = (struct rt_device_graphic_info*) args;
+                RT_ASSERT(info != RT_NULL);
 
-			info->bits_per_pixel = 16;
-			info->pixel_format = RTGRAPHIC_PIXEL_FORMAT_RGB565P;
-			info->framebuffer = RT_NULL;
-			info->width = 240;
-			info->height = 320;
-		}
-		break;
+                info->bits_per_pixel = 16;
+                info->pixel_format = RTGRAPHIC_PIXEL_FORMAT_RGB565P;
+                info->framebuffer = RT_NULL;
+                info->width = 240;
+                info->height = 320;
+            }
+            break;
 
-	case RTGRAPHIC_CTRL_RECT_UPDATE:
-		/* nothong to be done */
-		break;
+        case RTGRAPHIC_CTRL_RECT_UPDATE:
+            /* nothong to be done */
+            break;
 
-	default:
-		break;
-	}
+        default:
+            break;
+    }
 
-	return RT_EOK;
+    return RT_EOK;
 }
 
 void rt_hw_lcd_init(void)
@@ -494,20 +494,20 @@ void rt_hw_lcd_init(void)
         rt_thread_delay(1);
     }
 
-	/* register lcd device */
-	_lcd_device.type  = RT_Device_Class_Graphic;
-	_lcd_device.init  = lcd_init;
-	_lcd_device.open  = lcd_open;
-	_lcd_device.close = lcd_close;
-	_lcd_device.control = lcd_control;
-	_lcd_device.read  = RT_NULL;
-	_lcd_device.write = RT_NULL;
+    /* register lcd device */
+    _lcd_device.type  = RT_Device_Class_Graphic;
+    _lcd_device.init  = lcd_init;
+    _lcd_device.open  = lcd_open;
+    _lcd_device.close = lcd_close;
+    _lcd_device.control = lcd_control;
+    _lcd_device.read  = RT_NULL;
+    _lcd_device.write = RT_NULL;
 
-	_lcd_device.user_data = &ssd1289_ops;
+    _lcd_device.user_data = &ssd1289_ops;
     ssd1289_init();
 
     /* register graphic device driver */
-	rt_device_register(&_lcd_device, "lcd",
-		RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE);
+    rt_device_register(&_lcd_device, "lcd",
+            RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE);
 }
 
