@@ -70,7 +70,7 @@ void rt_hw_adc_init(void)
 
 }
 
-#include "finsh.h"
+//#include "finsh.h"
 uint16_t adc(void)
 {
     __IO uint16_t  ADC1ConvertedValue = 0, ADC1ConvertedVoltage = 0;
@@ -87,4 +87,4 @@ uint16_t adc(void)
     rt_kprintf("Voltage %d ==> %d\r\n",ADC1ConvertedVoltage,ADC1ConvertedValue);
     return ADC1ConvertedVoltage;
 }
-FINSH_FUNCTION_EXPORT(adc, read adc);
+//FINSH_FUNCTION_EXPORT(adc, read adc);
