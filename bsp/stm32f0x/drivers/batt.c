@@ -1,5 +1,5 @@
 /*
- * File      : usart.c
+ * File      : batt.c
  * This file is part of RT-Thread RTOS
  * COPYRIGHT (C) 2006-2013, RT-Thread Development Team
  *
@@ -130,6 +130,8 @@ rt_bool_t i2c_smbus_read_block_data(uint8_t addr, uint8_t command, uint8_t len,u
 void read_batt(void)
 {
     int32_t data;
+    uint8_t byte;
+    uint8_t string[15];
     i2c_smbus_read_block_data(0x0B,0x00,2,(uint8_t *)&data);
     rt_kprintf("ManufacturerAccess       %x\r\n",data);
     i2c_smbus_read_block_data(0x0B,0x01,2,(uint8_t *)&data);
@@ -154,12 +156,12 @@ void read_batt(void)
     rt_kprintf("Current                  %x\r\n",data);
     i2c_smbus_read_block_data(0x0B,0x0b,2,(uint8_t *)&data);
     rt_kprintf("AverageCurrent           %x\r\n",data);
-    i2c_smbus_read_block_data(0x0B,0x0c,2,(uint8_t *)&data);
-    rt_kprintf("MaxError                 %x\r\n",data);
-    i2c_smbus_read_block_data(0x0B,0x0d,2,(uint8_t *)&data);
-    rt_kprintf("RelativeStateOfCharge    %x\r\n",data);
-    i2c_smbus_read_block_data(0x0B,0x0e,2,(uint8_t *)&data);
-    rt_kprintf("AbsoluteStateOfCharge    %x\r\n",data);
+    i2c_smbus_read_block_data(0x0B,0x0c,1,(uint8_t *)&byte);
+    rt_kprintf("MaxError                 %x\r\n",byte);
+    i2c_smbus_read_block_data(0x0B,0x0d,1,(uint8_t *)&byte);
+    rt_kprintf("RelativeStateOfCharge    %x\r\n",byte);
+    i2c_smbus_read_block_data(0x0B,0x0e,1,(uint8_t *)&byte);
+    rt_kprintf("AbsoluteStateOfCharge    %x\r\n",byte);
     i2c_smbus_read_block_data(0x0B,0x0f,2,(uint8_t *)&data);
     rt_kprintf("RemainingCapacity        %x\r\n",data);
     i2c_smbus_read_block_data(0x0B,0x10,2,(uint8_t *)&data);
@@ -188,12 +190,12 @@ void read_batt(void)
     rt_kprintf("ManufactureDate          %x\r\n",data);
     i2c_smbus_read_block_data(0x0B,0x1c,2,(uint8_t *)&data);
     rt_kprintf("SerialNumber             %x\r\n",data);
-    i2c_smbus_read_block_data(0x0B,0x20,2,(uint8_t *)&data);
-    rt_kprintf("ManufacturerName         %x\r\n",data);
-    i2c_smbus_read_block_data(0x0B,0x21,2,(uint8_t *)&data);
-    rt_kprintf("DeviceName               %x\r\n",data);
-    i2c_smbus_read_block_data(0x0B,0x22,2,(uint8_t *)&data);
-    rt_kprintf("DeviceChemistry          %x\r\n",data);
-    i2c_smbus_read_block_data(0x0B,0x23,2,(uint8_t *)&data);
-    rt_kprintf("ManufacturerData         %x\r\n",data);
+    i2c_smbus_read_block_data(0x0B,0x20,12,(uint8_t *)&string);
+    rt_kprintf("ManufacturerName         %s\r\n",string);
+    i2c_smbus_read_block_data(0x0B,0x21,8,(uint8_t *)&string);
+    rt_kprintf("DeviceName               %s\r\n",string);
+    i2c_smbus_read_block_data(0x0B,0x22,5,(uint8_t *)&string);
+    rt_kprintf("DeviceChemistry          %s\r\n",string);
+    i2c_smbus_read_block_data(0x0B,0x23,15,(uint8_t *)&string);
+    rt_kprintf("ManufacturerData         %s\r\n",string);
 }
