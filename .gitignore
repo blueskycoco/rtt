@@ -11,3 +11,9 @@
 *.ilk
 build
 xcode-rtthread
+*~
+*.o
+*.bak
+*.dep
+*.lib
+*.a
