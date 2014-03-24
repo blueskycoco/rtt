@@ -234,8 +234,8 @@ void INTEINT4567_handler(int irqno,void *param)
     /* EINT4 : SL811HS */
     if( eint_pend & (1<<INT_EINT4567) )
     {
-    	if(extint_pend & (1<<0))
-        	INTEINT4_handler(0);
+    //	if(extint_pend & (1<<0))
+      //  	INTEINT4_handler(0);
 		if(extint_pend & (1<<1))
         	INTEINT5_handler(1);
 		if(extint_pend & (1<<2))
