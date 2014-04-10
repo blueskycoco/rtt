@@ -18,6 +18,7 @@
 
 #include "board.h"
 #include "usart.h"
+#include "cc1101.h"
 /* RT_USING_COMPONENTS_INIT */
 #ifdef  RT_USING_COMPONENTS_INIT
 #include <components.h>
@@ -152,6 +153,7 @@ void rt_hw_board_init()
 #ifdef RT_USING_COMPONENTS_INIT
     rt_components_board_init();
 #endif
+    cc1101_init();
 }
 
 /*@}*/
