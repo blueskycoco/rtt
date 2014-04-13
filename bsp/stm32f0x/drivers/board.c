@@ -142,6 +142,7 @@ void rt_hw_board_init()
 
 	/* Initial usart deriver, and set console device */
 	rt_hw_usart_init();
+	cc1101_init();
 #ifdef RT_USING_CONSOLE
 	rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif
