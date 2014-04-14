@@ -17,13 +17,13 @@ void spi_init()
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
 
     /* Enable SCK, MOSI, MISO and NSS GPIO clocks */
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA | RCC_AHBPeriph_GPIOB , ENABLE);
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA | RCC_AHBPeriph_GPIOC, ENABLE);
 
     /* SPI pin mappings */
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource5, GPIO_AF_0);
     GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_0);
-    GPIO_PinAFConfig(GPIOB, GPIO_PinSource4, GPIO_AF_0);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_0);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_0);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_0);
 
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -39,35 +39,35 @@ void spi_init()
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 
     /* SPI MISO pin configuration */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
-    GPIO_Init(GPIOB, &GPIO_InitStructure);
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
 
     /* SPI NSS pin configuration
      * */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
-
+#if 0
     /* cc1101 int init
      * */
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-    GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
+    GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
+    GPIO_Init(GPIOC, &GPIO_InitStructure);
 
     /* Configure the SPI interrupt priority */
-    NVIC_InitStructure.NVIC_IRQChannel = EXTI0_1_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannel = EXTI4_15_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPriority = 1;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 
-    EXTI_InitStructure.EXTI_Line = EXTI_Line1;
+    EXTI_InitStructure.EXTI_Line = EXTI_Line4;
     EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
     EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
     EXTI_InitStructure.EXTI_LineCmd = ENABLE;
     EXTI_Init(&EXTI_InitStructure);
 
     /* Clear DM9000A EXTI line pending bit */
-    EXTI_ClearITPendingBit(EXTI_Line1);
-
+    EXTI_ClearITPendingBit(EXTI_Line4);
+#endif
     /* SPI configuration
      * -------------------------------------------------------*/
     SPI_I2S_DeInit(SPI1);
@@ -97,8 +97,10 @@ int check_status(uint8_t bit)
 	while(SPI_I2S_GetITStatus(SPI1,bit)!=SET)
 	{
 		i++;
-		if(i==10)
+		if(i==100){
+			DEBUG("check bit %x timeout\r\n",bit);
 			return RT_FALSE;
+			}
 		rt_thread_delay(50);
 	}
 	return RT_TRUE;
@@ -109,7 +111,7 @@ uint8_t spi_send_rcv(uint8_t *data,int len)
 	uint8_t r=0;
 	/* Enable the SPI peripheral */
 	SPI_Cmd(SPI1, ENABLE);
-	rt_thread_delay(20);
+	rt_thread_delay(2);
 	
 	for(i=0;i<len;i++)
 	{
@@ -133,37 +135,45 @@ void reset_cs()
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_Level_3;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	GPIO_WriteBit(GPIOA,GPIO_Pin_15,Bit_SET);
+DEBUG("cc1101 init qq1\r\n");
+	GPIO_WriteBit(GPIOA,GPIO_Pin_4,Bit_SET);
+DEBUG("cc1101 init qq2\r\n");
 	rt_thread_delay(2);
-
-	GPIO_WriteBit(GPIOA,GPIO_Pin_15,Bit_RESET);
+DEBUG("cc1101 init qq3\r\n");
+	GPIO_WriteBit(GPIOA,GPIO_Pin_4,Bit_RESET);
+	DEBUG("cc1101 init qq4\r\n");
 	rt_thread_delay(2);
-
-	GPIO_WriteBit(GPIOA,GPIO_Pin_15,Bit_SET);
-	rt_thread_delay(50);
-
-	GPIO_PinAFConfig(GPIOA, GPIO_PinSource15, GPIO_AF_0);
+DEBUG("cc1101 init qq5\r\n");
+	GPIO_WriteBit(GPIOA,GPIO_Pin_4,Bit_SET);
+	DEBUG("cc1101 init qq6\r\n");
+	rt_thread_delay(10);
+DEBUG("cc1101 init qq7\r\n");
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_0);
+	DEBUG("cc1101 init qq8\r\n");
 	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_DOWN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
+DEBUG("cc1101 init qq9\r\n");
 	return;
 }
 int cc1101_init()
 {
     rt_bool_t status = RT_FALSE;
+	 DEBUG("cc1101 init 1\r\n");
 	rt_event_init(&cc1101_event, "cc1101_event", RT_IPC_FLAG_FIFO );
+	DEBUG("cc1101 init 2\r\n");
 	spi_init();
+	DEBUG("cc1101 init 3\r\n");
 	cc1101_hw_init();
+	DEBUG("cc1101 init 4\r\n");
 	return RT_TRUE;
 }
 
 void cc1101_isr()
 {
-	if(GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_1) ==SET)
+	if(GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_4) ==SET)
 		rt_event_send(&cc1101_event,GDO0_H);
 	else
 		rt_event_send(&cc1101_event,GDO0_L);
@@ -210,6 +220,6 @@ uint8_t cc1101_recv(uint8_t *buf,uint8_t len)
 #include <finsh.h>
 FINSH_FUNCTION_EXPORT_ALIAS(cc1101_send, csend,send data by cc1101);
 FINSH_FUNCTION_EXPORT_ALIAS(cc1101_recv, crcv,recv data by cc1101);
-
+FINSH_FUNCTION_EXPORT_ALIAS(cc1101_init, cinit,init cc1101);
 #endif
 

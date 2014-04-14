@@ -183,9 +183,11 @@ RF_SETTINGS rfSettings =
 void reset_cc1101()
 {
 	uint8_t val=CCxxx0_SRES;
+	DEBUG("cc1101 init 3.1.1\r\n");
 	reset_cs();
+	DEBUG("cc1101 init 3.1.2\r\n");
 	spi_send_rcv(&val, 1);
-
+	DEBUG("cc1101 init 3.1.3\r\n");
 	return;
 }
 
@@ -215,7 +217,7 @@ uint8_t read_cc1101(uint8_t addr,uint8_t *buf,uint8_t len,uint8_t type)
 			cmd = addr | READ_BURST;
 			spi_send_rcv(&cmd,1);
 			for(i=0;i<len;i++)
-				buf[i]=spi_send_rcv(&data,len);
+				buf[i]=spi_send_rcv(&data,1);
 		}
 	else if(type==TYPE_REG)
 		{
@@ -332,7 +334,11 @@ uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length)
 
 void cc1101_hw_init()
 {
+	DEBUG("cc1101 init 3.1\r\n");
 	reset_cc1101();
+	DEBUG("cc1101 init 3.2\r\n");
 	init_rf();
+	DEBUG("cc1101 init 3.3\r\n");
 	write_cc1101(CCxxx0_PATABLE,PaTabel,8,TYPE_BURST);
+	DEBUG("cc1101 init 3.4\r\n");
 }

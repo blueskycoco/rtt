@@ -31,6 +31,7 @@
 /* led thread entry */
 static void led_thread_entry(void* parameter)
 {
+	
 	while(1)
 	{
         rt_hw_led_on();
