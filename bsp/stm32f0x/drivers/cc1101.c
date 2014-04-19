@@ -10,8 +10,7 @@ void spi_init()
 {
     GPIO_InitTypeDef GPIO_InitStructure;
     SPI_InitTypeDef  SPI_InitStructure;
-    NVIC_InitTypeDef NVIC_InitStructure;
-    EXTI_InitTypeDef EXTI_InitStructure;
+    SPI_I2S_DeInit(SPI1);
 
     /* Enable the SPI peripheral */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
@@ -44,15 +43,128 @@ void spi_init()
 
     /* SPI NSS pin configuration
      * */
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
-#if 0
+
+    /* SPI configuration
+     * -------------------------------------------------------*/
+    SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+    SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
+    SPI_InitStructure.SPI_CPOL = SPI_CPOL_High;
+    SPI_InitStructure.SPI_CPHA = SPI_CPHA_2Edge;
+    SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+    SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2;
+    SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
+    SPI_InitStructure.SPI_CRCPolynomial = 7;
+
+    /* Initializes the SPI communication */
+    SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
+    SPI_Init(SPI1, &(SPI_InitStructure));
+
+    /* Initialize the FIFO threshold */
+    //SPI_RxFIFOThresholdConfig(SPI1, SPI_RxFIFOThreshold_QF);
+    SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_RXNE, ENABLE);
+    /* Enable NSS output for master mode */
+    SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_ERR, ENABLE);
+    SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_TXE, ENABLE);
+    SPI_Cmd(SPI1, ENABLE);
+}
+int check_status(uint8_t bit)
+{
+    int i=0;
+    while(SPI_I2S_GetITStatus(SPI1,bit)!=SET)
+    {
+        i++;
+        if(i==100){
+            DEBUG("check bit %x timeout\r\n",bit);
+            return RT_FALSE;
+        }
+        rt_thread_delay(1);
+    }
+    return RT_TRUE;
+}
+uint8_t spi_send_rcv(uint8_t *data,int len)
+{
+    int i=0;
+    uint8_t r=0;
+    /* Enable the SPI peripheral */
+    // SPI_SSOutputCmd(SPI1, ENABLE);
+    //GPIO_ResetBits(GPIOA,GPIO_Pin_4);
+    //SPI_NSSInternalSoftwareConfig(SPI1,SPI_NSSInternalSoft_Set);
+    rt_thread_delay(1);
+
+    for(i=0;i<len;i++)
+    {
+        if(check_status(SPI_I2S_IT_TXE))
+            SPI_SendData8(SPI1, data[i]);
+        if(check_status(SPI_I2S_IT_RXNE))
+            r=SPI_ReceiveData8(SPI1);
+
+    }
+    //SPI_NSSInternalSoftwareConfig(SPI1,SPI_NSSInternalSoft_Reset);
+    /* Disable the SPI peripheral */
+    //  SPI_SSOutputCmd(SPI1, DISABLE);	
+    //GPIO_SetBits(GPIOA,GPIO_Pin_4);
+    return r;
+}
+
+void reset_cs()
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_Level_3;
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+    GPIO_SetBits(GPIOA,GPIO_Pin_4);
+    //SPI_SSOutputCmd(SPI1, ENABLE);
+    //while(1);
+    //SPI_NSSInternalSoftwareConfig(SPI1,SPI_NSSInternalSoft_Set);
+    rt_thread_delay(1);
+
+    GPIO_ResetBits(GPIOA,GPIO_Pin_4);
+    //SPI_SSOutputCmd(SPI1, DISABLE);
+    //SPI_NSSInternalSoftwareConfig(SPI1,SPI_NSSInternalSoft_Reset);
+    rt_thread_delay(1);
+
+    GPIO_SetBits(GPIOA,GPIO_Pin_4);
+    //SPI_SSOutputCmd(SPI1, ENABLE);
+    //	SPI_NSSInternalSoftwareConfig(SPI1,SPI_NSSInternalSoft_Reset);
+    rt_thread_delay(2);
+
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_0);
+
+    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_DOWN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+    return;
+}
+int cc1101_init()
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
+    EXTI_InitTypeDef EXTI_InitStructure;
+
+    rt_bool_t status = RT_FALSE;
+
+    rt_event_init(&cc1101_event, "cc1101_event", RT_IPC_FLAG_FIFO );
+
+    spi_init();
+
+    cc1101_hw_init();
+
+
     /* cc1101 int init
      * */
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
     GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
-
+#if 0
     /* Configure the SPI interrupt priority */
     NVIC_InitStructure.NVIC_IRQChannel = EXTI4_15_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPriority = 1;
@@ -68,152 +180,59 @@ void spi_init()
     /* Clear DM9000A EXTI line pending bit */
     EXTI_ClearITPendingBit(EXTI_Line4);
 #endif
-    /* SPI configuration
-     * -------------------------------------------------------*/
-    SPI_I2S_DeInit(SPI1);
-    SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
-    SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
-    SPI_InitStructure.SPI_CPOL = SPI_CPOL_High;
-    SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
-    SPI_InitStructure.SPI_NSS = SPI_NSS_Hard;
-    SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_4;
-    SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
-    SPI_InitStructure.SPI_CRCPolynomial = 7;
-
-    /* Initializes the SPI communication */
-    SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
-    SPI_Init(SPI1, &(SPI_InitStructure));
-
-    /* Initialize the FIFO threshold */
-    SPI_RxFIFOThresholdConfig(SPI1, SPI_RxFIFOThreshold_QF);
-
-    /* Enable NSS output for master mode */
-    SPI_SSOutputCmd(SPI1, ENABLE);
-
-}
-int check_status(uint8_t bit)
-{
-	int i=0;
-	while(SPI_I2S_GetITStatus(SPI1,bit)!=SET)
-	{
-		i++;
-		if(i==100){
-			DEBUG("check bit %x timeout\r\n",bit);
-			return RT_FALSE;
-			}
-		rt_thread_delay(50);
-	}
-	return RT_TRUE;
-}
-uint8_t spi_send_rcv(uint8_t *data,int len)
-{
-	int i=0;
-	uint8_t r=0;
-	/* Enable the SPI peripheral */
-	SPI_Cmd(SPI1, ENABLE);
-	rt_thread_delay(2);
-	
-	for(i=0;i<len;i++)
-	{
-		if(check_status(SPI_I2S_IT_TXE))
-			SPI_SendData8(SPI1, data[i]);
-		if(check_status(SPI_I2S_IT_RXNE))
-			r=SPI_ReceiveData8(SPI1);
-
-	}
-
-	/* Disable the SPI peripheral */
-	 SPI_Cmd(SPI1, DISABLE);
-
-	return r;
-}
-
-void reset_cs()
-{
-	GPIO_InitTypeDef GPIO_InitStructure;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_Level_3;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-DEBUG("cc1101 init qq1\r\n");
-	GPIO_WriteBit(GPIOA,GPIO_Pin_4,Bit_SET);
-DEBUG("cc1101 init qq2\r\n");
-	rt_thread_delay(2);
-DEBUG("cc1101 init qq3\r\n");
-	GPIO_WriteBit(GPIOA,GPIO_Pin_4,Bit_RESET);
-	DEBUG("cc1101 init qq4\r\n");
-	rt_thread_delay(2);
-DEBUG("cc1101 init qq5\r\n");
-	GPIO_WriteBit(GPIOA,GPIO_Pin_4,Bit_SET);
-	DEBUG("cc1101 init qq6\r\n");
-	rt_thread_delay(10);
-DEBUG("cc1101 init qq7\r\n");
-	GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_0);
-	DEBUG("cc1101 init qq8\r\n");
-	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_DOWN;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
-DEBUG("cc1101 init qq9\r\n");
-	return;
-}
-int cc1101_init()
-{
-    rt_bool_t status = RT_FALSE;
-	 DEBUG("cc1101 init 1\r\n");
-	rt_event_init(&cc1101_event, "cc1101_event", RT_IPC_FLAG_FIFO );
-	DEBUG("cc1101 init 2\r\n");
-	spi_init();
-	DEBUG("cc1101 init 3\r\n");
-	cc1101_hw_init();
-	DEBUG("cc1101 init 4\r\n");
-	return RT_TRUE;
+    return RT_TRUE;
 }
 
 void cc1101_isr()
 {
-	if(GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_4) ==SET)
-		rt_event_send(&cc1101_event,GDO0_H);
-	else
-		rt_event_send(&cc1101_event,GDO0_L);
+	DEBUG("Enter cc1101 isr\r\n");
+    if(GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_4) ==SET)
+    {
+    		rt_event_send(&cc1101_event,GDO0_H);
+    }
+    else
+    	{
+        rt_event_send(&cc1101_event,GDO0_L);
+    	}
 }
 
 int wait_int(int flag)
 {
-	rt_uint32_t ev;
-	if(flag)
-		{
-			/*wait for gdo0 to h */
-			if( rt_event_recv( &cc1101_event, GDO0_H, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 1000, &ev ) != RT_EOK ) 
-			{
-				rt_kprintf("wait for h failed\r\n");
-				return RT_FALSE;
-			}
-		}
-	else
-		{
-			/*wait for gdo0 to l */
-			if( rt_event_recv( &cc1101_event, GDO0_L, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 1000, &ev ) != RT_EOK ) 
-			{
-				rt_kprintf("wait for l failed\r\n");
-				return RT_FALSE;
-			}
-		}
-	return RT_TRUE;
+    rt_uint32_t ev;
+    if(flag)
+    {
+        /*wait for gdo0 to h */
+        if( rt_event_recv( &cc1101_event, GDO0_H, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 1000, &ev ) != RT_EOK ) 
+        {
+            rt_kprintf("wait for h failed\r\n");
+            return RT_FALSE;
+        }
+    }
+    else
+    {
+        /*wait for gdo0 to l */
+        if( rt_event_recv( &cc1101_event, GDO0_L, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 1000, &ev ) != RT_EOK ) 
+        {
+            rt_kprintf("wait for l failed\r\n");
+            return RT_FALSE;
+        }
+    }
+    return RT_TRUE;
 }
 
 void cc1101_send(uint8_t *buf,uint8_t len)
 {
-	return cc1101_send_packet(buf,len);
+    return cc1101_send_packet(buf,len);
 }
 
-uint8_t cc1101_recv(uint8_t *buf,uint8_t len)
+uint8_t cc1101_recv(uint8_t len)
 {
-	uint8_t *len1;
-	*len1=len;
-	cc1101_rcv_packet(buf, len1);
-	return *len1;
+    uint8_t *len1;
+    *len1=len;
+    uint8_t *buf=malloc(len);
+    cc1101_rcv_packet(buf, len1);
+    free(buf);
+    return *len1;
 }
 
 #ifdef RT_USING_FINSH

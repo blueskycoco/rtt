@@ -183,11 +183,8 @@ RF_SETTINGS rfSettings =
 void reset_cc1101()
 {
 	uint8_t val=CCxxx0_SRES;
-	DEBUG("cc1101 init 3.1.1\r\n");
-	reset_cs();
-	DEBUG("cc1101 init 3.1.2\r\n");
+	reset_cs();	
 	spi_send_rcv(&val, 1);
-	DEBUG("cc1101 init 3.1.3\r\n");
 	return;
 }
 
@@ -282,6 +279,7 @@ void cc1101_send_packet(uint8_t *txBuffer, uint8_t size)
 	DEBUG("cc1101 write \r\n");
 	for(i=0;i<size;i++)
 		DEBUG("%x ",txBuffer[i]);
+		write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);
 	write_cc1101(CCxxx0_TXFIFO, &size,1,TYPE_REG);
 	write_cc1101(CCxxx0_TXFIFO, txBuffer, size,TYPE_BURST);	//写入要发送的数据
 
@@ -334,11 +332,11 @@ uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length)
 
 void cc1101_hw_init()
 {
-	DEBUG("cc1101 init 3.1\r\n");
+DEBUG("1-1\r\n");
 	reset_cc1101();
-	DEBUG("cc1101 init 3.2\r\n");
+DEBUG("1-2\r\n");
 	init_rf();
-	DEBUG("cc1101 init 3.3\r\n");
+DEBUG("1-3\r\n");
 	write_cc1101(CCxxx0_PATABLE,PaTabel,8,TYPE_BURST);
-	DEBUG("cc1101 init 3.4\r\n");
+DEBUG("1-4\r\n");
 }

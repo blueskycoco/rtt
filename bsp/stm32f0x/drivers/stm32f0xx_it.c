@@ -68,7 +68,7 @@ void SVC_Handler(void)
 {
 }
 
-void EXTI1_IRQHandler(void)
+void EXTI4_IRQHandler(void)
 {
     extern void cc1101_isr(void);
 
@@ -76,7 +76,7 @@ void EXTI1_IRQHandler(void)
     rt_interrupt_enter();
 
     /* Clear the DM9000A EXTI line pending bit */
-    EXTI_ClearITPendingBit(EXTI_Line1);
+    EXTI_ClearITPendingBit(EXTI_Line4);
 
     cc1101_isr();
 
