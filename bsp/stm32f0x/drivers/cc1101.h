@@ -2,7 +2,7 @@
 #include "stm32f0xx.h"
 #define DEBUG rt_kprintf
  
-uint8_t spi_send_rcv(uint8_t *data,int len);
+uint8_t spi_send_rcv(uint8_t data);
 int wait_int(int flag);
 void cc1101_hw_init();
 void reset_cs();

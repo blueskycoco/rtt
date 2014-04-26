@@ -62,18 +62,18 @@ uint8_t PaTabel[8] = {0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60};
 // Strobe commands
 #define CCxxx0_SRES         0x30        // Reset chip.
 #define CCxxx0_SFSTXON      0x31        // Enable and calibrate frequency synthesizer (if MCSM0.FS_AUTOCAL=1).
-                                        // If in RX/TX: Go to a wait state where only the synthesizer is
-                                        // running (for quick RX / TX turnaround).
+// If in RX/TX: Go to a wait state where only the synthesizer is
+// running (for quick RX / TX turnaround).
 #define CCxxx0_SXOFF        0x32        // Turn off crystal oscillator.
 #define CCxxx0_SCAL         0x33        // Calibrate frequency synthesizer and turn it off
-                                        // (enables quick start).
+// (enables quick start).
 #define CCxxx0_SRX          0x34        // Enable RX. Perform calibration first if coming from IDLE and
-                                        // MCSM0.FS_AUTOCAL=1.
+// MCSM0.FS_AUTOCAL=1.
 #define CCxxx0_STX          0x35        // In IDLE state: Enable TX. Perform calibration first if
-                                        // MCSM0.FS_AUTOCAL=1. If in RX state and CCA is enabled:
-                                        // Only go to TX if channel is clear.
+// MCSM0.FS_AUTOCAL=1. If in RX state and CCA is enabled:
+// Only go to TX if channel is clear.
 #define CCxxx0_SIDLE        0x36        // Exit RX / TX, turn off frequency synthesizer and exit
-                                        // Wake-On-Radio mode if applicable.
+// Wake-On-Radio mode if applicable.
 #define CCxxx0_SAFC         0x37        // Perform AFC adjustment of the frequency synthesizer
 #define CCxxx0_SWOR         0x38        // Start automatic RX polling sequence (Wake-on-Radio)
 #define CCxxx0_SPWD         0x39        // Enter power down mode when CSn goes high.
@@ -81,7 +81,7 @@ uint8_t PaTabel[8] = {0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60};
 #define CCxxx0_SFTX         0x3B        // Flush the TX FIFO buffer.
 #define CCxxx0_SWORRST      0x3C        // Reset real time clock.
 #define CCxxx0_SNOP         0x3D        // No operation. May be used to pad strobe commands to two
-                                        // uint8_ts for simpler software.
+// uint8_ts for simpler software.
 
 #define CCxxx0_PARTNUM      0x30
 #define CCxxx0_VERSION      0x31
@@ -140,7 +140,7 @@ typedef struct S_RF_SETTINGS
 } RF_SETTINGS;
 RF_SETTINGS rfSettings = 
 {
-	0x00,
+    0x00,
     0x08,   // FSCTRL1   Frequency synthesizer control.
     0x00,   // FSCTRL0   Frequency synthesizer control.
     0x10,   // FREQ2     Frequency control word, high byte.
@@ -182,161 +182,208 @@ RF_SETTINGS rfSettings =
 
 void reset_cc1101()
 {
-	uint8_t val=CCxxx0_SRES;
-	reset_cs();	
-	spi_send_rcv(&val, 1);
-	return;
+    uint8_t val=CCxxx0_SRES;
+    reset_cs();	
+    cs(0);
+    while(miso());
+    spi_send_rcv(val);
+    while(miso());
+    cs(1);
+    return;
 }
 
 void write_cc1101(uint8_t addr,uint8_t* buf,uint8_t len,uint8_t type)
 {
-	uint8_t cmd;
-	if(type==TYPE_BURST)
-		{/*write brust */
-			cmd = addr | WRITE_BURST;
-			spi_send_rcv(&cmd,1);
-			spi_send_rcv(buf,len);
-		}
-	else if(type==TYPE_REG)
-		{/*write reg */
-			spi_send_rcv(&addr,1);
-			spi_send_rcv(buf,1);
-		}
-	else/* strobe */
-		spi_send_rcv(&addr,1);
+    uint8_t cmd;
+    int i;
+    cs(0);
+    while(miso());
+    if(type==TYPE_BURST)
+    {/*write brust */
+        cmd = addr | WRITE_BURST;
+        spi_send_rcv(cmd);
+        for(i=0;i<len;i++)
+            spi_send_rcv(buf[i]);
+    }
+    else if(type==TYPE_REG)
+    {/*write reg */
+        spi_send_rcv(addr);
+        spi_send_rcv(buf[0]);
+    }
+    else/* strobe */
+        spi_send_rcv(addr);
+    cs(1);
 }
 
 uint8_t read_cc1101(uint8_t addr,uint8_t *buf,uint8_t len,uint8_t type)
 {
-	uint8_t cmd,data=0,i;
-	if(type==TYPE_BURST)
-		{
-			cmd = addr | READ_BURST;
-			spi_send_rcv(&cmd,1);
-			for(i=0;i<len;i++)
-				buf[i]=spi_send_rcv(&data,1);
-		}
-	else if(type==TYPE_REG)
-		{
-			cmd = addr | READ_BURST;
-			spi_send_rcv(&cmd,1);
-			return spi_send_rcv(&data,1);
-		}
-	else
-		{
-			cmd = addr | READ_SINGLE;
-			spi_send_rcv(&cmd,1);
-			return spi_send_rcv(&data,1);
-		}
-
-	return 0;
+    uint8_t cmd,data=0,i;
+    cs(0);
+    while(miso());
+    if(type==TYPE_BURST)
+    {
+        cmd = addr | READ_BURST;
+        spi_send_rcv(cmd);
+        for(i=0;i<len;i++)
+            buf[i]=spi_send_rcv(0);
+    }
+    else if(type==TYPE_REG)
+    {
+        cmd = addr | READ_BURST;
+        spi_send_rcv(cmd);
+        return spi_send_rcv(0);
+    }
+    else
+    {
+        cmd = addr | READ_SINGLE;
+        spi_send_rcv(cmd);
+        return spi_send_rcv(0);
+    }
+    cs(1);
+    return 0;
 }
 
 void init_rf(void) 
 {
 
-		write_cc1101(CCxxx0_FSCTRL0,  	&(rfSettings.FSCTRL2),1,TYPE_REG);//自已加的
-		// Write register settings
-		write_cc1101(CCxxx0_FSCTRL1,  &(rfSettings.FSCTRL1),1,TYPE_REG);
-		write_cc1101(CCxxx0_FSCTRL0,  &(rfSettings.FSCTRL0),1,TYPE_REG);
-		write_cc1101(CCxxx0_FREQ2,    	&(rfSettings.FREQ2),1,TYPE_REG);
-		write_cc1101(CCxxx0_FREQ1,    	&(rfSettings.FREQ1),1,TYPE_REG);
-		write_cc1101(CCxxx0_FREQ0,    	&(rfSettings.FREQ0),1,TYPE_REG);
-		write_cc1101(CCxxx0_MDMCFG4,  &(rfSettings.MDMCFG4),1,TYPE_REG);
-		write_cc1101(CCxxx0_MDMCFG3,  &(rfSettings.MDMCFG3),1,TYPE_REG);
-		write_cc1101(CCxxx0_MDMCFG2,  &(rfSettings.MDMCFG2),1,TYPE_REG);
-		write_cc1101(CCxxx0_MDMCFG1,  &(rfSettings.MDMCFG1),1,TYPE_REG);
-		write_cc1101(CCxxx0_MDMCFG0,  &(rfSettings.MDMCFG0),1,TYPE_REG);
-		write_cc1101(CCxxx0_CHANNR,   	&(rfSettings.CHANNR),1,TYPE_REG);
-		write_cc1101(CCxxx0_DEVIATN,  &(rfSettings.DEVIATN),1,TYPE_REG);
-		write_cc1101(CCxxx0_FREND1,   &(rfSettings.FREND1),1,TYPE_REG);
-		write_cc1101(CCxxx0_FREND0,   &(rfSettings.FREND0),1,TYPE_REG);
-		write_cc1101(CCxxx0_MCSM0 ,   &(rfSettings.MCSM0 ),1,TYPE_REG);
-		write_cc1101(CCxxx0_FOCCFG,   &(rfSettings.FOCCFG),1,TYPE_REG);
-		write_cc1101(CCxxx0_BSCFG,    &(rfSettings.BSCFG),1,TYPE_REG);
-		write_cc1101(CCxxx0_AGCCTRL2, &(rfSettings.AGCCTRL2),1,TYPE_REG);
-		write_cc1101(CCxxx0_AGCCTRL1, &(rfSettings.AGCCTRL1),1,TYPE_REG);
-		write_cc1101(CCxxx0_AGCCTRL0, &(rfSettings.AGCCTRL0),1,TYPE_REG);
-		write_cc1101(CCxxx0_FSCAL3,   &(rfSettings.FSCAL3),1,TYPE_REG);
-		write_cc1101(CCxxx0_FSCAL2,   &(rfSettings.FSCAL2),1,TYPE_REG);
-		write_cc1101(CCxxx0_FSCAL1,   &(rfSettings.FSCAL1),1,TYPE_REG);
-		write_cc1101(CCxxx0_FSCAL0,   &(rfSettings.FSCAL0),1,TYPE_REG);
-		write_cc1101(CCxxx0_FSTEST,   &(rfSettings.FSTEST),1,TYPE_REG);
-		write_cc1101(CCxxx0_TEST2,    &(rfSettings.TEST2),1,TYPE_REG);
-		write_cc1101(CCxxx0_TEST1,    &(rfSettings.TEST1),1,TYPE_REG);
-		write_cc1101(CCxxx0_TEST0,    &(rfSettings.TEST0),1,TYPE_REG);
-		write_cc1101(CCxxx0_IOCFG2,   &(rfSettings.IOCFG2),1,TYPE_REG);
-		write_cc1101(CCxxx0_IOCFG0,   &(rfSettings.IOCFG0),1,TYPE_REG);    
-		write_cc1101(CCxxx0_PKTCTRL1, &(rfSettings.PKTCTRL1),1,TYPE_REG);
-		write_cc1101(CCxxx0_PKTCTRL0, &(rfSettings.PKTCTRL0),1,TYPE_REG);
-		write_cc1101(CCxxx0_ADDR,     &(rfSettings.ADDR),1,TYPE_REG);
-		write_cc1101(CCxxx0_PKTLEN,   &(rfSettings.PKTLEN),1,TYPE_REG);
+    write_cc1101(CCxxx0_FSCTRL0,  	&(rfSettings.FSCTRL2),1,TYPE_REG);//自已加的
+    // Write register settings
+    write_cc1101(CCxxx0_FSCTRL1,  &(rfSettings.FSCTRL1),1,TYPE_REG);
+    write_cc1101(CCxxx0_FSCTRL0,  &(rfSettings.FSCTRL0),1,TYPE_REG);
+    write_cc1101(CCxxx0_FREQ2,    	&(rfSettings.FREQ2),1,TYPE_REG);
+    write_cc1101(CCxxx0_FREQ1,    	&(rfSettings.FREQ1),1,TYPE_REG);
+    write_cc1101(CCxxx0_FREQ0,    	&(rfSettings.FREQ0),1,TYPE_REG);
+    write_cc1101(CCxxx0_MDMCFG4,  &(rfSettings.MDMCFG4),1,TYPE_REG);
+    write_cc1101(CCxxx0_MDMCFG3,  &(rfSettings.MDMCFG3),1,TYPE_REG);
+    write_cc1101(CCxxx0_MDMCFG2,  &(rfSettings.MDMCFG2),1,TYPE_REG);
+    write_cc1101(CCxxx0_MDMCFG1,  &(rfSettings.MDMCFG1),1,TYPE_REG);
+    write_cc1101(CCxxx0_MDMCFG0,  &(rfSettings.MDMCFG0),1,TYPE_REG);
+    write_cc1101(CCxxx0_CHANNR,   	&(rfSettings.CHANNR),1,TYPE_REG);
+    write_cc1101(CCxxx0_DEVIATN,  &(rfSettings.DEVIATN),1,TYPE_REG);
+    write_cc1101(CCxxx0_FREND1,   &(rfSettings.FREND1),1,TYPE_REG);
+    write_cc1101(CCxxx0_FREND0,   &(rfSettings.FREND0),1,TYPE_REG);
+    write_cc1101(CCxxx0_MCSM0 ,   &(rfSettings.MCSM0 ),1,TYPE_REG);
+    write_cc1101(CCxxx0_FOCCFG,   &(rfSettings.FOCCFG),1,TYPE_REG);
+    write_cc1101(CCxxx0_BSCFG,    &(rfSettings.BSCFG),1,TYPE_REG);
+    write_cc1101(CCxxx0_AGCCTRL2, &(rfSettings.AGCCTRL2),1,TYPE_REG);
+    write_cc1101(CCxxx0_AGCCTRL1, &(rfSettings.AGCCTRL1),1,TYPE_REG);
+    write_cc1101(CCxxx0_AGCCTRL0, &(rfSettings.AGCCTRL0),1,TYPE_REG);
+    write_cc1101(CCxxx0_FSCAL3,   &(rfSettings.FSCAL3),1,TYPE_REG);
+    write_cc1101(CCxxx0_FSCAL2,   &(rfSettings.FSCAL2),1,TYPE_REG);
+    write_cc1101(CCxxx0_FSCAL1,   &(rfSettings.FSCAL1),1,TYPE_REG);
+    write_cc1101(CCxxx0_FSCAL0,   &(rfSettings.FSCAL0),1,TYPE_REG);
+    write_cc1101(CCxxx0_FSTEST,   &(rfSettings.FSTEST),1,TYPE_REG);
+    write_cc1101(CCxxx0_TEST2,    &(rfSettings.TEST2),1,TYPE_REG);
+    write_cc1101(CCxxx0_TEST1,    &(rfSettings.TEST1),1,TYPE_REG);
+    write_cc1101(CCxxx0_TEST0,    &(rfSettings.TEST0),1,TYPE_REG);
+    write_cc1101(CCxxx0_IOCFG2,   &(rfSettings.IOCFG2),1,TYPE_REG);
+    write_cc1101(CCxxx0_IOCFG0,   &(rfSettings.IOCFG0),1,TYPE_REG);    
+    write_cc1101(CCxxx0_PKTCTRL1, &(rfSettings.PKTCTRL1),1,TYPE_REG);
+    write_cc1101(CCxxx0_PKTCTRL0, &(rfSettings.PKTCTRL0),1,TYPE_REG);
+    write_cc1101(CCxxx0_ADDR,     &(rfSettings.ADDR),1,TYPE_REG);
+    write_cc1101(CCxxx0_PKTLEN,   &(rfSettings.PKTLEN),1,TYPE_REG);
+
+    DEBUG("CCxxx0_FSCTRL0 = %x\r\n",read_cc1101(CCxxx0_FSCTRL0, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FSCTRL1 = %x\r\n",read_cc1101(CCxxx0_FSCTRL1, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FREQ2 = %x\r\n",read_cc1101(CCxxx0_FREQ2, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FREQ1 = %x\r\n",read_cc1101(CCxxx0_FREQ1, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FREQ0 = %x\r\n",read_cc1101(CCxxx0_FREQ0, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_MDMCFG4 = %x\r\n",read_cc1101(CCxxx0_MDMCFG4, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_MDMCFG3 = %x\r\n",read_cc1101(CCxxx0_MDMCFG3, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_MDMCFG2 = %x\r\n",read_cc1101(CCxxx0_MDMCFG2, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_MDMCFG1 = %x\r\n",read_cc1101(CCxxx0_MDMCFG1, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_MDMCFG0 = %x\r\n",read_cc1101(CCxxx0_MDMCFG0, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_CHANNR = %x\r\n",read_cc1101(CCxxx0_CHANNR, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_DEVIATN = %x\r\n",read_cc1101(CCxxx0_DEVIATN, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FREND1 = %x\r\n",read_cc1101(CCxxx0_FREND1, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FREND0 = %x\r\n",read_cc1101(CCxxx0_FREND0, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_MCSM0 = %x\r\n",read_cc1101(CCxxx0_MCSM0, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FOCCFG = %x\r\n",read_cc1101(CCxxx0_FOCCFG, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_BSCFG = %x\r\n",read_cc1101(CCxxx0_BSCFG, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_AGCCTRL2 = %x\r\n",read_cc1101(CCxxx0_AGCCTRL2, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_AGCCTRL1 = %x\r\n",read_cc1101(CCxxx0_AGCCTRL1, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_AGCCTRL0 = %x\r\n",read_cc1101(CCxxx0_AGCCTRL0, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FSCAL3 = %x\r\n",read_cc1101(CCxxx0_FSCAL3, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FSCAL2 = %x\r\n",read_cc1101(CCxxx0_FSCAL2, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FSCAL1 = %x\r\n",read_cc1101(CCxxx0_FSCAL1, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FSCAL0 = %x\r\n",read_cc1101(CCxxx0_FSCAL0, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_FSTEST = %x\r\n",read_cc1101(CCxxx0_FSTEST, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_TEST2 = %x\r\n",read_cc1101(CCxxx0_TEST2, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_TEST1 = %x\r\n",read_cc1101(CCxxx0_TEST1, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_TEST0 = %x\r\n",read_cc1101(CCxxx0_TEST0, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_IOCFG2 = %x\r\n",read_cc1101(CCxxx0_IOCFG2, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_IOCFG0 = %x\r\n",read_cc1101(CCxxx0_IOCFG0, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_PKTCTRL1 = %x\r\n",read_cc1101(CCxxx0_PKTCTRL1, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_PKTCTRL0 = %x\r\n",read_cc1101(CCxxx0_PKTCTRL0, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_ADDR = %x\r\n",read_cc1101(CCxxx0_ADDR, RT_NULL, 0,TYPE_STROBE_STATUS));
+    DEBUG("CCxxx0_PKTLEN = %x\r\n",read_cc1101(CCxxx0_PKTLEN, RT_NULL, 0,TYPE_STROBE_STATUS));
+
+
 }
 
 void cc1101_send_packet(uint8_t *txBuffer, uint8_t size) 
 {
-	int i;
-	DEBUG("cc1101 write \r\n");
-	for(i=0;i<size;i++)
-		DEBUG("%x ",txBuffer[i]);
-		write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);
-	write_cc1101(CCxxx0_TXFIFO, &size,1,TYPE_REG);
-	write_cc1101(CCxxx0_TXFIFO, txBuffer, size,TYPE_BURST);	//写入要发送的数据
+    int i;
+    DEBUG("cc1101 write \r\n");
+    for(i=0;i<size;i++)
+        DEBUG("%x ",txBuffer[i]);
 
-	write_cc1101(CCxxx0_STX,RT_NULL,0,TYPE_STROBE_STATUS);		//进入发送模式发送数据
+    write_cc1101(CCxxx0_TXFIFO, &size,1,TYPE_REG);
+    write_cc1101(CCxxx0_TXFIFO, txBuffer, size,TYPE_BURST);	//写入要发送的数据
 
-	// Wait for GDO0 to be set -> sync transmitted
- 	wait_int(RT_TRUE);
-	// Wait for GDO0 to be cleared -> end of packet 
-	wait_int(RT_FALSE);
-	write_cc1101(CCxxx0_SFTX,RT_NULL,0,TYPE_STROBE_STATUS);
+    write_cc1101(CCxxx0_STX,RT_NULL,0,TYPE_STROBE_STATUS);		//进入发送模式发送数据
+
+    // Wait for GDO0 to be set -> sync transmitted
+    wait_int(RT_TRUE);
+    // Wait for GDO0 to be cleared -> end of packet 
+    wait_int(RT_FALSE);
+    write_cc1101(CCxxx0_SFTX,RT_NULL,0,TYPE_STROBE_STATUS);
 }
 
 uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length) 
 {
-	uint8_t status[2];
-	uint8_t packetLength;
-	uint8_t i=(*length)*4;  // 具体多少要根据datarate和length来决定
+    uint8_t status[2];
+    uint8_t packetLength;
+    uint8_t i=(*length)*4;  // 具体多少要根据datarate和length来决定
 
-	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);		//进入接收状态
-	//delay(5);
-	//while (!GDO1);
-	//while (GDO1);
-	wait_int(RT_FALSE);
-	if ((read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_STROBE_STATUS) & BYTES_IN_RXFIFO)) //如果接的字节数不为0
-	{
-		packetLength = read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_REG);//读出第一个字节，此字节为该帧数据长度
-		if (packetLength <= *length) 		//如果所要的有效数据长度小于等于接收到的数据包的长度
-		{
-			read_cc1101(CCxxx0_RXFIFO, rxBuffer, packetLength,TYPE_BURST); //读出所有接收到的数据
-			*length = packetLength;				//把接收数据长度的修改为当前数据的长度
+    write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);		//进入接收状态
+    wait_int(RT_FALSE);
 
-			// Read the 2 appended status bytes (status[0] = RSSI, status[1] = LQI)
-			read_cc1101(CCxxx0_RXFIFO, status, 2,TYPE_BURST); 	//读出CRC校验位
-			write_cc1101(CCxxx0_SFRX,RT_NULL,0,TYPE_STROBE_STATUS);		//清洗接收缓冲区
-			DEBUG("cc1101 read \r\n");
-			for(i=0;i<*length;i++)
-				DEBUG("%x ",rxBuffer[i]);
-			return (status[1] & CRC_OK);			//如果校验成功返回接收成功
-		}
-		else 
-		{
-			*length = packetLength;
-			write_cc1101(CCxxx0_SFRX,RT_NULL,0,TYPE_STROBE_STATUS);		//清洗接收缓冲区
-			return 0;
-		}
-	} 
-	else
-		return 0;
+    if ((read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_STROBE_STATUS) & BYTES_IN_RXFIFO)) //如果接的字节数不为0
+    {
+
+        packetLength = read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_REG);//读出第一个字节，此字节为该帧数据长度
+
+        if (packetLength <= *length) 		//如果所要的有效数据长度小于等于接收到的数据包的长度
+        {
+
+            read_cc1101(CCxxx0_RXFIFO, rxBuffer, packetLength,TYPE_BURST); //读出所有接收到的数据
+            *length = packetLength;				//把接收数据长度的修改为当前数据的长度
+
+            // Read the 2 appended status bytes (status[0] = RSSI, status[1] = LQI)
+            read_cc1101(CCxxx0_RXFIFO, status, 2,TYPE_BURST); 	//读出CRC校验位
+
+            write_cc1101(CCxxx0_SFRX,RT_NULL,0,TYPE_STROBE_STATUS);		//清洗接收缓冲区
+            DEBUG("cc1101 read \r\n");
+            for(i=0;i<*length;i++)
+                DEBUG("%x ",rxBuffer[i]);
+            return (status[1] & CRC_OK);			//如果校验成功返回接收成功
+        }
+        else 
+        {
+            *length = packetLength;
+            write_cc1101(CCxxx0_SFRX,RT_NULL,0,TYPE_STROBE_STATUS);		//清洗接收缓冲区
+            DEBUG("rx buffer is not enough ,need %d bytes\r\n",packetLength);
+            return 0;
+        }
+    } 
+    else
+        return 0;
 }
 
 void cc1101_hw_init()
 {
-DEBUG("1-1\r\n");
-	reset_cc1101();
-DEBUG("1-2\r\n");
-	init_rf();
-DEBUG("1-3\r\n");
-	write_cc1101(CCxxx0_PATABLE,PaTabel,8,TYPE_BURST);
-DEBUG("1-4\r\n");
+    reset_cc1101();
+    init_rf();
+    write_cc1101(CCxxx0_PATABLE,PaTabel,8,TYPE_BURST);
 }
