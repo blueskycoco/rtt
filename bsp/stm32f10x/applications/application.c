@@ -45,6 +45,8 @@
 ALIGN(RT_ALIGN_SIZE)
 static rt_uint8_t led_stack[ 512 ];
 static struct rt_thread led_thread;
+static rt_uint8_t lcd_stack[ 512 ];
+static struct rt_thread lcd_thread;
 static void led_thread_entry(void* parameter)
 {
     unsigned int count=0;
@@ -69,7 +71,47 @@ static void led_thread_entry(void* parameter)
         rt_thread_delay( RT_TICK_PER_SECOND/2 );
     }
 }
-
+static void lcd_thread_entry(void* parameter)
+{
+	int val1=0,val2=1,val3=2,val4=3,val5=4,val6=5;
+	uint8_t bat1=20,bat2=0;
+	u8 str[100];	/*将数字信息填充到str里*/
+	sprintf(str,"%d%d%d%d%d.%d",val1,val2,val3,val4,val5,val6);
+	/*初始化ssd1306*/    
+	ssd1306_init();	/*绘制缓冲区，包含电池信息和数字信息*/
+	draw(bat1,bat2,str);	/*打开显示*/
+	display();
+	while(1){
+		val1++;
+		val2++;
+		val3++;
+		val4++;
+		val5++;
+		val6++;
+		bat1++;
+		bat2++;
+		sprintf(str,"%d%d%d%d%d.%d",val1,val2,val3,val4,val5,val6);
+		draw(bat1,bat2,str);
+		display();
+	rt_thread_delay(30);
+		if(val1==9)
+			val1=0;
+		if(val2==9)
+			val2=0;
+		if(val3==9)
+			val3=0;
+		if(val4==9)
+			val4=0;
+		if(val5==9)
+			val5=0;
+		if(val6==9)
+			val6=0;
+		if(bat1==100)
+			bat1=0;
+		if(bat2==100)
+			bat2=0;
+		}
+}
 #ifdef RT_USING_RTGUI
 rt_bool_t cali_setup(void)
 {
@@ -148,7 +190,7 @@ int rt_application_init(void)
     rt_thread_t init_thread;
 
     rt_err_t result;
-
+//1101_init();
     /* init led thread */
     result = rt_thread_init(&led_thread,
                             "led",
@@ -162,7 +204,19 @@ int rt_application_init(void)
     {
         rt_thread_startup(&led_thread);
     }
-
+/* init led thread */
+    result = rt_thread_init(&lcd_thread,
+                            "led",
+                            lcd_thread_entry,
+                            RT_NULL,
+                            (rt_uint8_t*)&lcd_stack[0],
+                            sizeof(lcd_stack),
+                            20,
+                            5);
+    if (result == RT_EOK)
+    {
+        rt_thread_startup(&lcd_thread);
+    }
 #if (RT_THREAD_PRIORITY_MAX == 32)
     init_thread = rt_thread_create("init",
                                    rt_init_thread_entry, RT_NULL,

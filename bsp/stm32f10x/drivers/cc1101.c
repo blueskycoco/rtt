@@ -1,6 +1,6 @@
 #include <rthw.h>
 #include <rtthread.h>
-#include <stm32f0xx.h>
+#include <stm32f10x.h>
 #include <rtdevice.h>
 #include "cc1101.h"
 #define HW 1
@@ -84,11 +84,11 @@ uint8_t spi_send_rcv(uint8_t data)
 void spi_init()
 {
     GPIO_InitTypeDef GPIO_InitStructure;
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA | RCC_AHBPeriph_GPIOC, ENABLE);
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_DOWN;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_Level_3;
+    RCC_AHBPeriphClockCmd(RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOA, ENABLE);
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    //IO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    //IO_InitStructure.GPIO_PuPd  = GPIO_PuPd_DOWN;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 
     /* SPI SCK pin configuration */
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
@@ -101,7 +101,7 @@ void spi_init()
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 
     /* SPI MISO pin configuration */
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 
@@ -299,13 +299,13 @@ int cc1101_init()
 
     /* cc1101 int init
      * */
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
     GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 #if HW
     /* Configure the SPI interrupt priority */
-    NVIC_InitStructure.NVIC_IRQChannel = EXTI4_15_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannel = EXTI4_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
 
