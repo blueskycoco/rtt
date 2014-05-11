@@ -43,6 +43,8 @@
 #include "led.h"
 static rt_uint8_t lcd_stack[ 512 ];
 static struct rt_thread lcd_thread;
+static rt_uint8_t cc1101_stack[ 512 ];
+static struct rt_thread cc1101_thread;
 
 ALIGN(RT_ALIGN_SIZE)
 static rt_uint8_t led_stack[ 512 ];
@@ -71,6 +73,22 @@ static void led_thread_entry(void* parameter)
         rt_thread_delay( RT_TICK_PER_SECOND/2 );
     }
 }
+static void cc1101_thread_entry(void* parameter)
+{
+    unsigned int count=0;
+	rt_kprintf("Enter cc1101 init\r\n");
+    cc1101_init();
+rt_kprintf("Enter cc1101 end\r\n");
+    while (1)
+    {
+    rt_kprintf("Enter cc1101 send\r\n");
+	//cc1101_send("01234",5);
+	cc1101_recv(31);
+	rt_kprintf("Enter cc1101 send 2\r\n");
+	rt_thread_delay(100);
+	
+    }
+}
 static void lcd_thread_entry(void* parameter)
 {
 	int val1=0,val2=1,val3=2,val4=3,val5=4,val6=5;
@@ -93,7 +111,7 @@ static void lcd_thread_entry(void* parameter)
 		sprintf(str,"%d%d%d%d%d.%d",val1,val2,val3,val4,val5,val6);
 		draw(bat1,bat2,str);
 		display();
-		//rt_thread_delay(30);
+		rt_thread_delay(10);
 		if(val1==9)
 			val1=0;
 		if(val2==9)
@@ -215,6 +233,18 @@ int rt_application_init(void)
     if (result == RT_EOK)
     {
        rt_thread_startup(&lcd_thread);
+    }
+    result = rt_thread_init(&cc1101_thread,
+                            "cc1101",
+                            cc1101_thread_entry,
+                            RT_NULL,
+                            (rt_uint8_t*)&cc1101_stack[0],
+                            sizeof(cc1101_stack),
+                            20,
+                            5);
+    if (result == RT_EOK)
+    {
+       rt_thread_startup(&cc1101_thread);
     }
 #if (RT_THREAD_PRIORITY_MAX == 32)
     init_thread = rt_thread_create("init",

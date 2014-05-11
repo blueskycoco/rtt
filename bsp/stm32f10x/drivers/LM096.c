@@ -44,68 +44,14 @@ void pin_init()
 	 I2C_Init(I2C1, &I2C_InitStructure);
 }
 /*寄存器写操作，data是要写的数据，iscommand用于区分是显示数据还是寄存器数据*/
-#if 0
-void ssd1306_send_byte(uint8_t data,int is_command)
-{
-#define VAL 1000000
-	 long i=0;
-	 I2C_GenerateSTART(I2C1, ENABLE);
-	 while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT))
-	 {
-		  i++;
-		  if(i>VAL){
-			   rt_kprintf("I2C_EVENT_MASTER_MODE_SELECT time out %d,%d\r\n",data,is_command);
-			   return;
-		  }
-	 }
-	 i=0;
-	 I2C_Send7bitAddress(I2C1, 0x78, I2C_Direction_Transmitter);
-	 while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED)){
-		  i++;
-		  if(i>VAL)
-		  {
-			   rt_kprintf("I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED time out %d,%d\r\n",data,is_command);
-			   I2C_GenerateSTOP(I2C1, ENABLE);
-			   return;
-		  }
-	 }
-	 if(is_command)
-		  I2C_SendData(I2C1,0x00);
-	 else
-		  I2C_SendData(I2C1,0x40);
-	 i=0;
-	 while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED)){
-		  i++;
-		  if(i>VAL)
-		  {
-			   rt_kprintf("I2C_EVENT_MASTER_BYTE_TRANSMITTED 1 time out %d,%d\r\n",data,is_command);
-			   I2C_GenerateSTOP(I2C1, ENABLE);
-			   return;
-		  }
-	 }  	
 
-	 I2C_SendData(I2C1,data);
-	 i=0;
-	 while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED)){
-		  i++;
-		  if(i>VAL)
-		  {
-			   rt_kprintf("I2C_EVENT_MASTER_BYTE_TRANSMITTED 2  time out %d,%d\r\n",data,is_command);
-			   I2C_GenerateSTOP(I2C1, ENABLE);
-			   return;
-		  }
-	 }
-
-	 I2C_GenerateSTOP(I2C1, ENABLE);
-}
-#else
 void ssd1306_send_byte_cmd(uint8_t data)
 {
-	I2C_GenerateSTART(I2C1, ENABLE);
+	 I2C_GenerateSTART(I2C1, ENABLE);
 	 while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
 
 	 I2C_Send7bitAddress(I2C1, 0x78, I2C_Direction_Transmitter);
-	 
+
 	 while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
 
 	 I2C_SendData(I2C1,0x00);
@@ -119,7 +65,7 @@ void ssd1306_send_byte_cmd(uint8_t data)
 void ssd1306_fill_frame_buffer()
 {
 	 int i=0;
-	
+
 	 I2C_GenerateSTART(I2C1, ENABLE);
 	 while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
 
@@ -127,19 +73,18 @@ void ssd1306_fill_frame_buffer()
 	 while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
 
 
-	  I2C_SendData(I2C1,0x40);
+	 I2C_SendData(I2C1,0x40);
 	 while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
- 	for(i=0;i<sizeof(buffer)/sizeof(uint8_t);i++)
+	 for(i=0;i<sizeof(buffer)/sizeof(uint8_t);i++)
 	 {
 
- 	I2C_SendData(I2C1,buffer[i]);
- 	while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
-	} 
+		  I2C_SendData(I2C1,buffer[i]);
+		  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+	 } 
 	 I2C_GenerateSTOP(I2C1, ENABLE);
-	 
+
 }
 
-#endif
 /*对ssd1306进行复位操作*/
 void device_rst()
 {
@@ -167,63 +112,14 @@ void ssd1306_init()
 		  ssd1306_send_byte_cmd(init_reg[i]);
 	 }
 	 clear();
-	
-}
-#if 0
-void  drawchar(uint8_t x, uint8_t line, uint8_t c) {
-	 unsigned char i;
-	 if((line >= SSD1306_LCDHEIGHT/8) || (x >= (SSD1306_LCDWIDTH - 6)))
-		  return;
-	 for(i =0; i<5; i++ )
-	 {
-		  buffer[x + (line*128) ] =font[c*5+i];// (*(unsigned char *)(font+(c*5)+i)/*& ~_BV(((line*128)%8))*/) ;
-		  x++;
-	 }
-}/*11*15*/
-void  drawchar2(uint8_t x, uint8_t line, uint8_t c) {
-	 unsigned char i,j;
-	 if((line >= SSD1306_LCDHEIGHT/8) || (x >= (SSD1306_LCDWIDTH - 9)))
-		  return;
-	 j=x;
-	 for(i =0; i<8; i++ )
-	 {
-		  buffer[x + (line*128) ] =font2[(c)*16+i];// (*(unsigned char *)(font+(c*5)+i)/*& ~_BV(((line*128)%8))*/) ;
-		  x++;
-	 }
-	 for(i =0; i<8; i++ )
-	 {
-		  buffer[x + ((line+1)*128)-8 ] =font2[(c)*16+8+i];// (*(unsigned char *)(font+(c*5)+i)/*& ~_BV(((line*128)%8))*/) ;
-		  x++;
+	 /*写入显示序列命令*/
+
+	 for(i=0;i<sizeof(draw_reg);i++)
+	 {						
+		  ssd1306_send_byte_cmd(draw_reg[i]);
 	 }
 }
 
-void drawstring(uint8_t x, uint8_t line, char *c) {
-	 while (c[0] != 0) {
-		  if(line==2 || line==0)
-		  {
-			   drawchar2(x, line, c[0]);
-			   c++;
-			   x += 9; // 6 pixels wide
-			   if (x + 9 >= SSD1306_LCDWIDTH) {
-					x = 0;    // ran out of this line
-					line=line+2;
-			   }
-		  }else
-		  {
-			   drawchar(x, line, c[0]);
-			   c++;
-			   x += 6; // 6 pixels wide
-			   if (x + 6 >= SSD1306_LCDWIDTH) {
-					x = 0;    // ran out of this line
-					line++;
-			   }
-		  }
-		  if (line >= (SSD1306_LCDHEIGHT/8))
-			   return;        // ran out of space :(
-	 }
-
-}
-#endif
 /*绘制指定点的像素*/
 void setpixel(uint8_t x, uint8_t y,uint8_t clear) {
 	 /*判断是否超出了边界128×64*/
@@ -410,17 +306,8 @@ void draw(uint8_t bat1,uint8_t bat2,char *c)
 }
 void display(void) 
 {
-	 int i,j;
-	  /*写入显示序列命令*/
-	  
-for(i=0;i<sizeof(draw_reg);i++)
-	  {						
-		   ssd1306_send_byte_cmd(draw_reg[i]);
-	  }
-	  /*填充显示缓冲区到ssd1306*/
-	 // for(i=0;i<sizeof(buffer);i++)
-	  {
-		   ssd1306_fill_frame_buffer();
-	  }
+
+	 /*填充显示缓冲区到ssd1306*/
+	 ssd1306_fill_frame_buffer();
 }
 

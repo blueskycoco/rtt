@@ -143,6 +143,23 @@ void EXTI4_IRQHandler(void)
     rt_interrupt_leave();
 }
 #endif /* RT_USING_LWIP */
+void EXTI4_IRQHandler(void)
+{
+    extern void cc1101_isr(void);
+
+    /* enter interrupt */
+    rt_interrupt_enter();
+	if(EXTI_GetFlagStatus(EXTI_Line4))
+	{
+	    /* Clear the DM9000A EXTI line pending bit */
+	    EXTI_ClearITPendingBit(EXTI_Line4);
+
+	    cc1101_isr();
+		 
+	}
+    /* leave interrupt */
+    rt_interrupt_leave();
+}
 
 /**
   * @}
