@@ -320,7 +320,63 @@ void init_rf(void)
 */
 
 }
+#if 1
+void cc1101_send_packet(uint8_t *txBuffer, uint8_t size) 
+{
+	int i;
+	DEBUG("cc1101 write \r\n");
+    	for(i=0;i<size;i++)
+        		DEBUG("%x ",txBuffer[i]);
 
+	uint8_t marcState=0;
+	DEBUG("check rx mode\r\n");
+	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);
+	while((read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f)!=0x0d)
+		rt_thread_delay(1);
+	DEBUG("leave rx mode\r\n");
+	rt_thread_delay(50);
+	write_cc1101(CCxxx0_TXFIFO, &size,1,TYPE_REG);
+    	write_cc1101(CCxxx0_TXFIFO, txBuffer, size,TYPE_BURST);
+	DEBUG("enter tx mode\r\n");
+	write_cc1101(CCxxx0_STX,RT_NULL,0,TYPE_STROBE_STATUS);
+	while((marcState != 0x13) && (marcState != 0x14) && (marcState != 0x15))
+	{
+		marcState=read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f;
+		rt_thread_delay(1);
+		rt_kprintf("wait for cc1101 enter into tx mode %x\r\n",marcState);
+	}
+	if((marcState != 0x13) && (marcState != 0x14) && (marcState != 0x15))
+	{    
+		write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);     // Enter IDLE state
+		write_cc1101(CCxxx0_SFTX,RT_NULL,0,TYPE_STROBE_STATUS);       // Flush Tx FIFO
+		write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);         // Back to RX state
+		rt_kprintf("cc1101 send failed %x\r\n",marcState);
+		return ;
+	}
+	wait_int(RT_TRUE);
+    	wait_int(RT_FALSE);
+	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);  
+	if((read_cc1101(CCxxx0_TXBYTES,RT_NULL,0,TYPE_REG)&0x7f)==0)
+	{
+		rt_kprintf("cc1101 send ok\r\n");
+		return ;
+	}
+	rt_kprintf("cc1101 send failed 2\r\n");
+}
+uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length) 
+{
+	if((read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f)==0x11)
+	{
+		write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);     // Enter IDLE state
+		write_cc1101(CCxxx0_SFRX,RT_NULL,0,TYPE_STROBE_STATUS);       // Flush Tx FIFO		
+	}
+	else if(read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_REG)&0x7f)
+		{
+			*length=read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_STROBE_STATUS);
+			
+		}
+}
+#else
 void cc1101_send_packet(uint8_t *txBuffer, uint8_t size) 
 {
     int i;
@@ -352,7 +408,7 @@ uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length)
     if ((read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_STROBE_STATUS) & BYTES_IN_RXFIFO)) //如果接的字节数不为0
     {
 
-        packetLength = read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_REG);//读出第一个字节，此字节为该帧数据长度
+        packetLength = read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_STROBE_STATUS);//读出第一个字节，此字节为该帧数据长度
 
         if (packetLength <= *length) 		//如果所要的有效数据长度小于等于接收到的数据包的长度
         {
@@ -385,7 +441,7 @@ uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length)
         return 0;
     }
 }
-
+#endif
 void cc1101_hw_init()
 {
     reset_cc1101();

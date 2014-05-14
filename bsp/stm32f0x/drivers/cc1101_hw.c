@@ -282,7 +282,7 @@ void init_rf(void)
     write_cc1101(CCxxx0_PKTCTRL0, &(rfSettings.PKTCTRL0),1,TYPE_REG);
     write_cc1101(CCxxx0_ADDR,     &(rfSettings.ADDR),1,TYPE_REG);
     write_cc1101(CCxxx0_PKTLEN,   &(rfSettings.PKTLEN),1,TYPE_REG);
-/*
+
     DEBUG("CCxxx0_FSCTRL0 = %x\r\n",read_cc1101(CCxxx0_FSCTRL0, RT_NULL, 0,TYPE_STROBE_STATUS));
     DEBUG("CCxxx0_FSCTRL1 = %x\r\n",read_cc1101(CCxxx0_FSCTRL1, RT_NULL, 0,TYPE_STROBE_STATUS));
     DEBUG("CCxxx0_FREQ2 = %x\r\n",read_cc1101(CCxxx0_FREQ2, RT_NULL, 0,TYPE_STROBE_STATUS));
@@ -317,10 +317,10 @@ void init_rf(void)
     DEBUG("CCxxx0_PKTCTRL0 = %x\r\n",read_cc1101(CCxxx0_PKTCTRL0, RT_NULL, 0,TYPE_STROBE_STATUS));
     DEBUG("CCxxx0_ADDR = %x\r\n",read_cc1101(CCxxx0_ADDR, RT_NULL, 0,TYPE_STROBE_STATUS));
     DEBUG("CCxxx0_PKTLEN = %x\r\n",read_cc1101(CCxxx0_PKTLEN, RT_NULL, 0,TYPE_STROBE_STATUS));
-*/
+
 
 }
-
+#if 0
 void cc1101_send_packet(uint8_t *txBuffer, uint8_t size) 
 {
     int i;
@@ -338,6 +338,7 @@ void cc1101_send_packet(uint8_t *txBuffer, uint8_t size)
     // Wait for GDO0 to be cleared -> end of packet 
     wait_int(RT_FALSE);
     write_cc1101(CCxxx0_SFTX,RT_NULL,0,TYPE_STROBE_STATUS);
+    write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);
 }
 
 uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length) 
@@ -352,7 +353,7 @@ uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length)
     if ((read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_STROBE_STATUS) & BYTES_IN_RXFIFO)) //如果接的字节数不为0
     {
 
-        packetLength = read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_REG);//读出第一个字节，此字节为该帧数据长度
+        packetLength = read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_STROBE_STATUS);//读出第一个字节，此字节为该帧数据长度
 
         if (packetLength <= *length) 		//如果所要的有效数据长度小于等于接收到的数据包的长度
         {
@@ -385,7 +386,66 @@ uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length)
         return 0;
     }
 }
+#else
+void cc1101_send_packet(uint8_t *txBuffer, uint8_t size) 
+{
+	int i;
+	DEBUG("cc1101 write \r\n");
+    	for(i=0;i<size;i++)
+        		DEBUG("%x ",txBuffer[i]);
 
+	uint8_t marcState;
+	DEBUG("check rx mode\r\n");
+	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);
+	while((read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f)!=0x0d)
+		rt_thread_delay(1);
+	DEBUG("leave rx mode\r\n");
+	rt_thread_delay(50);
+	write_cc1101(CCxxx0_TXFIFO, &size,1,TYPE_REG);
+    	write_cc1101(CCxxx0_TXFIFO, txBuffer, size,TYPE_BURST);
+	DEBUG("enter tx mode\r\n");
+	write_cc1101(CCxxx0_STX,RT_NULL,0,TYPE_STROBE_STATUS);
+
+	marcState=read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f;
+	if((marcState != 0x13) && (marcState != 0x14) && (marcState != 0x15))
+	{    
+		write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);     // Enter IDLE state
+		write_cc1101(CCxxx0_SFTX,RT_NULL,0,TYPE_STROBE_STATUS);       // Flush Tx FIFO
+		write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);         // Back to RX state
+		rt_kprintf("cc1101 send failed %x\r\n",marcState);
+		return ;
+	}
+	wait_int(RT_TRUE);
+    	wait_int(RT_FALSE);
+	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);  
+	if((read_cc1101(CCxxx0_TXBYTES,RT_NULL,0,TYPE_REG)&0x7f)==0)
+	{
+		rt_kprintf("cc1101 send ok\r\n");
+		return ;
+	}
+	rt_kprintf("cc1101 send failed 2\r\n");
+}
+uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length) 
+{
+	int i;
+	if((read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f)==0x11)
+	{
+		write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);     // Enter IDLE state
+		write_cc1101(CCxxx0_SFRX,RT_NULL,0,TYPE_STROBE_STATUS);       // Flush Tx FIFO		
+		DEBUG("read cc1101 failed\r\n");
+	}
+	else if(read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_REG)&0x7f)
+		{
+			*length=read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_STROBE_STATUS);
+			rxBuffer=(uint8_t *)malloc(*length);
+			read_cc1101(CCxxx0_RXFIFO,rxBuffer,*length,TYPE_BURST);
+			DEBUG("cc1101 read \r\n");
+            		for(i=0;i<*length;i++)
+                			DEBUG("%x ",rxBuffer[i]);
+		}
+	return *length;
+}
+#endif
 void cc1101_hw_init()
 {
     reset_cc1101();

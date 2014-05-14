@@ -41,6 +41,7 @@
 #endif
 
 #include "led.h"
+#include "power.h"
 static rt_uint8_t lcd_stack[ 512 ];
 static struct rt_thread lcd_thread;
 static rt_uint8_t cc1101_stack[ 512 ];
@@ -64,6 +65,12 @@ static void led_thread_entry(void* parameter)
         count++;
         rt_hw_led_on(0);
         rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
+        rt_hw_led_on(1);
+        rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
+        rt_hw_led_on(2);
+        rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
+        rt_hw_led_on(3);
+        rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
 
         /* led1 off */
 #ifndef RT_USING_FINSH
@@ -71,20 +78,43 @@ static void led_thread_entry(void* parameter)
 #endif
         rt_hw_led_off(0);
         rt_thread_delay( RT_TICK_PER_SECOND/2 );
+	   rt_hw_led_off(1);
+        rt_thread_delay( RT_TICK_PER_SECOND/2 );
+	   rt_hw_led_off(2);
+        rt_thread_delay( RT_TICK_PER_SECOND/2 );
+	   rt_hw_led_off(3);
+        rt_thread_delay( RT_TICK_PER_SECOND/2 );
+    }
+}
+static rt_uint8_t power_stack[ 1024 ];
+static struct rt_thread power_thread;
+static void power_thread_entry(void* parameter)
+{
+    unsigned int count=0;
+
+    power_man_init(100,2000);
+
+    while (1)
+    {
+        	   rt_thread_delay(100);
+	   power_man_timer_poll(100,2000);
+	   //power_man_timer_interrupt();
     }
 }
 static void cc1101_thread_entry(void* parameter)
 {
     unsigned int count=0;
-	rt_kprintf("Enter cc1101 init\r\n");
+//	rt_kprintf("Enter cc1101 init\r\n");
     cc1101_init();
-rt_kprintf("Enter cc1101 end\r\n");
+uint8_t buf[5];
+sprintf(buf,"%s","12345");
+//rt_kprintf("Enter cc1101 end\r\n");
     while (1)
     {
-    rt_kprintf("Enter cc1101 send\r\n");
-	//cc1101_send("01234",5);
-	cc1101_recv(31);
-	rt_kprintf("Enter cc1101 send 2\r\n");
+    //rt_kprintf("Enter cc1101 send\r\n");
+	cc1101_send(buf,5);
+	//cc1101_recv(31);
+	//rt_kprintf("Enter cc1101 send 2\r\n");
 	rt_thread_delay(100);
 	
     }
@@ -208,6 +238,8 @@ int rt_application_init(void)
     rt_thread_t init_thread;
     
     rt_err_t result;
+    rt_hw_led_init();
+#if 0
     /* init led thread */
     result = rt_thread_init(&led_thread,
                             "led",
@@ -221,6 +253,7 @@ int rt_application_init(void)
     {
         rt_thread_startup(&led_thread);
     }
+    
 /* init led thread */
     result = rt_thread_init(&lcd_thread,
                             "oled",
@@ -245,6 +278,19 @@ int rt_application_init(void)
     if (result == RT_EOK)
     {
        rt_thread_startup(&cc1101_thread);
+    }
+    #endif
+    result = rt_thread_init(&power_thread,
+                            "power",
+                            power_thread_entry,
+                            RT_NULL,
+                            (rt_uint8_t*)&power_stack[0],
+                            sizeof(power_stack),
+                            20,
+                            5);
+    if (result == RT_EOK)
+    {
+        rt_thread_startup(&power_thread);
     }
 #if (RT_THREAD_PRIORITY_MAX == 32)
     init_thread = rt_thread_create("init",
