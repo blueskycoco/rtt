@@ -327,32 +327,11 @@ void cc1101_send_packet(uint8_t *txBuffer, uint8_t size)
 	DEBUG("cc1101 write \r\n");
     	for(i=0;i<size;i++)
         		DEBUG("%x ",txBuffer[i]);
-
-	uint8_t marcState=0;
-	DEBUG("check rx mode\r\n");
-	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);
-	while((read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f)!=0x0d)
-		rt_thread_delay(1);
-	DEBUG("leave rx mode\r\n");
-	rt_thread_delay(50);
 	write_cc1101(CCxxx0_TXFIFO, &size,1,TYPE_REG);
     	write_cc1101(CCxxx0_TXFIFO, txBuffer, size,TYPE_BURST);
-	DEBUG("enter tx mode\r\n");
+	
 	write_cc1101(CCxxx0_STX,RT_NULL,0,TYPE_STROBE_STATUS);
-	while((marcState != 0x13) && (marcState != 0x14) && (marcState != 0x15))
-	{
-		marcState=read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f;
-		rt_thread_delay(1);
-		rt_kprintf("wait for cc1101 enter into tx mode %x\r\n",marcState);
-	}
-	if((marcState != 0x13) && (marcState != 0x14) && (marcState != 0x15))
-	{    
-		write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);     // Enter IDLE state
-		write_cc1101(CCxxx0_SFTX,RT_NULL,0,TYPE_STROBE_STATUS);       // Flush Tx FIFO
-		write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);         // Back to RX state
-		rt_kprintf("cc1101 send failed %x\r\n",marcState);
-		return ;
-	}
+	
 	wait_int(RT_TRUE);
     	wait_int(RT_FALSE);
 	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);  
@@ -365,16 +344,53 @@ void cc1101_send_packet(uint8_t *txBuffer, uint8_t size)
 }
 uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length) 
 {
-	if((read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f)==0x11)
+#if 0
+	uint8_t marc=read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f;
+	DEBUG("marc %x\r\n",marc);
+	if(marc==0x11)
 	{
 		write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);     // Enter IDLE state
 		write_cc1101(CCxxx0_SFRX,RT_NULL,0,TYPE_STROBE_STATUS);       // Flush Tx FIFO		
 	}
-	else if(read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_REG)&0x7f)
+	else{
+		marc=read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_REG)&0x7f;
+		DEBUG("rxbytes %x\r\n",marc);
+		if(marc!=0)
 		{
+			DEBUG("read %d bytes\r\n",read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_REG)&0x7f);
 			*length=read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_STROBE_STATUS);
-			
+			read_cc1101(CCxxx0_RXFIFO, rxBuffer, *length,TYPE_BURST); 
 		}
+		}
+	return *length;
+	#endif
+	uint8_t i,status[2];
+	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);  
+	wait_int(RT_TRUE);
+	wait_int(RT_FALSE);
+	uint8_t marc=read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_REG)&0x7f;
+	DEBUG("rxbytes %x\r\n",marc);
+	if(marc!=0)
+		{
+			uint8_t len=read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_STROBE_STATUS);
+			DEBUG("len is %d\r\n",len);
+			if(len<=*length)
+				{
+					read_cc1101(CCxxx0_RXFIFO, rxBuffer, len,TYPE_BURST);
+					for(i=0;i<len;i++)
+						DEBUG("<==%x\r\n",rxBuffer[i]);
+					*length=len;
+					read_cc1101(CCxxx0_RXFIFO,status,2,TYPE_BURST);
+					return status[1]&CRC_OK;
+				}
+			else
+				{
+					*length=len;
+					write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);     // Enter IDLE state
+					write_cc1101(CCxxx0_SFRX,RT_NULL,0,TYPE_STROBE_STATUS); 
+				}
+		}
+	return 0;
 }
 #else
 void cc1101_send_packet(uint8_t *txBuffer, uint8_t size) 

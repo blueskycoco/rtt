@@ -3,7 +3,7 @@
 #include <stm32f10x.h>
 #include <rtdevice.h>
 #include "cc1101.h"
-#define HW 1
+#define HW 0
 #define GDO0_H (1<<0)
 #define GDO0_L (1<<1)
 struct rt_event cc1101_event;
@@ -381,9 +381,9 @@ uint8_t cc1101_recv(uint8_t len)
 {
     uint8_t *len1;
     len1=&len;
-    uint8_t *buf=malloc(len);
+    uint8_t *buf[11];//=malloc(len);
     cc1101_rcv_packet(buf, len1);
-    free(buf);
+    //free(buf);
     return *len1;
 }
 void cc1101_read_reg(uint8_t reg)

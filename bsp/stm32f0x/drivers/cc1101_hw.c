@@ -282,7 +282,7 @@ void init_rf(void)
     write_cc1101(CCxxx0_PKTCTRL0, &(rfSettings.PKTCTRL0),1,TYPE_REG);
     write_cc1101(CCxxx0_ADDR,     &(rfSettings.ADDR),1,TYPE_REG);
     write_cc1101(CCxxx0_PKTLEN,   &(rfSettings.PKTLEN),1,TYPE_REG);
-
+/*
     DEBUG("CCxxx0_FSCTRL0 = %x\r\n",read_cc1101(CCxxx0_FSCTRL0, RT_NULL, 0,TYPE_STROBE_STATUS));
     DEBUG("CCxxx0_FSCTRL1 = %x\r\n",read_cc1101(CCxxx0_FSCTRL1, RT_NULL, 0,TYPE_STROBE_STATUS));
     DEBUG("CCxxx0_FREQ2 = %x\r\n",read_cc1101(CCxxx0_FREQ2, RT_NULL, 0,TYPE_STROBE_STATUS));
@@ -317,10 +317,83 @@ void init_rf(void)
     DEBUG("CCxxx0_PKTCTRL0 = %x\r\n",read_cc1101(CCxxx0_PKTCTRL0, RT_NULL, 0,TYPE_STROBE_STATUS));
     DEBUG("CCxxx0_ADDR = %x\r\n",read_cc1101(CCxxx0_ADDR, RT_NULL, 0,TYPE_STROBE_STATUS));
     DEBUG("CCxxx0_PKTLEN = %x\r\n",read_cc1101(CCxxx0_PKTLEN, RT_NULL, 0,TYPE_STROBE_STATUS));
-
+*/
 
 }
+#if 1
+void cc1101_send_packet(uint8_t *txBuffer, uint8_t size) 
+{
+	int i;
+	DEBUG("cc1101 write \r\n");
+    	for(i=0;i<size;i++)
+        		DEBUG("%x ",txBuffer[i]);
+	write_cc1101(CCxxx0_TXFIFO, &size,1,TYPE_REG);
+    	write_cc1101(CCxxx0_TXFIFO, txBuffer, size,TYPE_BURST);
+	
+	write_cc1101(CCxxx0_STX,RT_NULL,0,TYPE_STROBE_STATUS);
+	
+	wait_int(RT_TRUE);
+    	wait_int(RT_FALSE);
+	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);  
+	if((read_cc1101(CCxxx0_TXBYTES,RT_NULL,0,TYPE_REG)&0x7f)==0)
+	{
+		rt_kprintf("cc1101 send ok\r\n");
+		return ;
+	}
+	rt_kprintf("cc1101 send failed 2\r\n");
+}
+uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length) 
+{
 #if 0
+	uint8_t marc=read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f;
+	DEBUG("marc %x\r\n",marc);
+	if(marc==0x11)
+	{
+		write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);     // Enter IDLE state
+		write_cc1101(CCxxx0_SFRX,RT_NULL,0,TYPE_STROBE_STATUS);       // Flush Tx FIFO		
+	}
+	else{
+		marc=read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_REG)&0x7f;
+		DEBUG("rxbytes %x\r\n",marc);
+		if(marc!=0)
+		{
+			DEBUG("read %d bytes\r\n",read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_REG)&0x7f);
+			*length=read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_STROBE_STATUS);
+			read_cc1101(CCxxx0_RXFIFO, rxBuffer, *length,TYPE_BURST); 
+		}
+		}
+	return *length;
+	#endif
+	uint8_t i,status[2];
+	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);  
+	wait_int(RT_TRUE);
+	wait_int(RT_FALSE);
+	uint8_t marc=read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_REG)&0x7f;
+	//DEBUG("rxbytes %x\r\n",marc);
+	if(marc!=0)
+		{
+			uint8_t len=read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_STROBE_STATUS);
+			DEBUG("len is %d\r\n",len);
+			if(len<=*length)
+				{
+					read_cc1101(CCxxx0_RXFIFO, rxBuffer, len,TYPE_BURST);
+					for(i=0;i<len;i++)
+						DEBUG("%x ",rxBuffer[i]);
+					DEBUG("cc1101 receive ok\r\n");
+					*length=len;
+					read_cc1101(CCxxx0_RXFIFO,status,2,TYPE_BURST);
+					return status[1]&CRC_OK;
+				}
+			else
+				{
+					*length=len;
+					write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);     // Enter IDLE state
+					write_cc1101(CCxxx0_SFRX,RT_NULL,0,TYPE_STROBE_STATUS); 
+				}
+		}
+	return 0;
+}
+#else
 void cc1101_send_packet(uint8_t *txBuffer, uint8_t size) 
 {
     int i;
@@ -338,7 +411,6 @@ void cc1101_send_packet(uint8_t *txBuffer, uint8_t size)
     // Wait for GDO0 to be cleared -> end of packet 
     wait_int(RT_FALSE);
     write_cc1101(CCxxx0_SFTX,RT_NULL,0,TYPE_STROBE_STATUS);
-    write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);
 }
 
 uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length) 
@@ -385,65 +457,6 @@ uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length)
         write_cc1101(CCxxx0_STX,RT_NULL,0,TYPE_STROBE_STATUS);
         return 0;
     }
-}
-#else
-void cc1101_send_packet(uint8_t *txBuffer, uint8_t size) 
-{
-	int i;
-	DEBUG("cc1101 write \r\n");
-    	for(i=0;i<size;i++)
-        		DEBUG("%x ",txBuffer[i]);
-
-	uint8_t marcState;
-	DEBUG("check rx mode\r\n");
-	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);
-	while((read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f)!=0x0d)
-		rt_thread_delay(1);
-	DEBUG("leave rx mode\r\n");
-	rt_thread_delay(50);
-	write_cc1101(CCxxx0_TXFIFO, &size,1,TYPE_REG);
-    	write_cc1101(CCxxx0_TXFIFO, txBuffer, size,TYPE_BURST);
-	DEBUG("enter tx mode\r\n");
-	write_cc1101(CCxxx0_STX,RT_NULL,0,TYPE_STROBE_STATUS);
-
-	marcState=read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f;
-	if((marcState != 0x13) && (marcState != 0x14) && (marcState != 0x15))
-	{    
-		write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);     // Enter IDLE state
-		write_cc1101(CCxxx0_SFTX,RT_NULL,0,TYPE_STROBE_STATUS);       // Flush Tx FIFO
-		write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);         // Back to RX state
-		rt_kprintf("cc1101 send failed %x\r\n",marcState);
-		return ;
-	}
-	wait_int(RT_TRUE);
-    	wait_int(RT_FALSE);
-	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);  
-	if((read_cc1101(CCxxx0_TXBYTES,RT_NULL,0,TYPE_REG)&0x7f)==0)
-	{
-		rt_kprintf("cc1101 send ok\r\n");
-		return ;
-	}
-	rt_kprintf("cc1101 send failed 2\r\n");
-}
-uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length) 
-{
-	int i;
-	if((read_cc1101(CCxxx0_MARCSTATE,RT_NULL,0,TYPE_REG)&0x1f)==0x11)
-	{
-		write_cc1101(CCxxx0_SIDLE,RT_NULL,0,TYPE_STROBE_STATUS);     // Enter IDLE state
-		write_cc1101(CCxxx0_SFRX,RT_NULL,0,TYPE_STROBE_STATUS);       // Flush Tx FIFO		
-		DEBUG("read cc1101 failed\r\n");
-	}
-	else if(read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_REG)&0x7f)
-		{
-			*length=read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_STROBE_STATUS);
-			rxBuffer=(uint8_t *)malloc(*length);
-			read_cc1101(CCxxx0_RXFIFO,rxBuffer,*length,TYPE_BURST);
-			DEBUG("cc1101 read \r\n");
-            		for(i=0;i<*length;i++)
-                			DEBUG("%x ",rxBuffer[i]);
-		}
-	return *length;
 }
 #endif
 void cc1101_hw_init()
