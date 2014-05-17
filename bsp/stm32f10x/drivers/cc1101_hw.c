@@ -334,6 +334,7 @@ void cc1101_send_packet(uint8_t *txBuffer, uint8_t size)
 	
 	wait_int(RT_TRUE);
     	wait_int(RT_FALSE);
+	//rt_thread_delay(1);
 	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);  
 	if((read_cc1101(CCxxx0_TXBYTES,RT_NULL,0,TYPE_REG)&0x7f)==0)
 	{
@@ -369,7 +370,7 @@ uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length)
 	wait_int(RT_TRUE);
 	wait_int(RT_FALSE);
 	uint8_t marc=read_cc1101(CCxxx0_RXBYTES,RT_NULL,0,TYPE_REG)&0x7f;
-	DEBUG("rxbytes %x\r\n",marc);
+	//DEBUG("rxbytes %x\r\n",marc);
 	if(marc!=0)
 		{
 			uint8_t len=read_cc1101(CCxxx0_RXFIFO,RT_NULL,0,TYPE_STROBE_STATUS);
@@ -378,7 +379,8 @@ uint8_t cc1101_rcv_packet(uint8_t *rxBuffer, uint8_t *length)
 				{
 					read_cc1101(CCxxx0_RXFIFO, rxBuffer, len,TYPE_BURST);
 					for(i=0;i<len;i++)
-						DEBUG("<==%x\r\n",rxBuffer[i]);
+						DEBUG("%x ",rxBuffer[i]);
+					DEBUG("cc1101 receive ok\r\n");
 					*length=len;
 					read_cc1101(CCxxx0_RXFIFO,status,2,TYPE_BURST);
 					return status[1]&CRC_OK;

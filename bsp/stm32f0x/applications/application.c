@@ -58,10 +58,12 @@ sprintf(buf,"%s","0000000000");
 			buf[i]=buf[i]+1;
     		}
         //cc1101_send((uint8_t *)buf,10);
-        //rt_thread_delay(RT_TICK_PER_SECOND);
+        //rt_thread_delay(20);
 	cc1101_recv(50);
         //rt_hw_led_off();
         //rt_thread_delay(RT_TICK_PER_SECOND);
+        rt_thread_delay(20);
+        cc1101_send((uint8_t *)buf,10);
 	}
 }
 static void rt_init_thread_entry(void* parameter)

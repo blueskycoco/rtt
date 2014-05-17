@@ -3,7 +3,7 @@
 #include <stm32f10x.h>
 #include <rtdevice.h>
 #include "cc1101.h"
-#define HW 0
+#define HW 1
 #define GDO0_H (1<<0)
 #define GDO0_L (1<<1)
 struct rt_event cc1101_event;
@@ -299,10 +299,11 @@ int cc1101_init()
 
     /* cc1101 int init
      * */
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
     GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 #if HW
+GPIO_EXTILineConfig(GPIO_PortSourceGPIOC, GPIO_PinSource4);
     /* Configure the SPI interrupt priority */
     NVIC_InitStructure.NVIC_IRQChannel = EXTI4_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
@@ -325,28 +326,28 @@ int cc1101_init()
 
 void cc1101_isr()
 {
-    //DEBUG("Enter cc1101 isr\r\n");
-    //halWait(5000);
-    //DEBUG("Enter");
-    if(GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_4) ==SET)
+	
+    if(GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_4) ==Bit_SET)
     {
         rt_event_send(&cc1101_event,GDO0_H);
-		  DEBUG("GDO0_H in int \r\n");
+		  //DEBUG("GDO0_H in int \r\n");
     }
     else
     {
         rt_event_send(&cc1101_event,GDO0_L);
-		  DEBUG("GDO0_L in int \r\n");
+		 // DEBUG("GDO0_L in int \r\n");
     }
 }
 
 int wait_int(int flag)
 {
     rt_uint32_t ev;
+    
+
     if(flag)
     {
         /*wait for gdo0 to h */
-#if 0
+#if 1
         if( rt_event_recv( &cc1101_event, GDO0_H, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 1000, &ev ) != RT_EOK ) 
         {
             rt_kprintf("wait for h failed\r\n");
@@ -359,7 +360,7 @@ int wait_int(int flag)
     else
     {
         /*wait for gdo0 to l */
-#if 0
+#if 1
         if( rt_event_recv( &cc1101_event, GDO0_L, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 1000, &ev ) != RT_EOK ) 
         {
             rt_kprintf("wait for l failed\r\n");
@@ -369,6 +370,7 @@ int wait_int(int flag)
         while(GPIO_ReadInputDataBit(GPIOC,GPIO_Pin_4)==SET);
 #endif
     }
+   
     return RT_TRUE;
 }
 

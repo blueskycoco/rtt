@@ -149,12 +149,13 @@ void EXTI4_IRQHandler(void)
 
     /* enter interrupt */
     rt_interrupt_enter();
-	if(EXTI_GetFlagStatus(EXTI_Line4))
+	if(EXTI_GetITStatus(EXTI_Line4))
 	{
+	
+	    cc1101_isr();
 	    /* Clear the DM9000A EXTI line pending bit */
 	    EXTI_ClearITPendingBit(EXTI_Line4);
-
-	    cc1101_isr();
+	    
 		 
 	}
     /* leave interrupt */

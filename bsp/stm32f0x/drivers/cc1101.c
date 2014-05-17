@@ -3,7 +3,7 @@
 #include <stm32f0xx.h>
 #include <rtdevice.h>
 #include "cc1101.h"
-#define HW 0
+#define HW 1
 #define GDO0_H (1<<0)
 #define GDO0_L (1<<1)
 struct rt_event cc1101_event;
@@ -303,6 +303,9 @@ int cc1101_init()
     GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 #if HW
+ RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOC, EXTI_PinSource4);
+
     /* Configure the SPI interrupt priority */
     NVIC_InitStructure.NVIC_IRQChannel = EXTI4_15_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPriority = 1;
@@ -329,12 +332,12 @@ void cc1101_isr()
     if(GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_4) ==SET)
     {
         rt_event_send(&cc1101_event,GDO0_H);
-		  DEBUG("GDO0_H in int \r\n");
+		  //DEBUG("GDO0_H in int \r\n");
     }
     else
     {
         rt_event_send(&cc1101_event,GDO0_L);
-		  DEBUG("GDO0_L in int \r\n");
+		  //DEBUG("GDO0_L in int \r\n");
     }
 }
 
@@ -344,7 +347,7 @@ int wait_int(int flag)
     if(flag)
     {
         /*wait for gdo0 to h */
-#if 0
+#if 1
         if( rt_event_recv( &cc1101_event, GDO0_H, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 1000, &ev ) != RT_EOK ) 
         {
             rt_kprintf("wait for h failed\r\n");
@@ -357,7 +360,7 @@ int wait_int(int flag)
     else
     {
         /*wait for gdo0 to l */
-#if 0
+#if 1
         if( rt_event_recv( &cc1101_event, GDO0_L, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 1000, &ev ) != RT_EOK ) 
         {
             rt_kprintf("wait for l failed\r\n");
