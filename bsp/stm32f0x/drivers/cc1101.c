@@ -348,9 +348,10 @@ int wait_int(int flag)
     {
         /*wait for gdo0 to h */
 #if 1
-        if( rt_event_recv( &cc1101_event, GDO0_H, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 1000, &ev ) != RT_EOK ) 
+        if( rt_event_recv( &cc1101_event, GDO0_H, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 100, &ev ) != RT_EOK ) 
         {
             rt_kprintf("wait for h failed\r\n");
+		  cc1101_hw_init();
             return RT_FALSE;
         }
 #else
@@ -361,9 +362,10 @@ int wait_int(int flag)
     {
         /*wait for gdo0 to l */
 #if 1
-        if( rt_event_recv( &cc1101_event, GDO0_L, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 1000, &ev ) != RT_EOK ) 
+        if( rt_event_recv( &cc1101_event, GDO0_L, RT_EVENT_FLAG_AND | RT_EVENT_FLAG_CLEAR, 100, &ev ) != RT_EOK ) 
         {
             rt_kprintf("wait for l failed\r\n");
+		  cc1101_hw_init();
             return RT_FALSE;
         }
 #else

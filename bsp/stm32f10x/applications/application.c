@@ -120,7 +120,7 @@ sprintf(buf,"%s","123456789a");
 				buf[i]=0;
 			buf[i]=buf[i]+1;
     		}
-	rt_thread_delay(20);
+	//rt_thread_delay(20);
 	cc1101_send((uint8_t *)buf,10);
 	//cc1101_recv(31);
 	//rt_kprintf("Enter cc1101 send 2\r\n");

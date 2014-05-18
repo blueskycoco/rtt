@@ -62,7 +62,7 @@ sprintf(buf,"%s","0000000000");
 	cc1101_recv(50);
         //rt_hw_led_off();
         //rt_thread_delay(RT_TICK_PER_SECOND);
-        rt_thread_delay(20);
+        rt_thread_delay(10);
         cc1101_send((uint8_t *)buf,10);
 	}
 }
