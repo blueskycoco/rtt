@@ -6,6 +6,7 @@
 #define SDIO_CMD0TIMEOUT                ((uint32_t)0x00002710)
 #define SDIO_INIT_CLK_DIV                  ((uint8_t)0xB2)
 #define SDIO_FIFO_ADDRESS                ((uint32_t)0x40018080)
+#define SD_DATATIMEOUT                  ((uint32_t)0xFFFFFFFF)
 SDIO_InitTypeDef SDIO_InitStructure;
 SDIO_CmdInitTypeDef SDIO_CmdInitStructure;
 SDIO_DataInitTypeDef SDIO_DataInitStructure;
@@ -43,11 +44,11 @@ rt_uint32_t CmdResp4Error(uint8_t cmd)
 
     status = SDIO->STA;
     //rt_kprintf("1 status=%x\r\n",status);
-    while (!(status & (SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND | SDIO_FLAG_CTIMEOUT|SDIO_IT_SDIOIT)))
+    while (!(status & (SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND | SDIO_FLAG_CTIMEOUT)))
     {    
         status = SDIO->STA;
     }
-    rt_kprintf("2 status=%x\r\n",status);
+  //  rt_kprintf("2 status=%x\r\n",status);
     if (status & SDIO_FLAG_CTIMEOUT)
     {
         errorstatus = SD_CMD_RSP_TIMEOUT;
@@ -68,23 +69,11 @@ rt_uint32_t CmdResp4Error(uint8_t cmd)
         errorstatus = SD_ILLEGAL_CMD;
         return(errorstatus);
     }
-    //while (!(status & SDIO_IT_SDIOIT))
-    //{    
-        //status = SDIO->STA;
-    //}
-     rt_kprintf("3 status=%x\r\n",status);
     /* Clear all the static flags */
     SDIO_ClearFlag(SDIO_STATIC_FLAGS);
     /* We have received response, retrieve it for analysis  */
-     response_r1 = SDIO_GetResponse(SDIO_RESP1);
-     response_r2= SDIO_GetResponse(SDIO_RESP2);
-     status=((response_r1>>8)|(response_r2&0xff));
-	rt_kprintf("R1 %x,R2 %x, %x\r\n",response_r1,response_r2,status);
-	     response_r1 = SDIO_GetResponse(SDIO_RESP3);
-     response_r2= SDIO_GetResponse(SDIO_RESP4);
-		
-rt_kprintf("R3 %x,R4 %x\r\n",response_r1,response_r2);
-	return status;
+     response_r1 = SDIO_GetResponse(SDIO_RESP1);		
+	return response_r1;
 }
 void SD_LowLevel_Init(void)
 {
@@ -165,12 +154,12 @@ void SD_LowLevel_DMA_RxConfig(uint32_t *BufferDST, uint32_t BufferSize)
 SD_Error SD_PowerON(void)
 {
 	 int i;
+	 rt_uint16_t rca,num_fn;
 	 SD_Error errorstatus = SD_OK;
 	 uint32_t response = 0, count = 0, validvoltage = 0;
 	 uint32_t SDType = SD_STD_CAPACITY;
 	
 	 SD_LowLevel_Init();
-	 SDIO_SetSDIOOperation(ENABLE);
 	 /*!< Power ON Sequence -----------------------------------------------------*/
 	 /*!< Configure the SDIO peripheral */
 	 /*!< SDIOCLK = HCLK, SDIO_CK = HCLK/(2 + SDIO_INIT_CLK_DIV) */
@@ -197,7 +186,7 @@ SD_Error SD_PowerON(void)
 	 SDIO_CmdInitStructure.SDIO_Response = SDIO_Response_No;
 	 SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_No;
 	 SDIO_CmdInitStructure.SDIO_CPSM = SDIO_CPSM_Enable;
-#if 1
+
 	 for(i=0;i<80;i++)
 	 {
 		  SDIO_SendCommand(&SDIO_CmdInitStructure);
@@ -211,23 +200,41 @@ SD_Error SD_PowerON(void)
 			   return(errorstatus);
 		  }
 	 }
-	 #endif
 	
-	// SDIO_ITConfig(SDIO_IT_SDIOIT,ENABLE);
-	SDIO_SetSDIOReadWaitMode(SDIO_ReadWaitMode_DATA2);
 	 /* CMD5:SD_CMD_SDIO_SEN_OP_COND */
 	 SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SDIO_SEN_OP_COND;
 	 SDIO_CmdInitStructure.SDIO_Response = SDIO_Response_Short;	 
-	 SDIO_StartSDIOReadWait(ENABLE);
-	
-	 SDIO_SendCommand(&SDIO_CmdInitStructure);
-	  SDIO_StopSDIOReadWait(DISABLE);
-	
-	//rt_kprintf("respond1 %x",CmdResp4Error(SD_CMD_SDIO_SEN_OP_COND));
-	SDIO_CmdInitStructure.SDIO_Argument = CmdResp4Error(SD_CMD_SDIO_SEN_OP_COND);
 
 	 SDIO_SendCommand(&SDIO_CmdInitStructure);
-	CmdResp4Error(SD_CMD_SDIO_SEN_OP_COND);
+	 response=CmdResp4Error(SD_CMD_SDIO_SEN_OP_COND);
+	rt_kprintf("respond %x\r\n",response);
+	if(response==0)
+		response=0x00ffff00;
+	SDIO_CmdInitStructure.SDIO_Argument = response;
+
+	 SDIO_SendCommand(&SDIO_CmdInitStructure);
+	response=CmdResp4Error(SD_CMD_SDIO_SEN_OP_COND);
+	rt_kprintf("2 respond %x\r\n",response);
+	num_fn=(response&0x70000000)>>27;
+	/* CMD3:SD_CMD_SET_REL_ADDR */
+	SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SET_REL_ADDR;
+	SDIO_CmdInitStructure.SDIO_Argument = 0;
+	SDIO_SendCommand(&SDIO_CmdInitStructure);
+	 response=CmdResp4Error(SD_CMD_SET_REL_ADDR);
+	 rt_kprintf("3 respond %x\r\n",response);
+	 if((response&0xe000)!=0)
+	 	rt_kprintf("get rca failed\r\n");
+	 else
+	 	rca=(response&0xffff0000)>>16;
+	 rt_kprintf("rca %d,num_fn %d\r\n",rca,num_fn);
+	 SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SEL_DESEL_CARD;
+	SDIO_CmdInitStructure.SDIO_Argument = rca<<16;
+	SDIO_SendCommand(&SDIO_CmdInitStructure);
+	 response=CmdResp4Error(SD_CMD_SEL_DESEL_CARD);
+	 rt_kprintf("4 respond %x\r\n",response);
+	SDIO_SendCommand(&SDIO_CmdInitStructure);
+	 response=CmdResp4Error(SD_CMD_SEL_DESEL_CARD);
+	 rt_kprintf("5 respond %x\r\n",response);
 
 	 return SD_OK;
 }
