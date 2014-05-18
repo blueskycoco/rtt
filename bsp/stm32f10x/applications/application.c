@@ -53,7 +53,7 @@ static struct rt_thread led_thread;
 static void led_thread_entry(void* parameter)
 {
     unsigned int count=0;
-
+ 
     rt_hw_led_init();
 
     while (1)
@@ -91,7 +91,8 @@ static struct rt_thread power_thread;
 static void power_thread_entry(void* parameter)
 {
     unsigned int count=0;
-
+SD_PowerON();
+ return ;
     power_man_init(100,2000);
 
     while (1)
@@ -248,8 +249,11 @@ int rt_application_init(void)
     rt_thread_t init_thread;
     
     rt_err_t result;
+
+   
+ //   while(1);
     rt_hw_led_init();
-#if 1
+#if 0
     /* init led thread */
     result = rt_thread_init(&led_thread,
                             "led",
