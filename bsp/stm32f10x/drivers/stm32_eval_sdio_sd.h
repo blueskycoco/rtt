@@ -221,6 +221,207 @@ typedef struct
   uint16_t RCA;
   uint8_t CardType;
 } SD_CardInfo;
+/***********from marvell sdio driver */
+
+typedef struct _card_capability
+{
+    uint8_t num_of_io_funcs;         /* Number of i/o functions */
+    uint8_t memory_yes;              /* Memory present ? */
+    uint16_t rca;                    /* Relative Card Address */
+    uint32_t ocr;                    /* Operation Condition register */
+    uint16_t fnblksz[8];
+    uint32_t cisptr[8];
+} card_capability;
+
+typedef struct _dummy_tmpl
+{
+    int irq_line;
+} dummy_tmpl;
+
+typedef struct _mmc_card_rec
+{
+    uint8_t chiprev;
+    uint8_t block_size_512;
+    uint8_t async_int_mode;
+    card_capability info;
+    static struct rt_semaphore sem_lock;
+//    struct _sdio_host *ctrlr;
+} mmc_card_rec;
+
+typedef struct _mmc_card_rec *mmc_card_t;
+
+typedef struct _sdio_host *mmc_controller_t;
+
+typedef enum _sdio_fsm
+{
+    SDIO_FSM_IDLE = 1,
+    SDIO_FSM_CLK_OFF,
+    SDIO_FSM_END_CMD,
+    SDIO_FSM_BUFFER_IN_TRANSIT,
+    SDIO_FSM_END_BUFFER,
+    SDIO_FSM_END_IO,
+    SDIO_FSM_END_PRG,
+    SDIO_FSM_ERROR
+} sdio_fsm_state;
+#if 0
+typedef struct _sdio_host
+{
+    int usage;
+    int slot;
+    uint16_t manf_id;
+    uint16_t dev_id;
+    int bus_width;
+    int dma_init;
+    int irq_line;
+    int card_int_ready;
+    uint32_t num_ofcmd52;
+    uint32_t num_ofcmd53;
+
+#ifdef IRQ_DEBUG
+    int irqcnt;
+    int timeo;
+#endif
+    int busy;                   /* atomic busy flag               */
+    uint32_t mmc_i_reg;              /* interrupt last requested       */
+    uint32_t mmc_i_mask;             /* mask to be set by intr handler */
+    uint32_t mmc_stat;               /* status register at last intr   */
+    uint32_t mmc_cmdat;              /* MMC_CMDAT at the last inr      */
+    uint32_t saved_mmc_clkrt;
+    uint32_t saved_mmc_i_mask;
+    uint32_t saved_mmc_resto;
+    uint32_t saved_mmc_spi;
+    uint32_t saved_drcmrrxmmc;
+    uint32_t saved_drcmrtxmmc;
+    uint32_t suspended;
+    uint32_t clkrt;                  /* current bus clock rate         */
+    uint8_t mmc_res[8];              /* Allignment                     */
+
+    /*
+     * DMA Related 
+     */
+    ssize_t blksz;              /* current block size in bytes     */
+    ssize_t bufsz;              /* buffer size for each transfer   */
+    ssize_t nob;                /* number of blocks pers buffer    */
+
+    int chan;                   /* dma channel no                  */
+
+    dma_addr_t phys_addr;       /* iodata physical address         */
+
+    pxa_dma_desc *read_desc;    /* input descriptor array         */
+
+    pxa_dma_desc *write_desc;   /* output descriptor 
+                                   array virtual address */
+    dma_addr_t read_desc_phys_addr;     /* descriptor array 
+                                           physical address      */
+    dma_addr_t write_desc_phys_addr;    /* descriptor array 
+                                           physical address      */
+    pxa_dma_desc *last_read_desc;       /* last input descriptor 
+                                           used by the previous transfer 
+                                         */
+    pxa_dma_desc *last_write_desc;      /* last output descriptor
+                                           used by the previous 
+                                           transfer              */
+
+    sdio_fsm_state state;
+
+    card_capability card_capability;
+    char *iodata;               /* I/O data buffer           */
+    struct _dummy_tmpl *tmpl;
+    struct completion completion;       /* completion                */
+    struct semaphore io_sem;
+    struct rw_semaphore rw_semaphore;
+    mmc_card_t card;
+} __attribute__ ((aligned)) sdio_ctrller;
+#endif
+typedef struct _sdio_operations
+{
+    char name[16];
+} sdio_operations;
+
+typedef struct _iorw_extended_t
+{
+    uint8_t rw_flag;          /** If 0 command is READ; else if 1 command is WRITE */
+    uint8_t func_num;
+    uint8_t blkmode;
+    uint8_t op_code;
+    uint32_t reg_addr;
+    uint32_t byte_cnt;
+    uint32_t blk_size;
+    uint8_t *buf;
+} iorw_extended_t;
+
+typedef struct _ioreg
+{
+    uint8_t read_or_write;
+    uint8_t function_num;
+    uint32_t reg_addr;
+    uint8_t dat;
+} ioreg_t;
+
+typedef struct _mmc_notifier_rec mmc_notifier_rec_t;
+typedef struct _mmc_notifier_rec *mmc_notifier_t;
+
+typedef int (*mmc_notifier_fn_t) (mmc_card_t);
+
+struct _mmc_notifier_rec
+{
+    mmc_notifier_fn_t add;
+    mmc_notifier_fn_t remove;
+};
+
+typedef enum _mmc_response
+{
+    MMC_NORESPONSE = 1,
+    MMC_R1,
+    MMC_R2,
+    MMC_R3,
+    MMC_R4,
+    MMC_R5,
+    MMC_R6
+} mmc_response;
+
+enum _cmd53_rw
+{
+    IOMEM_READ = 0,
+    IOMEM_WRITE = 1
+};
+
+enum _cmd53_mode
+{
+    BLOCK_MODE = 1,
+    BYTE_MODE = 0
+};
+
+enum _cmd53_opcode
+{
+    FIXED_ADDRESS = 0,
+    INCREMENTAL_ADDRESS = 1
+};
+
+#define SDIO_BUSWIDTH_1_BIT 1
+#define SDIO_BUSWIDTH_4_BIT 4
+
+#define ECSI_BIT	    0x20
+#define BUSWIDTH_1_BIT	    0x00
+#define BUSWIDTH_4_BIT	    0x02
+
+#define	MMC_TYPE_HOST		1
+#define	MMC_TYPE_CARD		2
+#define	MMC_REG_TYPE_USER	3
+
+#define	SDIO_READ		0
+#define	SDIO_WRITE		1
+#define	MRVL_MANFID		0x2df
+#define	MRVL_DEVID		0x9103
+#define	NO			0
+#define	YES			1
+#define	TRUE			1
+#define	FALSE			0
+#define	ENABLED 		1
+#define	DISABLED 		0
+#define	SIZE_OF_TUPLE 		255
+
+/***********from marvell sdio driver */
 
 /**
   * @}

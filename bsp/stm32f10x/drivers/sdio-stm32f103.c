@@ -12,6 +12,17 @@ SDIO_CmdInitTypeDef SDIO_CmdInitStructure;
 SDIO_DataInitTypeDef SDIO_DataInitStructure;
 #define SDIO_STATIC_FLAGS               ((uint32_t)0x000005FF)
 #define SD_STD_CAPACITY                 ((uint32_t)0x00000000)
+mmc_card_t card;
+
+void acquire_io()
+{
+       rt_sem_take(&(card.sem_lock), RT_WAITING_FOREVER);
+}
+void release_io()
+{
+    rt_sem_release(&(card.sem_lock));
+}
+
 static SD_Error CmdError(void)
 {
 	 SD_Error errorstatus = SD_OK;
@@ -35,6 +46,152 @@ static SD_Error CmdError(void)
 
 	 return(errorstatus);
 }
+
+static int rw_ioreg(ioreg_t * ioreg)
+{
+    int ret;
+    rt_uint16_t argh = 0, argl = 0,response;
+
+    /* Nicely fill up argh and argl send the command down
+     * Read the response from MMC_R1
+     */
+
+    acquire_io();
+    
+    /* SDIO Spec: CMD52 is 48 bit long. 
+       -----------------------------------------------------------
+       S|D|CMDIND|R|FUN|F|S|REGISTER  ADDRESS|S|WRITEBIT|CRC    7|
+       -----------------------------------------------------------
+       The Command and the Command index will be filled by the SDIO Controller
+       (48 - 16)
+       So fill up argh (16 bits) argl (16 bits) with 
+       R/W flag (1)
+       FUNC NUMBER (3)
+       RAW FLAG (1)
+       STUFF (1)
+       REG ADDR (17)
+       and the Write data value or a Null if read
+     */
+    argh =
+        (ioreg->read_or_write ? (1 << 15) : 0) |
+        (ioreg->function_num << 12) |
+        (ioreg->read_or_write == 2 ? (1 << 11) : 0) |
+        ((ioreg->reg_addr & 0x0001ff80) >> 7);
+
+    argl =
+        ((ioreg->reg_addr & 0x0000007f) << 9) |
+        (ioreg->read_or_write ? ioreg->dat : 0);
+
+    //MMC_CMD = CMD(52);
+    //MMC_ARGH = argh;
+    //MMC_ARGL = argl;
+    //wmb();
+    SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SDIO_RW_DIRECT;
+    SDIO_CmdInitStructure.SDIO_Argument = (argh<<16)|argl;
+
+#define CARD_RESET 8
+#define HOST_INTSTATUS_REG 0x05
+    /* Disabling controller to check for SDIO interrupt from the card
+       solves the extra interrupt issue. The next CMD52 write will re-enable it. */
+    if ((!spte && ioreg->reg_addr == HOST_INTSTATUS_REG) &&
+        !ioreg->read_or_write && (ioreg->function_num == FN1))
+       {
+       //MMC_CMDAT = MMC_CMDAT_R1 & (~MMC_CMDAT_SDIO_INT_EN);
+        SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_No;
+        SDIO_CmdInitStructure.SDIO_Response=SDIO_Response_Short;
+    }
+    else if ((ioreg->reg_addr == IO_ABORT_REG) && ioreg->read_or_write &&
+             (ioreg->function_num == FN0) &&
+             ((ioreg->dat & CARD_RESET) == CARD_RESET))
+       {
+       	//MMC_CMDAT = MMC_CMDAT_SDIO_INT_EN;
+       	SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_IT;
+	SDIO_CmdInitStructure.SDIO_Response=SDIO_Response_No;
+    	}
+    else
+      {
+      //MMC_CMDAT = MMC_CMDAT_R1;       /* R5 */
+	SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_No;
+	SDIO_CmdInitStructure.SDIO_Response=SDIO_Response_Short;
+
+    	}
+
+    //ret = send_command(ctrller, MMC_R5, 0);
+    SDIO_SendCommand(&SDIO_CmdInitStructure);
+   response=CmdResp4Error(SD_CMD_SDIO_RW_DIRECT);
+   rt_kprintf("CMD52 respond %x\r\n",response);
+
+    ioreg->dat = response;
+
+    rt_kprintf("ioreg->dat = %x\n", ioreg->dat);
+
+    release_io();
+
+    return 0;
+
+  exit:
+    release_io();
+    return -1;
+}
+
+static int check_for_valid_ioreg(ioreg_t * ioreg)
+{
+
+    if (!ioreg) {
+        rt_kprintf("Bad ioreg\n");
+        return -1;
+    }
+
+    if (ioreg->function_num > 7 || ioreg->function_num >
+        card.card_capability.num_of_io_funcs) {
+
+        return -1;
+    }
+
+    /* Check register range */
+    if ((ioreg->reg_addr & 0xfffe0000) != 0x0) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int sdio_read_ioreg(rt_uint8_t func, rt_uint32_t reg, rt_uint8_t * dat)
+{
+    int ret = -1;
+    ioreg_t ioreg;
+
+    /* SDIO Spec: Command 52 needs 
+     * R/W Flag if 0 this will be read data if 1 write
+     * Function number: Number of the function within I/O 
+     * Register Address: This is the address of the  register
+     * write data: This bit is set to 0 for read
+     * CRC7: 7 bits CRC
+     */
+
+    ioreg.read_or_write = SDIO_READ;
+    ioreg.function_num = func;
+    ioreg.reg_addr = reg;
+    ioreg.dat = 0x00;     /** Will be filled by the card */
+
+    ret = check_for_valid_ioreg( &ioreg);
+
+    if (ret < 0) {
+        rt_kprintf("Wrong parameters for rw_ioreg\n");
+        goto exit;
+    }
+
+    ret = rw_ioreg(&ioreg);
+
+    if (ret < 0) {
+        rt_kprintf("rw_ioreg failed\n");
+    } else
+        *dat = ioreg.dat;
+
+  exit:
+    return ret;
+}
+
 rt_uint32_t CmdResp4Error(uint8_t cmd)
 {
     SD_Error errorstatus = SD_OK;
@@ -44,10 +201,20 @@ rt_uint32_t CmdResp4Error(uint8_t cmd)
 
     status = SDIO->STA;
     //rt_kprintf("1 status=%x\r\n",status);
-    while (!(status & (SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND | SDIO_FLAG_CTIMEOUT)))
-    {    
-        status = SDIO->STA;
-    }
+	if(SDIO_CmdInitStructure.SDIO_Wait==SDIO_Wait_IT)
+	{
+		while (!(status & (SDIO_IT_SDIOIT)))
+		{    
+			status = SDIO->STA;
+		}
+	}
+	else
+	{
+		while (!(status & (SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND | SDIO_FLAG_CTIMEOUT)))
+		{    
+			status = SDIO->STA;
+		}
+	}
   //  rt_kprintf("2 status=%x\r\n",status);
     if (status & SDIO_FLAG_CTIMEOUT)
     {
@@ -154,11 +321,11 @@ void SD_LowLevel_DMA_RxConfig(uint32_t *BufferDST, uint32_t BufferSize)
 SD_Error SD_PowerON(void)
 {
 	 int i;
-	 rt_uint16_t rca,num_fn;
+	
 	 SD_Error errorstatus = SD_OK;
 	 uint32_t response = 0, count = 0, validvoltage = 0;
 	 uint32_t SDType = SD_STD_CAPACITY;
-	
+	    rt_sem_init(&(card.sem_lock), "wifi_lock", 1, RT_IPC_FLAG_FIFO);
 	 SD_LowLevel_Init();
 	 /*!< Power ON Sequence -----------------------------------------------------*/
 	 /*!< Configure the SDIO peripheral */
@@ -178,7 +345,7 @@ SD_Error SD_PowerON(void)
 	
 	 /*!< Enable SDIO Clock */
 	 SDIO_ClockCmd(ENABLE);
-	
+	SDIO_ITConfig(SDIO_IT_SDIOIT|SDIO_IT_CMDREND);
 	 /*!< CMD0: GO_IDLE_STATE ---------------------------------------------------*/
 	 /*!< No CMD response required */
 	 SDIO_CmdInitStructure.SDIO_Argument = 0x0;
@@ -215,7 +382,10 @@ SD_Error SD_PowerON(void)
 	 SDIO_SendCommand(&SDIO_CmdInitStructure);
 	response=CmdResp4Error(SD_CMD_SDIO_SEN_OP_COND);
 	rt_kprintf("2 respond %x\r\n",response);
-	num_fn=(response&0x70000000)>>27;
+	
+	card.info.num_of_io_funcs=(response&0x70000000)>>27;
+	card.info.ocr=response&0xffffff;
+	card.info.memory_yes=(response&0x08000000)?1:0;
 	/* CMD3:SD_CMD_SET_REL_ADDR */
 	SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SET_REL_ADDR;
 	SDIO_CmdInitStructure.SDIO_Argument = 0;
@@ -225,10 +395,11 @@ SD_Error SD_PowerON(void)
 	 if((response&0xe000)!=0)
 	 	rt_kprintf("get rca failed\r\n");
 	 else
-	 	rca=(response&0xffff0000)>>16;
-	 rt_kprintf("rca %d,num_fn %d\r\n",rca,num_fn);
+	 	card.info.rca=(response&0xffff0000)>>16;
+	 rt_kprintf("rca %d,num_fn %d\r\n",card.info.rca,card.info.num_of_io_funcs);
+	 /* CMD7:SD_CMD_SEL_DESEL_CARD */
 	 SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SEL_DESEL_CARD;
-	SDIO_CmdInitStructure.SDIO_Argument = rca<<16;
+	SDIO_CmdInitStructure.SDIO_Argument =card.info.rca<<16;
 	SDIO_SendCommand(&SDIO_CmdInitStructure);
 	 response=CmdResp4Error(SD_CMD_SEL_DESEL_CARD);
 	 rt_kprintf("4 respond %x\r\n",response);
