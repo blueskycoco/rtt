@@ -225,6 +225,15 @@ typedef struct
   uint8_t CardType;
 } SD_CardInfo;
 /***********from marvell sdio driver */
+#define SD_SDIO_DMA_STREAM	  DMA2_Stream3
+#define SD_SDIO_DMA_CHANNEL	  DMA_Channel_4
+#define SD_SDIO_DMA_FLAG_FEIF 	  DMA_FLAG_FEIF3
+#define SD_SDIO_DMA_FLAG_DMEIF	  DMA_FLAG_DMEIF3
+#define SD_SDIO_DMA_FLAG_TEIF 	  DMA_FLAG_TEIF3
+#define SD_SDIO_DMA_FLAG_HTIF 	  DMA_FLAG_HTIF3
+#define SD_SDIO_DMA_FLAG_TCIF 	  DMA_FLAG_TCIF3 
+#define SD_SDIO_DMA_IRQn		  DMA2_Stream3_IRQn
+//#define SD_SDIO_DMA_IRQHANDLER	  DMA2_Stream3_IRQHandler 
 
 #define SD_BUS_WIDTH_1			0x00
 #define SD_BUS_WIDTH_4			0x02
@@ -335,6 +344,10 @@ typedef struct _mmc_card_rec
 uint8_t CisInfoBuf[512];
 uint16_t CisInfoLen;
 uint8_t TmpTxBuf[2312] __attribute__((aligned(4)));
+uint32_t ioport;
+uint32_t bufsz; 
+char *iodata;
+
 //    struct _sdio_host *ctrlr;
 } mmc_card_rec;
 

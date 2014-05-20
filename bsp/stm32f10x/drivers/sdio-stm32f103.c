@@ -459,7 +459,7 @@ int sdio_request_irq()
 
 	 //sdioint_handler = handler;
 
-	 //_DBGMSG("address of dev_id = %p sdioint_handler =%p\n",
+	 //rt_kprintf("address of dev_id = %p sdioint_handler =%p\n",
 	//		   net_devid, sdioint_handler);
 	 if (!card->card_int_ready)
 		  card->card_int_ready = YES;
@@ -482,7 +482,7 @@ int sdio_request_irq()
 
 	 //MMC_I_MASK &= ~MMC_I_MASK_SDIO_INT;
 	 //wmb();
-	 //_PRINTK("sdio_request_irq: MMC_I_MASK = 0x%x\n", MMC_I_MASK);
+	 //rt_kprintf("sdio_request_irq: MMC_I_MASK = 0x%x\n", MMC_I_MASK);
 
 //#ifdef DEBUG_SDIO_LEVEL1
 	 //print_addresses(ctrller);
@@ -529,8 +529,8 @@ int sbi_register_dev()
 		  goto failed;
 	 else
 		  ioport |= (reg << 16);
-
-	 rt_kprintf("SDIO FUNC1 IO port: 0x%x\n", ioport);
+	card->ioport=ioport;
+	 rt_kprintf("SDIO FUNC1 IO port: 0x%x\n",card->ioport);
 
 	 /* Disable host interrupt first. */
 	 if ((ret = disable_host_int_mask(0xff)) < 0) {
@@ -612,7 +612,7 @@ static int mv_sdio_read_scratch(rt_uint16_t * dat)
     if (ret < 0)
         return -1;
 
-    *dat = (((u16) scr1) << 8) | scr0;
+    *dat = (((rt_uint16_t) scr1) << 8) | scr0;
 
     return 0;
 }
@@ -636,9 +636,441 @@ static int mv_sdio_poll_card_status(rt_uint8_t bits)
     return -1;
 }
 
+static int check_iomem_args(iorw_extended_t * io_rw)
+{
+
+    /* Check function number range */
+    if (io_rw->func_num > card->info.num_of_io_funcs) {
+        return -1;
+    }
+
+    /* Check register range */
+    if ((io_rw->reg_addr & 0xfffe0000) != 0x0) {
+        return -1;
+    }
+
+    /* Check cnt range */
+    if (io_rw->byte_cnt == 0 || (io_rw->byte_cnt & 0xfffffe00) != 0x0) {
+        return -1;
+    }
+
+    /* Check blksz range */
+    if (io_rw->blkmode && (io_rw->blk_size == 0 || io_rw->blk_size > 0x0800)) {
+        return -1;
+    }
+
+    /* Check null-pointer */
+    if (io_rw->buf == 0x0) {
+        return -1;
+    }
+
+    return 0;
+}
+static int
+check_for_err_response_mmc_r5(rt_uint32_t response)
+{
+    long err, ret = -1;
+
+    /* The response R5 contains the error code in 23-31 bits
+     */
+    err = (response&0xff0000)>>16;
+
+    err = err << 8;
+
+    err |= (response&0xff000000)>>24;
+
+    if (!(err & 0xff))
+        return 0;
+
+    return ret;
+}
+static int
+sdio_wait_for_interrupt()
+{
+	uint32_t status;
+
+	status = SDIO->STA;
+	//rt_kprintf("1 status=%x\r\n",status);
+	while (!(status & (SDIO_IT_SDIOIT)))
+	{	
+		status = SDIO->STA;
+	}
+	return 0;
+
+}
+void SD_ProcessDMAIRQ(void)
+{
+  if(DMA2->LISR & SD_SDIO_DMA_FLAG_TCIF)
+  {
+    DMAEndOfTransfer = 0x01;
+    DMA_ClearFlag(SD_SDIO_DMA_STREAM, SD_SDIO_DMA_FLAG_TCIF|SD_SDIO_DMA_FLAG_FEIF);
+  }
+}
+void DMA2_Stream3_IRQHandler(void)
+{
+  SD_ProcessDMAIRQ();
+}
+
+void SD_LowLevel_DMA_RxConfig(uint32_t *BufferDST, uint32_t BufferSize)
+{
+  DMA_InitTypeDef SDDMA_InitStructure;
+
+  DMA_ClearFlag(SD_SDIO_DMA_STREAM, SD_SDIO_DMA_FLAG_FEIF | SD_SDIO_DMA_FLAG_DMEIF | SD_SDIO_DMA_FLAG_TEIF | SD_SDIO_DMA_FLAG_HTIF | SD_SDIO_DMA_FLAG_TCIF);
+
+  /* DMA2 Stream3  or Stream6 disable */
+  DMA_Cmd(SD_SDIO_DMA_STREAM, DISABLE);
+
+  /* DMA2 Stream3 or Stream6 Config */
+  DMA_DeInit(SD_SDIO_DMA_STREAM);
+
+  SDDMA_InitStructure.DMA_Channel = SD_SDIO_DMA_CHANNEL;
+  SDDMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)SDIO_FIFO_ADDRESS;
+  SDDMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)BufferDST;
+  SDDMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralToMemory;
+  SDDMA_InitStructure.DMA_BufferSize = BufferSize/4; /* assert_param(0~64K) */
+  SDDMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  SDDMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  SDDMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
+  SDDMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
+  SDDMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
+  SDDMA_InitStructure.DMA_Priority = DMA_Priority_VeryHigh;
+  SDDMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Enable;
+  SDDMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
+  SDDMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_INC4;
+  SDDMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_INC4;
+  DMA_Init(SD_SDIO_DMA_STREAM, &SDDMA_InitStructure);
+
+  //DMA_FlowControllerConfig(SD_SDIO_DMA_STREAM, DMA_FlowCtrl_Peripheral);
+
+  /* DMA2 Stream3 or Stream6 enable */
+  DMA_Cmd(SD_SDIO_DMA_STREAM, ENABLE);
+}
+
+static int trigger_dma_read(int byte_cnt)
+{
+
+    ssize_t ret = -1;
+    //register int ndesc;
+    //int chan = ctrller->chan;
+
+    //pxa_dma_desc *desc;
+
+    //if ((ctrller->state != SDIO_FSM_END_CMD) &&
+        //(ctrller->state != SDIO_FSM_END_BUFFER)) {
+        //_ERROR("<1>unexpected state (%d)", (ctrller->state));
+        //goto error;
+    //}
+
+    if (byte_cnt > card->bufsz)
+        byte_cnt = card->bufsz;
+
+    //set_state(ctrller, SDIO_FSM_BUFFER_IN_TRANSIT);
+
+    //if (sdio_initialize_ireg(ctrller, ~MMC_I_MASK_ALL)) {
+        //_ERROR("<1>drv_init_completion failed read_buffer1\n");
+        //goto error;
+    //}
+
+    //if ((desc = ctrller->last_read_desc)) {
+        //desc->ddadr &= ~DDADR_STOP;
+        //desc->dcmd &= ~(DCMD_ENDIRQEN | DCMD_LENGTH);
+        //desc->dcmd |= (1 << 5);
+    //}
+
+    /* 1) setup descriptors for DMA transfer from the device */
+    //ndesc = (byte_cnt >> 5) - 1;
+    //desc = &ctrller->read_desc[ndesc];
+    //ctrller->last_read_desc = desc;
+    //desc->ddadr |= DDADR_STOP;
+    //desc->dcmd |= DCMD_ENDIRQEN;
+   // DDADR(chan) = ctrller->read_desc_phys_addr;
+   // wmb();
+    //DCSR(chan) |= DCSR_RUN;
+    //SDIO_ITConfig(SDIO_IT_DCRCFAIL | SDIO_IT_DTIMEOUT | SDIO_IT_DATAEND | SDIO_IT_RXOVERR | SDIO_IT_STBITERR, ENABLE);
+     SDIO_ITConfig(SDIO_IT_DCRCFAIL | SDIO_IT_DTIMEOUT | SDIO_IT_DATAEND | SDIO_IT_RXOVERR | SDIO_IT_STBITERR, ENABLE);
+	SD_LowLevel_DMA_RxConfig((uint32_t *)card->iodata, byte_cnt);
+	SDIO_DMACmd(ENABLE);
+
+sdio_wait_for_interrupt();
+
+    //if (check_ctrller_state(ctrller, SDIO_FSM_END_BUFFER)) {
+        //_ERROR("<1>__check_state failed -read_buffer\n");
+        //goto error;
+    //}
+
+    //if (!(ctrller->mmc_stat & MMC_STAT_ERRORS))
+        ret = byte_cnt;
+  error:
+    rt_kprintf("dma_read returning ret = %d\n", ret);
+    return ret;
+}
+
+int cmd53_reador_write(iorw_extended_t * io_rw)
+{
+    rt_uint32_t cmdat_temp;
+    int ret = -1, ret1 = 0;
+    rt_uint16_t argh = 0UL, argl = 0UL,response;
+    ssize_t bytecnt;
+    /* CMD53 */
+
+    /* SDIO Spec: 
+       R/W flag (1) 
+       Function Number (3)
+       Block Mode (1)
+       OP Code (1) (Multi byte read / write from fixed location or 
+       from the fixed location      
+       Register Address (17) 
+       Byte Count (9)
+       Command and the CRC will be taken care by the controller, so 
+       fill up (48-16) bits
+     */
+
+    argh =
+        (io_rw->rw_flag << 15) |
+        (io_rw->func_num << 12) |
+        (io_rw->blkmode << 11) |
+        (io_rw->op_code << 10) | ((io_rw->reg_addr & 0x0001ff80) >> 7);
+
+    argl = ((io_rw->reg_addr & 0x0000007f) << 9) | (io_rw->byte_cnt & 0x1ff);
+
+    //if ((ret = stop_clock(ctrller)))
+        //goto error;
+
+    //MMC_CMD = CMD(53);
+   //MMC_ARGH = argh;
+    //MMC_ARGL = argl;
+    SDIO_CmdInitStructure.SDIO_CmdIndex = SD_CMD_SDIO_RW_EXTENDED;
+    SDIO_CmdInitStructure.SDIO_Argument = (argh<<16)|argl;
+
+    //cmdat_temp =
+        //MMC_CMDAT_R1 | MMC_CMDAT_BLOCK | MMC_CMDAT_DATA_EN |
+        //(io_rw->rw_flag ? MMC_CMDAT_WR_RD : MMC_CMDAT_READ);
+    SDIO_CmdInitStructure.SDIO_Wait = SDIO_Wait_IT;
+    SDIO_CmdInitStructure.SDIO_Response=SDIO_Response_Short;
+    SDIO_DataInitStructure.SDIO_DataTimeOut = SD_DATATIMEOUT;
+    
+    
+    SDIO_DataInitStructure.SDIO_TransferDir =  (io_rw->rw_flag ? SDIO_TransferDir_ToCard : SDIO_TransferDir_ToSDIO);
+    SDIO_DataInitStructure.SDIO_TransferMode = SDIO_TransferMode_Block;
+    SDIO_DataInitStructure.SDIO_DPSM = SDIO_DPSM_Enable;
+   
+
+   /* if (ctrller->bus_width == SDIO_BUSWIDTH_4_BIT)
+        cmdat_temp |= MMC_CMDAT_SD_4DAT;
+
+    else if (ctrller->bus_width == SDIO_BUSWIDTH_1_BIT)
+        cmdat_temp |= MMC_CMDAT_SD_1DAT;
+
+    else
+        cmdat_temp |= MMC_CMDAT_SD_4DAT;
+*/
+    if (io_rw->blkmode) {
+        //MMC_BLKLEN = io_rw->blk_size;
+        //MMC_NOB = io_rw->byte_cnt;
+        SDIO_DataInitStructure.SDIO_DataLength = io_rw->byte_cnt*10; 
+        SDIO_DataInitStructure.SDIO_DataBlockSize =(rt_uint32_t)SDIO_DataBlockSize_32b;
+    } else {
+        //MMC_BLKLEN = io_rw->byte_cnt;
+        //MMC_NOB = 1;
+        SDIO_DataInitStructure.SDIO_DataLength =(rt_uint32_t)SDIO_DataBlockSize_1b;
+	  SDIO_DataInitStructure.SDIO_DataBlockSize =  io_rw->byte_cnt;
+    }
+    SDIO_DataConfig(&SDIO_DataInitStructure);
+
+   // cmdat_temp |= MMC_CMDAT_DMA_EN;
+    //wmb();
+
+    //MMC_CMDAT = cmdat_temp;
+
+    //ctrller->num_ofcmd53++;
+
+    rt_kprintf("CMD53(0x%04x%04x)\n", argh, argl);
+
+   // if ((ret = send_command(MMC_R5, 0)))
+   //     goto error;
+   SDIO_SendCommand(&SDIO_CmdInitStructure);
+   
+   response=CmdResp4Error(SD_CMD_SDIO_RW_EXTENDED);
+   if(check_for_err_response_mmc_r5(response)!=0)
+	goto error;
+    if (io_rw->blkmode)
+        bytecnt = io_rw->blk_size * io_rw->byte_cnt;
+    else
+        bytecnt = io_rw->byte_cnt * 1;
+
+    /* Start transferring data on DAT line */
+    rt_kprintf("Byte count = %d\n", bytecnt);
+    while (bytecnt > 0) {
+        if (io_rw->rw_flag == 0) {
+            /* READ */
+            rt_kprintf("read_buffer of %d\n", bytecnt);
+
+            if ((ret = trigger_dma_read(bytecnt)) <= 0) {
+                rt_kprintf("<1>HWAC Read buffer error\n");
+                ret1 = ret;
+                goto error;
+            }
+
+            if ((ret = fill_buffer_forread(ctrller, io_rw->buf, ret)) < 0)
+                goto error;
+        } else {
+            /* WRITE */
+            if ((ret = fill_buffer_forwrite(ctrller,
+                                            io_rw->buf, bytecnt)) < 0)
+                goto error;
+
+            if ((ret = trigger_dma_write(ctrller, ret)) <= 0) {
+                rt_kprintf("HWAC Write buffer error\n");
+                goto error;
+            }
+        }
+
+        io_rw->buf += ret;
+        bytecnt -= ret;
+    }
+
+    //if (set_state(ctrller, SDIO_FSM_END_IO)) {
+        //rt_kprintf("<1>set_state failed rw_iomem\n");
+        //goto error;
+    //}
+//wait sdio int occur
+    //if ((ret = complete_io(ctrller, io_rw->rw_flag))) {
+        //rt_kprintf("<1>complete_io failed rw_iomem\n");
+        //goto error;
+    //}
+
+    return 0;
+  error:
+    //if (set_state(ctrller, SDIO_FSM_END_IO)) {
+        //rt_kprintf("<1>set_state failed rw_iomem\n");
+    //}
+
+    //if ((ret = complete_io(ctrller, io_rw->rw_flag))) {
+        //rt_kprintf("complete_io failed in cmd53_reador_write\n");
+    //}
+
+    return ret1;
+}
+
+static int write_blksz(iorw_extended_t * io_rw)
+{
+    int ret;
+    ioreg_t ioreg;
+
+    if (io_rw->blkmode && card->info.fnblksz[io_rw->func_num] != io_rw->blk_size) {
+        /* Write low byte */
+        rt_kprintf("looks like a odd size printing the values"
+                "blkmode=0x%x blksz=%d fnblksz =%d\n",
+                io_rw->blkmode, io_rw->blk_size,
+                card->info.fnblksz[io_rw->func_num]);
+
+        ioreg.read_or_write = SDIO_WRITE;
+        ioreg.function_num = FN0;
+        ioreg.reg_addr = FN_BLOCK_SIZE_0_REG(io_rw->func_num);
+        ioreg.dat = (rt_uint8_t) (io_rw->blk_size & 0x00ff);
+
+        if (rw_ioreg(&ioreg) < 0) {
+            rt_kprintf("rw_ioreg failed rw_iomem\n");
+            ret = -1;
+            goto err_down;
+        }
+
+        /* Write high byte */
+        ioreg.read_or_write = SDIO_WRITE;
+        ioreg.function_num = FN0;
+        ioreg.reg_addr = FN_BLOCK_SIZE_1_REG(io_rw->func_num);
+        ioreg.dat = (rt_uint8_t) (io_rw->blk_size >> 8);
+
+        if (rw_ioreg(&ioreg) < 0) {
+            rt_kprintf("rw_ioreg failed rw_iomem 1\n");
+            ret = -1;
+            goto err_down;
+        }
+
+        card->info.fnblksz[io_rw->func_num] = io_rw->blk_size;
+    }
+
+    return 0;
+
+  err_down:
+    rt_kprintf("rw_iomem failed\n");
+    return -1;
+}
+
+int sdio_write_iomem(rt_uint8_t func, rt_uint32_t reg, rt_uint8_t blockmode,
+                 rt_uint8_t opcode, ssize_t cnt, ssize_t blksz, rt_uint8_t * dat)
+{
+    int ret;
+    iorw_extended_t io_rw;
+
+    /* Theory: PXA Manual:
+     * The 2 transmit data fifo's are writable , Each transmit data FIFO
+     * is a 32 entries of 1 byte data. 
+     * To access the FIFO by DMA the software must program the dma to read
+     * or write the SDIO FIFO's with a single byte transfer and 32 byte 
+     * burst
+     * The CMDAT[DMA_ENAB] bit must be set to enable communication
+     * with the DMA 
+     * Block Data Write: After turning the clock on to start the 
+     * command sequence the s/w must program the DMA to fill the 
+     * MMC_TXFIFO. The software must continue to fill the FIFO 
+     * until all the data has been written to the fifo. 
+     * The s/w then should wait for MMC_I_REG[DATA_TRANS_DONE] interrupt
+     * and MMC_I_REG[PRG_DONE] interrupt. The s/w can read the MMC_STAT
+     * to know the status
+     */
+
+    io_rw.rw_flag = IOMEM_WRITE;
+    io_rw.func_num = func;
+    io_rw.reg_addr = reg;
+    io_rw.blkmode = blockmode;
+    io_rw.op_code = opcode;
+    io_rw.byte_cnt = cnt;
+    io_rw.blk_size = blksz;
+    io_rw.buf = dat;
+
+    rt_kprintf("sdio_write_iomem\n");
+    rt_kprintf("CMD 53 write values rw_flag = %x func_num = %x"
+            "reg_addr = %x, blkmode = %x opcode = %x count = %x"
+            "blk size = %x buf_addr = %p", io_rw.rw_flag,
+            io_rw.func_num, io_rw.reg_addr, io_rw.blkmode,
+            io_rw.op_code, io_rw.byte_cnt, io_rw.blk_size, io_rw.buf);
+
+    ret = check_iomem_args(&io_rw);
+
+    if (ret < 0) {
+        rt_kprintf("Wrong parameters passed to sdio_write_iomem\n");
+        goto exit;
+    }
+
+    ret = write_blksz(&io_rw);
+
+    if (ret < 0) {
+        rt_kprintf("rw_iomem error CMD53 write fails\n");
+        goto exit;
+    }
+
+    /* Perform the actual CMD53 Write now */
+
+    acquire_io();
+
+    ret = cmd53_reador_write(&io_rw);
+
+    release_io();
+
+    if (ret < 0)
+        rt_kprintf("rw_iomem error CMD53 write fails\n");
+
+    //rt_kprintf("leave: sdio_write_iomem jiffies = %lu\n", jiffies);
+
+  exit:
+    return ret;
+}
+
+
 static int sbi_prog_firmware_image(const rt_uint8_t * firmware, int firmwarelen)
 {
-    int ret = 0;
+    int ret = -1;
     rt_uint16_t firmwarestat;
     rt_uint8_t *fwbuf = card->TmpTxBuf;
     int fwblknow;
@@ -688,8 +1120,8 @@ static int sbi_prog_firmware_image(const rt_uint8_t * firmware, int firmwarelen)
         rt_kprintf(".");
 
         /* Send data */
-        ret = sdio_write_iomem(priv->wlan_dev.card, FN1,
-                               priv->wlan_dev.ioport, BLOCK_MODE,
+        ret = sdio_write_iomem(FN1,
+                               card->ioport, BLOCK_MODE,
                                FIXED_ADDRESS, FIRMWARE_TRANSFER_NBLOCK,
                                SD_BLOCK_SIZE_FW_DL, fwbuf);
 
@@ -699,22 +1131,11 @@ static int sbi_prog_firmware_image(const rt_uint8_t * firmware, int firmwarelen)
         }
     }
 
-#ifdef FW_DOWNLOAD_SPEED
-    tv2 = get_utimeofday();
-    rt_kprintf("helper: %ld.%03ld.%03ld ", tv1 / 1000000,
-           (tv1 % 1000000) / 1000, tv1 % 1000);
-    rt_kprintf(" -> %ld.%03ld.%03ld ", tv2 / 1000000,
-           (tv2 % 1000000) / 1000, tv2 % 1000);
-    tv2 -= tv1;
-    rt_kprintf(" == %ld.%03ld.%03ld\n", tv2 / 1000000,
-           (tv2 % 1000000) / 1000, tv2 % 1000);
-#endif
-
     /* Write last EOF data */
     rt_kprintf("\nTransferring EOF block\n");
     memset(fwbuf, 0x0, SD_BLOCK_SIZE_FW_DL);
-    ret = sdio_write_iomem(priv->wlan_dev.card, FN1,
-                           priv->wlan_dev.ioport, BLOCK_MODE,
+    ret = sdio_write_iomem(FN1,
+                           card->ioport, BLOCK_MODE,
                            FIXED_ADDRESS, 1, SD_BLOCK_SIZE_FW_DL, fwbuf);
 
     if (ret < 0) {
@@ -733,6 +1154,44 @@ int wlan_setup_station_hw()
 sbi_disable_host_int();
 
 }
+
+int sdio_set_buswidth(int mode)
+{
+    //ECSI bit should be turn on too.
+    switch (mode) {
+    case SDIO_BUSWIDTH_1_BIT:
+
+        sdio_write_ioreg(FN0,
+                         BUS_INTERFACE_CONTROL_REG,
+                         ECSI_BIT | BUSWIDTH_1_BIT);
+
+        //card->ctrlr->bus_width = SDIO_BUSWIDTH_1_BIT;
+        rt_kprintf("\n SDIO: Bus width is " "set to 1 bit mode\n");
+        break;
+
+    case SDIO_BUSWIDTH_4_BIT:
+        sdio_write_ioreg(FN0,
+                         BUS_INTERFACE_CONTROL_REG,
+                         ECSI_BIT | BUSWIDTH_4_BIT);
+//        card->ctrlr->bus_width = SDIO_BUSWIDTH_4_BIT;
+
+        rt_kprintf("\n SDIO: Bus width is " "set to 4 bit mode\n");
+
+        break;
+    default:
+        rt_kprintf("Not supported Mode, force to 4 bit mode\n");
+
+        sdio_write_ioreg(FN0,
+                         BUS_INTERFACE_CONTROL_REG,
+                         ECSI_BIT | BUSWIDTH_4_BIT);
+
+//        card->ctrlr->bus_width = SDIO_BUSWIDTH_4_BIT;
+        break;
+    }
+
+    return 0;
+}
+
 rt_uint32_t CmdResp4Error(uint8_t cmd)
 {
 	 SD_Error errorstatus = SD_OK;
@@ -742,7 +1201,7 @@ rt_uint32_t CmdResp4Error(uint8_t cmd)
 
 	 status = SDIO->STA;
 	 //rt_kprintf("1 status=%x\r\n",status);
-	 if(SDIO_CmdInitStructure.SDIO_Wait==SDIO_Wait_IT)
+	/* if(SDIO_CmdInitStructure.SDIO_Wait==SDIO_Wait_IT)
 	 {
 		  while (!(status & (SDIO_IT_SDIOIT)))
 		  {    
@@ -750,12 +1209,12 @@ rt_uint32_t CmdResp4Error(uint8_t cmd)
 		  }
 	 }
 	 else
-	 {
+	 {*/
 		  while (!(status & (SDIO_FLAG_CCRCFAIL | SDIO_FLAG_CMDREND | SDIO_FLAG_CTIMEOUT)))
 		  {    
 			   status = SDIO->STA;
 		  }
-	 }
+	 //}
 	 //  rt_kprintf("2 status=%x\r\n",status);
 	 if (status & SDIO_FLAG_CTIMEOUT)
 	 {
@@ -867,6 +1326,9 @@ SD_Error SD_PowerON(void)
 	 uint32_t response = 0, count = 0, validvoltage = 0;
 	 uint32_t SDType = SD_STD_CAPACITY;
 	 card=(mmc_card_t)rt_malloc(sizeof(mmc_card_rec));
+	 rt_memset(card,0,sizeof(card));
+	 card->bufsz = PXA_MMC_IODATA_SIZE;
+	 card->iodata=(char *)rt_malloc(PXA_MMC_IODATA_SIZE*sizeof(char));
 	 rt_sem_init(&(card->sem_lock), "wifi_lock", 1, RT_IPC_FLAG_FIFO);
 	 SD_LowLevel_Init();
 	 	    NVIC_InitTypeDef NVIC_InitStructure;
@@ -976,6 +1438,7 @@ SD_Error SD_PowerON(void)
 	 /*!< Enable SDIO Clock */
 	 SDIO_ClockCmd(ENABLE);
 	 SDIO_ITConfig(SDIO_IT_SDIOIT/*|SDIO_IT_CMDREND*/,ENABLE);
+	 sdio_set_buswidth(SDIO_BUSWIDTH_4_BIT);
 	 sbi_probe_card();
 	sbi_register_dev();
 	sbi_get_cis_info();
