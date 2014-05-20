@@ -429,59 +429,67 @@ static int disable_host_int_mask(rt_uint8_t mask)
 done:
 	 return ret;
 }
-#if 0
-int sdio_request_irq(mmc_card_t card,
-		  IRQ_RET_TYPE(*handler) (int, void *, struct pt_regs *),
-		  unsigned long irq_flags, const char *devname, void *dev_id)
+SD_Error SD_ProcessIRQSrc(void)
+{
+	rt_kprintf("in SD_ProcessIRQSrc %x\r\n",SDIO_GetITStatus(SDIO_IT_SDIOIT));
+	if(SDIO_GetITStatus(SDIO_IT_SDIOIT)==SET)
+	SDIO_ClearITPendingBit(SDIO_IT_SDIOIT);
+}
+void SDIO_IRQHandler(void)
+{
+    /* enter interrupt */
+    rt_interrupt_enter();
+
+    /* Process All SDIO Interrupt Sources */
+    SD_ProcessIRQSrc();
+
+    /* leave interrupt */
+    rt_interrupt_leave();
+}
+
+int sdio_request_irq()
 {
 	 int ret, func;
-	 u8 io_enable_reg, int_enable_reg;
-	 sdio_ctrller *ctrller;
+	 rt_uint8_t io_enable_reg, int_enable_reg;
+	 //sdio_ctrller *ctrller;
 
-	 _ENTER();
+	 //_ENTER();
 
-	 if (!card) {
-		  _ERROR("Passed a Null card exiting out\n");
-		  ret = -ENODEV;
-		  goto done;
-	 }
-	 ctrller = card->ctrlr;
+	 //net_devid = dev_id;
 
-	 net_devid = dev_id;
+	 //sdioint_handler = handler;
 
-	 sdioint_handler = handler;
-
-	 _DBGMSG("address of dev_id = %p sdioint_handler =%p\n",
-			   net_devid, sdioint_handler);
-	 if (!ctrller->card_int_ready)
-		  ctrller->card_int_ready = YES;
+	 //_DBGMSG("address of dev_id = %p sdioint_handler =%p\n",
+	//		   net_devid, sdioint_handler);
+	 if (!card->card_int_ready)
+		  card->card_int_ready = YES;
 
 	 io_enable_reg = 0x0;
 
 	 int_enable_reg = IENM;
 
 	 for (func = 1; func <= 7 && func <=
-			   ctrller->card_capability.num_of_io_funcs; func++) {
+			   card->info.num_of_io_funcs; func++) {
 
 		  io_enable_reg |= IOE(func);
 		  int_enable_reg |= IEN(func);
 	 }
 
 	 /** Enable function IOs on card */
-	 sdio_write_ioreg(card, FN0, IO_ENABLE_REG, io_enable_reg);
+	 sdio_write_ioreg(FN0, IO_ENABLE_REG, io_enable_reg);
 	 /** Enable function interrupts on card */
-	 sdio_write_ioreg(card, FN0, INT_ENABLE_REG, int_enable_reg);
+	 sdio_write_ioreg(FN0, INT_ENABLE_REG, int_enable_reg);
 
-	 MMC_I_MASK &= ~MMC_I_MASK_SDIO_INT;
-	 wmb();
-	 _PRINTK("sdio_request_irq: MMC_I_MASK = 0x%x\n", MMC_I_MASK);
+	 //MMC_I_MASK &= ~MMC_I_MASK_SDIO_INT;
+	 //wmb();
+	 //_PRINTK("sdio_request_irq: MMC_I_MASK = 0x%x\n", MMC_I_MASK);
 
-#ifdef DEBUG_SDIO_LEVEL1
-	 print_addresses(ctrller);
-#endif
+//#ifdef DEBUG_SDIO_LEVEL1
+	 //print_addresses(ctrller);
+//#endif
 
 	 ret = 0;
-	 _LEAVE();
+//	 _LEAVE();
 
 done:
 	 return ret;
@@ -530,36 +538,201 @@ int sbi_register_dev()
 	 }
 
 	 /* Request the SDIO IRQ */
-	 rt_kprintf("Before request_irq Address is if==>%p\n", isr_function);
-	 ret = sdio_request_irq(priv->wlan_dev.card,
-			   (handler_fn_t) isr_function, 0,
-			   "sdio_irq", priv->wlan_dev.netdev);
+	// rt_kprintf("Before request_irq Address is if==>%p\n", isr_function);
+	 ret = sdio_request_irq();
 
 	 if (ret < 0) {
-		  rt_kprintf(FATAL, "Failed to request IRQ on SDIO bus (%d)\n", ret);
+		  rt_kprintf("Failed to request IRQ on SDIO bus (%d)\n", ret);
 		  goto failed;
 	 }
 
-	 rt_kprintf(INFO, "IrqLine: %d\n", card->ctrlr->tmpl->irq_line);
-	 priv->wlan_dev.netdev->irq = card->ctrlr->tmpl->irq_line;
-	 priv->adapter->irq = priv->wlan_dev.netdev->irq;
-	 priv->adapter->chip_rev = card->chiprev;
-	 priv->adapter->sdiomode =
-		  ((mmc_card_t) ((priv->wlan_dev).card))->ctrlr->bus_width;
-#if defined(_MAINSTONE) || defined(SYSKT)
-	 if (request_gpio_irq_callback
-			   ((void (*)(void *)) gpio_irq_callback, (void *) priv))
-		  rt_kprintf(FATAL, "Failed to request GPIO IRQ callback\n");
-#endif /* _MAINSTONE || SYSKT */
+	 //rt_kprintf(INFO, "IrqLine: %d\n", card->ctrlr->tmpl->irq_line);
+	 //priv->wlan_dev.netdev->irq = card->ctrlr->tmpl->irq_line;
+	 //priv->adapter->irq = priv->wlan_dev.netdev->irq;
+	 //priv->adapter->chip_rev = card->chiprev;
+	 //priv->adapter->sdiomode =
+	//	  ((mmc_card_t) ((priv->wlan_dev).card))->ctrlr->bus_width;
+//#if defined(_MAINSTONE) || defined(SYSKT)
+//	 if (request_gpio_irq_callback
+//			   ((void (*)(void *)) gpio_irq_callback, (void *) priv))
+//		  rt_kprintf(FATAL, "Failed to request GPIO IRQ callback\n");
+//#endif /* _MAINSTONE || SYSKT */
 
-	 return WLAN_STATUS_SUCCESS;
+	 return 0;
 
 failed:
-	 priv->wlan_dev.card = NULL;
+	 //priv->wlan_dev.card = NULL;
 
-	 return WLAN_STATUS_FAILURE;
+	 return -1;
 }
+int sbi_get_cis_info()
+{
+    //mmc_card_t card = (mmc_card_t) priv->wlan_dev.card;
+    //wlan_adapter *Adapter = priv->adapter;
+    rt_uint8_t tupledata[255];
+    int i;
+    rt_uint32_t ret = 0;
+
+    //ENTER();
+
+    /* Read the Tuple Data */
+    for (i = 0; i < sizeof(tupledata); i++) {
+        ret = sdio_read_ioreg(FN0, card->info.cisptr[FN0] + i,
+                              &tupledata[i]);
+        if (ret) {
+            rt_kprintf(WARN, "get_cis_info error:%d\n", ret);
+            return WLAN_STATUS_FAILURE;
+        }
+    }
+
+    /* Copy the CIS Table to Adapter */
+    memset(card->CisInfoBuf, 0x0, sizeof(card->CisInfoBuf));
+    memcpy(card->CisInfoBuf, tupledata, sizeof(tupledata));
+    card->CisInfoLen = sizeof(tupledata);
+
+   // LEAVE();
+    return 0;
+}
+int sbi_disable_host_int()
+{
+    return disable_host_int_mask(HIM_DISABLE);
+}
+static int mv_sdio_read_scratch(rt_uint16_t * dat)
+{
+    int ret = 0;
+    rt_uint8_t scr0;
+    rt_uint8_t scr1;
+    ret = sdio_read_ioreg(FN1, CARD_OCR_0_REG, &scr0);
+    if (ret < 0)
+        return -1;
+
+    ret = sdio_read_ioreg(FN1, CARD_OCR_1_REG, &scr1);
+    rt_kprintf("CARD_OCR_0_REG = 0x%x, CARD_OCR_1_REG = 0x%x\n", scr0,
+           scr1);
+    if (ret < 0)
+        return -1;
+
+    *dat = (((u16) scr1) << 8) | scr0;
+
+    return 0;
+}
+static int mv_sdio_poll_card_status(rt_uint8_t bits)
+{
+    int tries;
+    int rval;
+    rt_uint8_t cs;
+
+    for (tries = 0; tries < MAX_POLL_TRIES; tries++) {
+        rval = sdio_read_ioreg(FN1,
+                               CARD_STATUS_REG, &cs);
+        if (rval == 0 && (cs & bits) == bits) {
+            return 0;
+        }
+
+        rt_thread_delay(10);
+    }
+
+    rt_kprintf("mv_sdio_poll_card_status: FAILED!:%d\n", rval);
+    return -1;
+}
+
+static int sbi_prog_firmware_image(const rt_uint8_t * firmware, int firmwarelen)
+{
+    int ret = 0;
+    rt_uint16_t firmwarestat;
+    rt_uint8_t *fwbuf = card->TmpTxBuf;
+    int fwblknow;
+    rt_uint32_t tx_len;
+
+    //ENTER();
+
+    /* Check if the firmware is already downloaded */
+    if ((ret = mv_sdio_read_scratch(&firmwarestat)) < 0) {
+        rt_kprintf("read scratch returned <0\n");
+        goto done;
+    }
+
+    if (firmwarestat == FIRMWARE_READY) {
+        rt_kprintf("FW already downloaded!\n");
+        ret = 0;
+        goto done;
+    }
+
+    rt_kprintf("Downloading helper image (%d bytes), block size %d bytes\n",
+           firmwarelen, SD_BLOCK_SIZE_FW_DL);
+
+    /* Perform firmware data transfer */
+    tx_len =
+        (FIRMWARE_TRANSFER_NBLOCK * SD_BLOCK_SIZE_FW_DL) - SDIO_HEADER_LEN;
+    for (fwblknow = 0; fwblknow < firmwarelen; fwblknow += tx_len) {
+
+        /* The host polls for the DN_LD_CARD_RDY and CARD_IO_READY bits */
+        ret = mv_sdio_poll_card_status(CARD_IO_READY | DN_LD_CARD_RDY);
+        if (ret < 0) {
+            rt_kprintf("FW download died @ %d\n", fwblknow);
+            goto done;
+        }
+
+        /* Set blocksize to transfer - checking for last block */
+        if (firmwarelen - fwblknow < tx_len)
+            tx_len = firmwarelen - fwblknow;
+
+        fwbuf[0] = ((tx_len & 0x000000ff) >> 0);        /* Little-endian */
+        fwbuf[1] = ((tx_len & 0x0000ff00) >> 8);
+        fwbuf[2] = ((tx_len & 0x00ff0000) >> 16);
+        fwbuf[3] = ((tx_len & 0xff000000) >> 24);
+
+        /* Copy payload to buffer */
+        memcpy(&fwbuf[SDIO_HEADER_LEN], &firmware[fwblknow], tx_len);
+
+        rt_kprintf(".");
+
+        /* Send data */
+        ret = sdio_write_iomem(priv->wlan_dev.card, FN1,
+                               priv->wlan_dev.ioport, BLOCK_MODE,
+                               FIXED_ADDRESS, FIRMWARE_TRANSFER_NBLOCK,
+                               SD_BLOCK_SIZE_FW_DL, fwbuf);
+
+        if (ret < 0) {
+            rt_kprintf("IO error: transferring block @ %d\n", fwblknow);
+            goto done;
+        }
+    }
+
+#ifdef FW_DOWNLOAD_SPEED
+    tv2 = get_utimeofday();
+    rt_kprintf("helper: %ld.%03ld.%03ld ", tv1 / 1000000,
+           (tv1 % 1000000) / 1000, tv1 % 1000);
+    rt_kprintf(" -> %ld.%03ld.%03ld ", tv2 / 1000000,
+           (tv2 % 1000000) / 1000, tv2 % 1000);
+    tv2 -= tv1;
+    rt_kprintf(" == %ld.%03ld.%03ld\n", tv2 / 1000000,
+           (tv2 % 1000000) / 1000, tv2 % 1000);
 #endif
+
+    /* Write last EOF data */
+    rt_kprintf("\nTransferring EOF block\n");
+    memset(fwbuf, 0x0, SD_BLOCK_SIZE_FW_DL);
+    ret = sdio_write_iomem(priv->wlan_dev.card, FN1,
+                           priv->wlan_dev.ioport, BLOCK_MODE,
+                           FIXED_ADDRESS, 1, SD_BLOCK_SIZE_FW_DL, fwbuf);
+
+    if (ret < 0) {
+        rt_kprintf("IO error in writing EOF FW block\n");
+        goto done;
+    }
+
+    ret = 0;
+
+  done:
+    return ret;
+}
+
+int wlan_setup_station_hw()
+{
+sbi_disable_host_int();
+
+}
 rt_uint32_t CmdResp4Error(uint8_t cmd)
 {
 	 SD_Error errorstatus = SD_OK;
@@ -696,6 +869,14 @@ SD_Error SD_PowerON(void)
 	 card=(mmc_card_t)rt_malloc(sizeof(mmc_card_rec));
 	 rt_sem_init(&(card->sem_lock), "wifi_lock", 1, RT_IPC_FLAG_FIFO);
 	 SD_LowLevel_Init();
+	 	    NVIC_InitTypeDef NVIC_InitStructure;
+
+	    NVIC_InitStructure.NVIC_IRQChannel = SDIO_IRQn;
+	    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	    NVIC_Init(&NVIC_InitStructure);
+
 	 /*!< Power ON Sequence -----------------------------------------------------*/
 	 /*!< Configure the SDIO peripheral */
 	 /*!< SDIOCLK = HCLK, SDIO_CK = HCLK/(2 + SDIO_INIT_CLK_DIV) */
@@ -714,7 +895,7 @@ SD_Error SD_PowerON(void)
 
 	 /*!< Enable SDIO Clock */
 	 SDIO_ClockCmd(ENABLE);
-	 SDIO_ITConfig(SDIO_IT_SDIOIT|SDIO_IT_CMDREND,ENABLE);
+	 SDIO_ITConfig(SDIO_IT_SDIOIT/*|SDIO_IT_CMDREND*/,ENABLE);
 	 /*!< CMD0: GO_IDLE_STATE ---------------------------------------------------*/
 	 /*!< No CMD response required */
 	 SDIO_CmdInitStructure.SDIO_Argument = 0x0;
@@ -794,8 +975,9 @@ SD_Error SD_PowerON(void)
 
 	 /*!< Enable SDIO Clock */
 	 SDIO_ClockCmd(ENABLE);
-	 SDIO_ITConfig(SDIO_IT_SDIOIT|SDIO_IT_CMDREND,ENABLE);
+	 SDIO_ITConfig(SDIO_IT_SDIOIT/*|SDIO_IT_CMDREND*/,ENABLE);
 	 sbi_probe_card();
-
+	sbi_register_dev();
+	sbi_get_cis_info();
 	 return SD_OK;
 }
