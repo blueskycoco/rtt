@@ -338,6 +338,7 @@ typedef struct _mmc_card_rec
     uint8_t async_int_mode;
     card_capability info;
     struct rt_semaphore sem_lock;
+    struct rt_semaphore irq_lock;
         uint16_t manf_id;
     uint16_t dev_id;
     int card_int_ready;

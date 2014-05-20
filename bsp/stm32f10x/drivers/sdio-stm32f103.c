@@ -685,16 +685,17 @@ check_for_err_response_mmc_r5(rt_uint32_t response)
     return ret;
 }
 static int
-sdio_wait_for_interrupt()
+sdio_wait_for_interrupt(int mask)
 {
 	uint32_t status;
 
-	status = SDIO->STA;
-	//rt_kprintf("1 status=%x\r\n",status);
-	while (!(status & (SDIO_IT_SDIOIT)))
-	{	
-		status = SDIO->STA;
-	}
+	//rt_sem_take(&(card->irq_lock), RT_WAITING_FOREVER);
+	 status = SDIO->STA;
+	 
+	  while (!(status & (mask)))
+	  {    
+		   status = SDIO->STA;
+	  }
 	return 0;
 
 }
@@ -702,8 +703,9 @@ void SD_ProcessDMAIRQ(void)
 {
   if(DMA2->LISR & SD_SDIO_DMA_FLAG_TCIF)
   {
-    DMAEndOfTransfer = 0x01;
+    //DMAEndOfTransfer = 0x01;
     DMA_ClearFlag(SD_SDIO_DMA_STREAM, SD_SDIO_DMA_FLAG_TCIF|SD_SDIO_DMA_FLAG_FEIF);
+   //rt_sem_release(&(card->irq_lock));
   }
 }
 void DMA2_Stream3_IRQHandler(void)
@@ -744,6 +746,42 @@ void SD_LowLevel_DMA_RxConfig(uint32_t *BufferDST, uint32_t BufferSize)
 
   /* DMA2 Stream3 or Stream6 enable */
   DMA_Cmd(SD_SDIO_DMA_STREAM, ENABLE);
+}
+
+void SD_LowLevel_DMA_TxConfig(uint32_t *BufferSRC, uint32_t BufferSize)
+{
+  DMA_InitTypeDef SDDMA_InitStructure;
+
+  DMA_ClearFlag(SD_SDIO_DMA_STREAM, SD_SDIO_DMA_FLAG_FEIF | SD_SDIO_DMA_FLAG_DMEIF | SD_SDIO_DMA_FLAG_TEIF | SD_SDIO_DMA_FLAG_HTIF | SD_SDIO_DMA_FLAG_TCIF);
+
+  /* DMA2 Stream3  or Stream6 disable */
+  DMA_Cmd(SD_SDIO_DMA_STREAM, DISABLE);
+
+  /* DMA2 Stream3  or Stream6 Config */
+  DMA_DeInit(SD_SDIO_DMA_STREAM);
+
+  SDDMA_InitStructure.DMA_Channel = SD_SDIO_DMA_CHANNEL;
+  SDDMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)SDIO_FIFO_ADDRESS;
+  SDDMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)BufferSRC;
+  SDDMA_InitStructure.DMA_DIR = DMA_DIR_MemoryToPeripheral;
+  SDDMA_InitStructure.DMA_BufferSize = BufferSize/4; /* assert_param(0~64K) */
+  SDDMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  SDDMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  SDDMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
+  SDDMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
+  SDDMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
+  SDDMA_InitStructure.DMA_Priority = DMA_Priority_VeryHigh;
+  SDDMA_InitStructure.DMA_FIFOMode = DMA_FIFOMode_Enable;
+  SDDMA_InitStructure.DMA_FIFOThreshold = DMA_FIFOThreshold_Full;
+  SDDMA_InitStructure.DMA_MemoryBurst = DMA_MemoryBurst_INC4;
+  SDDMA_InitStructure.DMA_PeripheralBurst = DMA_PeripheralBurst_INC4;
+  DMA_Init(SD_SDIO_DMA_STREAM, &SDDMA_InitStructure);
+
+//  DMA_FlowControllerConfig(SD_SDIO_DMA_STREAM, DMA_FlowCtrl_Peripheral);
+
+  /* DMA2 Stream3  or Stream6 enable */
+  DMA_Cmd(SD_SDIO_DMA_STREAM, ENABLE);
+
 }
 
 static int trigger_dma_read(int byte_cnt)
@@ -803,6 +841,135 @@ sdio_wait_for_interrupt();
   error:
     rt_kprintf("dma_read returning ret = %d\n", ret);
     return ret;
+}
+
+/** 
+	This function sets up the DMA channel for the DMA and writes the 
+	specified amount of data (blocks) from the hodst to SDIO card 
+	
+	\param pointer to sdio controller structure and number of bytes to be 
+	read
+	\return returns byte count to be read or negative on error
+*/
+
+int trigger_dma_write(int cnt)
+{
+    ssize_t ret = -1;
+    //register int ndesc;
+
+    //int chan = ctrller->chan;
+    //pxa_dma_desc *desc;
+
+    //_ENTER();
+
+    //ctrller->state = SDIO_FSM_END_CMD;
+
+    //if ((ctrller->state != SDIO_FSM_END_CMD) &&
+        //(ctrller->state != SDIO_FSM_END_BUFFER)) {
+        //_ERROR("<1>Unexpected state (%d)\n", (ctrller->state));
+        //goto error;
+    //}
+
+    //if (!cnt) {
+        //_ERROR("Count value is zero erring out trigger_dma_write\n");
+        //goto error;
+    //}
+
+    if (cnt > card->bufsz)
+        cnt = card->bufsz;
+
+//    set_state(ctrller, SDIO_FSM_BUFFER_IN_TRANSIT);
+
+    //if (sdio_initialize_ireg(ctrller, ~MMC_I_MASK_ALL)) {
+        //_ERROR("drv_init_completion failed write_buffer\n");
+        //goto error;
+    //}
+
+    //if ((desc = ctrller->last_write_desc)) {
+        //desc->ddadr &= ~DDADR_STOP;
+        //desc->dcmd &= ~(DCMD_ENDIRQEN | DCMD_LENGTH);
+        //desc->dcmd |= (1 << 5);
+    //}
+    /* setup descriptors for DMA transfer to the device */
+    //ndesc = (cnt >> 5) - 1;
+    //desc = &ctrller->write_desc[ndesc];
+
+//    ctrller->last_write_desc = desc;
+   // desc->ddadr |= DDADR_STOP;
+    //desc->dcmd |= DCMD_ENDIRQEN;
+    /* start DMA channel */
+   // DDADR(chan) = ctrller->write_desc_phys_addr;
+    //DCSR(chan) |= DCSR_RUN;
+    SDIO_ITConfig(SDIO_IT_DCRCFAIL | SDIO_IT_DTIMEOUT | SDIO_IT_DATAEND | SDIO_IT_RXOVERR | SDIO_IT_STBITERR, ENABLE);
+    SD_LowLevel_DMA_TxConfig((uint32_t *)card->iodata, cnt);
+    SDIO_DMACmd(ENABLE);
+
+    sdio_wait_for_interrupt();
+
+    //if (check_ctrller_state(ctrller, SDIO_FSM_END_BUFFER)) {
+        //_ERROR("<1>__check_state error write_buffer\n");
+        //goto error;
+   // }
+    //if (!(ctrller->mmc_stat & MMC_STAT_ERRORS))
+        ret = cnt;
+
+    //_LEAVE();
+  error:
+    return ret;
+}
+static int fill_buffer_forread(char *buf, int count)
+{
+    int *ret;
+
+    if (count > card->bufsz)
+        count = card->bufsz;
+    ret = memcpy(buf, card->iodata, count);
+
+    if (!ret) {
+        rt_kprintf("memcpy failed in fill_buffer_forread\n");
+        return -1;
+    }
+
+    return count;
+}
+
+/** 
+	This function writes the data to DMA buffer from the buffer passed by 
+	the WLAN driver
+
+	\param pointer to controller structure, pointer to buffer and the count 
+	to copied
+	\return returns the count copied or a negative value on error
+*/
+
+int fill_buffer_forwrite(char *buf, int count)
+{
+    int *ret;
+    int retval = -1;
+
+//    _ENTER();
+
+
+    if (!buf) {
+        rt_kprintf("Buffer empty fill_buffer_for_write\n");
+        goto exit;
+    }
+
+    rt_kprintf("Just before memcpy count = %d\n", count);
+    if (count > card->bufsz)
+        count = card->bufsz;
+
+    ret = memcpy(card->iodata, buf, count);
+
+    if (!ret) {
+        rt_kprintf("memcpy failed in fill_buffer_forwrite\n");
+        goto exit;
+    }
+    retval = count;
+
+  exit:
+    //_LEAVE();
+    return retval;
 }
 
 int cmd53_reador_write(iorw_extended_t * io_rw)
@@ -911,15 +1078,14 @@ int cmd53_reador_write(iorw_extended_t * io_rw)
                 goto error;
             }
 
-            if ((ret = fill_buffer_forread(ctrller, io_rw->buf, ret)) < 0)
+            if ((ret = fill_buffer_forread( io_rw->buf, ret)) < 0)
                 goto error;
         } else {
             /* WRITE */
-            if ((ret = fill_buffer_forwrite(ctrller,
-                                            io_rw->buf, bytecnt)) < 0)
+            if ((ret = fill_buffer_forwrite( io_rw->buf, bytecnt)) < 0)
                 goto error;
 
-            if ((ret = trigger_dma_write(ctrller, ret)) <= 0) {
+            if ((ret = trigger_dma_write( ret)) <= 0) {
                 rt_kprintf("HWAC Write buffer error\n");
                 goto error;
             }
@@ -1265,59 +1431,7 @@ void SD_LowLevel_Init(void)
 	 /*!< Enable the DMA2 Clock */
 	 //RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA2, ENABLE);
 }
-void SD_LowLevel_DMA_TxConfig(uint32_t *BufferSRC, uint32_t BufferSize)
-{
 
-	 DMA_InitTypeDef DMA_InitStructure;
-
-	 DMA_ClearFlag(DMA2_FLAG_TC4 | DMA2_FLAG_TE4 | DMA2_FLAG_HT4 | DMA2_FLAG_GL4);
-
-	 /*!< DMA2 Channel4 disable */
-	 DMA_Cmd(DMA2_Channel4, DISABLE);
-
-	 /*!< DMA2 Channel4 Config */
-	 DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)SDIO_FIFO_ADDRESS;
-	 DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)BufferSRC;
-	 DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
-	 DMA_InitStructure.DMA_BufferSize = BufferSize / 4;
-	 DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-	 DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-	 DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
-	 DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
-	 DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-	 DMA_InitStructure.DMA_Priority = DMA_Priority_High;
-	 DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-	 DMA_Init(DMA2_Channel4, &DMA_InitStructure);
-
-	 /*!< DMA2 Channel4 enable */
-	 DMA_Cmd(DMA2_Channel4, ENABLE);  
-}
-void SD_LowLevel_DMA_RxConfig(uint32_t *BufferDST, uint32_t BufferSize)
-{
-	 DMA_InitTypeDef DMA_InitStructure;
-
-	 DMA_ClearFlag(DMA2_FLAG_TC4 | DMA2_FLAG_TE4 | DMA2_FLAG_HT4 | DMA2_FLAG_GL4);
-
-	 /*!< DMA2 Channel4 disable */
-	 DMA_Cmd(DMA2_Channel4, DISABLE);
-
-	 /*!< DMA2 Channel4 Config */
-	 DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)SDIO_FIFO_ADDRESS;
-	 DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)BufferDST;
-	 DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
-	 DMA_InitStructure.DMA_BufferSize = BufferSize / 4;
-	 DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-	 DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-	 DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Word;
-	 DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Word;
-	 DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
-	 DMA_InitStructure.DMA_Priority = DMA_Priority_High;
-	 DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-	 DMA_Init(DMA2_Channel4, &DMA_InitStructure);
-
-	 /*!< DMA2 Channel4 enable */
-	 DMA_Cmd(DMA2_Channel4, ENABLE); 
-}
 SD_Error SD_PowerON(void)
 {
 	 int i;
@@ -1330,6 +1444,7 @@ SD_Error SD_PowerON(void)
 	 card->bufsz = PXA_MMC_IODATA_SIZE;
 	 card->iodata=(char *)rt_malloc(PXA_MMC_IODATA_SIZE*sizeof(char));
 	 rt_sem_init(&(card->sem_lock), "wifi_lock", 1, RT_IPC_FLAG_FIFO);
+	 rt_sem_init(&(card->irq_lock), "irq_lock", 1, RT_IPC_FLAG_FIFO);
 	 SD_LowLevel_Init();
 	 	    NVIC_InitTypeDef NVIC_InitStructure;
 
