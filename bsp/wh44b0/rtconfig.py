@@ -3,12 +3,14 @@ import os
 # toolchains options
 ARCH     = 'arm'
 CPU      = 's3c44b0'
-#TextBase = '0x0c008000'
-TextBase = '0x0'
+TextBase = '0x0c008000'
+#TextBase = '0x0'
 CROSS_TOOL 	= 'gcc'
 
 if os.getenv('RTT_CC'):
 	CROSS_TOOL = os.getenv('RTT_CC')
+if os.getenv('RTT_BASE'):
+	TextBase = os.getenv('RTT_BASE')
 
 if  CROSS_TOOL == 'gcc':
 	PLATFORM 	= 'gcc'

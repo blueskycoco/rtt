@@ -72,8 +72,8 @@ int rt_application_init()
 	net_thread = rt_thread_create("net",rt_net_thread_entry, RT_NULL,1024,20,20);
 	if(led_thread != RT_NULL)
 		rt_thread_startup(led_thread);
-	if(net_thread != RT_NULL)
-		rt_thread_startup(net_thread);
+	//if(net_thread != RT_NULL)
+	//	rt_thread_startup(net_thread);
 	return 0;	/* empty */
 }
 #include "finsh.h"
