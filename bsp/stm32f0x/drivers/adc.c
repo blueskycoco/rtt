@@ -19,20 +19,20 @@
 static void RCC_Configuration(void)
 {
     /* Enable GPIO clock */
-    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
     /* Enable USART clock */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-
+RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
 }
 
 static void GPIO_Configuration(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
 
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1|GPIO_Pin_5;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-    GPIO_Init(GPIOC, &GPIO_InitStructure);
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 
 void rt_hw_adc_init(void)
@@ -57,8 +57,8 @@ void rt_hw_adc_init(void)
 
     /* Convert the ADC1 Channel 11 with 239.5 Cycles as
      * sampling time */ 
-    ADC_ChannelConfig(ADC1, ADC_Channel_11 , ADC_SampleTime_239_5Cycles);   
-
+    ADC_ChannelConfig(ADC1, ADC_Channel_1 , ADC_SampleTime_239_5Cycles);   
+    ADC_ChannelConfig(ADC1, ADC_Channel_5 , ADC_SampleTime_239_5Cycles);   
     /* ADC Calibration */
     ADC_GetCalibrationFactor(ADC1);
 
