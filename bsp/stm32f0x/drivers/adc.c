@@ -22,7 +22,6 @@ static void RCC_Configuration(void)
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
     /* Enable USART clock */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
-RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
 }
 
 static void GPIO_Configuration(void)
@@ -34,10 +33,58 @@ static void GPIO_Configuration(void)
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
+void gpb1_isr(void)
+{
+	static int a=0;
+	if(a==0){
+			GPIO_SetBits(GPIOA, GPIO_Pin_6);
+			a=1;
+			rt_kprintf("set buzzer on\r\n");
+		}
+	else
+		{
+		a=0;
+		GPIO_ResetBits(GPIOA,GPIO_Pin_6);
+		rt_kprintf("set buzzer off\r\n");
+		}
+}
+void key_config()
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+	EXTI_InitTypeDef EXTI_InitStructure;
 
+	
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB|RCC_AHBPeriph_GPIOA, ENABLE);
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_6;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_SetBits(GPIOA, GPIO_Pin_6);
+	
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
+	SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOB, EXTI_PinSource1);    /* Configure the SPI interrupt priority */
+	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_1_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPriority = 1;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+	EXTI_InitStructure.EXTI_Line = EXTI_Line1;
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	EXTI_Init(&EXTI_InitStructure);    /* Clear DM9000A EXTI line pending bit */
+	EXTI_ClearITPendingBit(EXTI_Line1);
+	
+}
 void rt_hw_adc_init(void)
 {
     ADC_InitTypeDef     ADC_InitStructure;
+    key_config();
     RCC_Configuration();
     GPIO_Configuration();
     /* ADCs DeInit */  
