@@ -142,7 +142,7 @@ void rt_hw_board_init()
 	SysTick_Config(SystemCoreClock / RT_TICK_PER_SECOND);
 
 	/* Initial usart deriver, and set console device */
-	rt_hw_usart_init();
+	//rt_hw_usart_init();
 	rt_hw_adc_init();
     //rt_hw_timer_init();
     //rt_hw_batt_init();

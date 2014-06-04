@@ -16,7 +16,7 @@
 
 /* SECTION: RT_DEBUG */
 /* Thread Debug */
-#define RT_DEBUG
+/*#define RT_DEBUG*/
 #define RT_DEBUG_INIT 1
 #define RT_USING_OVERFLOW_CHECK
 
@@ -61,14 +61,14 @@
 
 /* SECTION: Device System */
 /* Using Device System */
-#define RT_USING_DEVICE
+/*#define RT_USING_DEVICE*/
 // <bool name="RT_USING_DEVICE_IPC" description="Using device communication" default="true" />
-#define RT_USING_DEVICE_IPC
+/*#define RT_USING_DEVICE_IPC*/
 // <bool name="RT_USING_SERIAL" description="Using Serial" default="true" />
-#define RT_USING_SERIAL
+/*#define RT_USING_SERIAL*/
 
 /* SECTION: Console options */
-#define RT_USING_CONSOLE
+/*#define RT_USING_CONSOLE*/
 /* the buffer size of console*/
 #define RT_CONSOLEBUF_SIZE	128
 // <string name="RT_CONSOLE_DEVICE_NAME" description="The device name for console" default="uart1" />
@@ -77,7 +77,7 @@
 
 
 /* SECTION: finsh, a C-Express shell */
-#define RT_USING_FINSH
+/*#define RT_USING_FINSH*/
 /* configure finsh parameters */
 #define FINSH_THREAD_PRIORITY 25
 #define FINSH_THREAD_STACK_SIZE	1024
