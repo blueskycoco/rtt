@@ -33,22 +33,25 @@ static void led_thread_entry(void* parameter)
 {
 	while(1)
 	{
-        rt_hw_led1_on();
-        rt_thread_delay(RT_TICK_PER_SECOND);
+		  rt_hw_led1_on();
+		  rt_thread_delay(RT_TICK_PER_SECOND);
 
-        rt_hw_led1_off();
-        rt_thread_delay(RT_TICK_PER_SECOND);
+		  rt_hw_led1_off();
+		  rt_thread_delay(RT_TICK_PER_SECOND);
 	}
 }
 static void led1_thread_entry(void* parameter)
 {
+	init_18b20();
+
 	while(1)
 	{
-        rt_hw_led2_on();
-        rt_thread_delay(RT_TICK_PER_SECOND);
+		read_temp();
+		rt_hw_led2_on();
+		rt_thread_delay(RT_TICK_PER_SECOND);
 
-        rt_hw_led2_off();
-        rt_thread_delay(RT_TICK_PER_SECOND/2);
+		rt_hw_led2_off();
+		rt_thread_delay(RT_TICK_PER_SECOND/2);
 	}
 }
 

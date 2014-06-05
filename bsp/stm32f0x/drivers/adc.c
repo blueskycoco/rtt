@@ -105,8 +105,8 @@ void rt_hw_adc_init(void)
 
 	  /* Convert the ADC1 Channel 11 with 239.5 Cycles as
 	   * sampling time */ 
-	  ADC_ChannelConfig(ADC1, ADC_Channel_1 , ADC_SampleTime_239_5Cycles);   
-	  ADC_ChannelConfig(ADC1, ADC_Channel_5 , ADC_SampleTime_239_5Cycles);   
+	  //ADC_ChannelConfig(ADC1, ADC_Channel_1 , ADC_SampleTime_239_5Cycles);   
+	  //ADC_ChannelConfig(ADC1, ADC_Channel_5 , ADC_SampleTime_239_5Cycles);   
 	  /* ADC Calibration */
 	  ADC_GetCalibrationFactor(ADC1);
 
@@ -118,21 +118,21 @@ void rt_hw_adc_init(void)
 
 }
 
-//#include "finsh.h"
-uint16_t adc(void)
+uint16_t adc(unsigned char channel)
 {
 	  __IO uint16_t  ADC1ConvertedValue = 0, ADC1ConvertedVoltage = 0;
 	  /* ADC1 regular Software Start Conv */ 
+	  ADC_ChannelConfig(ADC1, channel,ADC_SampleTime_7_5Cycles);
 	  ADC_StartOfConversion(ADC1);
 	  /* Test EOC flag */
 	  while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);
 
 	  /* Get ADC1 converted data */
 	  ADC1ConvertedValue =ADC_GetConversionValue(ADC1);
+	  ADC_StopOfConversion(ADC1);
 
 	  /* Compute the voltage */
 	  ADC1ConvertedVoltage = (ADC1ConvertedValue *3300)/0xFFF;
 	  rt_kprintf("Voltage %d ==> %d\r\n",ADC1ConvertedVoltage,ADC1ConvertedValue);
 	  return ADC1ConvertedVoltage;
 }
-//FINSH_FUNCTION_EXPORT(adc, read adc);
