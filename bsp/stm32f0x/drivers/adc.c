@@ -19,7 +19,7 @@
 static void RCC_Configuration(void)
 {
 	  /* Enable GPIO clock */
-	  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+	  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA|RCC_AHBPeriph_GPIOB, ENABLE);
 	  /* Enable USART clock */
 	  RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1, ENABLE);
 }
@@ -28,11 +28,14 @@ static void GPIO_Configuration(void)
 {
 	  GPIO_InitTypeDef GPIO_InitStructure;
 
-	  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1|GPIO_Pin_5;
+	  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
 	  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
 	  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	  GPIO_Init(GPIOB, &GPIO_InitStructure);
+  	  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
 	  GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
+#if 0
 void gpb1_isr(void)
 {
 	  static int a=0;
@@ -82,10 +85,11 @@ void key_config()
 	  EXTI_ClearITPendingBit(EXTI_Line1);
 
 }
+#endif
 void rt_hw_adc_init(void)
 {
 	  ADC_InitTypeDef     ADC_InitStructure;
-	  key_config();
+	 // key_config();
 	  RCC_Configuration();
 	  GPIO_Configuration();
 	  /* ADCs DeInit */  
@@ -117,8 +121,8 @@ void rt_hw_adc_init(void)
 	  while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY)); 
 
 }
-
-uint16_t adc(unsigned char channel)
+/*channel 5 for shidu , channel 9 for battery vol */
+uint16_t read_adc(unsigned char channel)
 {
 	  __IO uint16_t  ADC1ConvertedValue = 0, ADC1ConvertedVoltage = 0;
 	  /* ADC1 regular Software Start Conv */ 
@@ -133,6 +137,6 @@ uint16_t adc(unsigned char channel)
 
 	  /* Compute the voltage */
 	  ADC1ConvertedVoltage = (ADC1ConvertedValue *3300)/0xFFF;
-	  rt_kprintf("Voltage %d ==> %d\r\n",ADC1ConvertedVoltage,ADC1ConvertedValue);
+	  rt_kprintf("Channel %d , Voltage %d ==> %d\r\n",channel , ADC1ConvertedVoltage,ADC1ConvertedValue);
 	  return ADC1ConvertedVoltage;
 }

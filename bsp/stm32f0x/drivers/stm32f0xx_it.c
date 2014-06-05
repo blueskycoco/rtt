@@ -67,7 +67,7 @@ void NMI_Handler(void)
 void SVC_Handler(void)
 {
 }
-
+#if 0
 void EXTI0_1_IRQHandler(void)
 {
 	extern void gpb1_isr(void);
@@ -82,6 +82,7 @@ void EXTI0_1_IRQHandler(void)
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
+#endif
 /******************************************************************************/
 /*                 STM32F0xx Peripherals Interrupt Handlers                   */
 /*  Add here the Interrupt Handler for the used peripheral(s) (PPP), for the  */

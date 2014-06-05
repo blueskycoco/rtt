@@ -12,7 +12,6 @@
  * 2009-01-05     Bernard      first implementation
  * 2013-11-15     bright       add RCC initial and print RCC freq function
  */
-
 #include <rthw.h>
 #include <rtthread.h>
 
@@ -20,6 +19,7 @@
 #include "usart.h"
 #include "adc.h"
 #include "timer.h"
+
 /* RT_USING_COMPONENTS_INIT */
 #ifdef  RT_USING_COMPONENTS_INIT
 #include <components.h>
@@ -43,6 +43,15 @@ void NVIC_Configuration(void)
 }
 void config_ITM()
 {
+	// The stimulus port from which SWO data is received and displayed.
+		unsigned int ITM_PORT_BIT0 = 0;
+	
+		// Has to be calculated according to the CPU speed and the output baud rate
+		unsigned int TargetDiv = 5;
+	
+		unsigned int StimulusRegs;
+
+#if 1
 #define ITM_ENA   (*(volatile unsigned int*)0xE0000E00) // ITM Enable
 #define ITM_TPR   (*(volatile unsigned int*)0xE0000E40) // Trace Privilege Register
 #define ITM_TCR   (*(volatile unsigned int*)0xE0000E80) // ITM Trace Control Reg.
@@ -58,42 +67,63 @@ void config_ITM()
 #define ITM_STIM_U32  (*(volatile unsigned int*)0xE0000000)
 #define ITM_STIM_U8   (*(volatile char*)0xE0000000)
 
-	// The stimulus port from which SWO data is received and displayed.
-	unsigned int ITM_PORT_BIT0 = 0;
-
-	// Has to be calculated according to the CPU speed and the output baud rate
-	unsigned int TargetDiv = 5;
-
-	unsigned int StimulusRegs;
-	//
-	// Enable access to SWO registers
-	//
 	DEMCR |= ( 1 << 24 );
 	ITM_LSR = 0xC5ACCE55;
-	//
-	// Initially disable ITM and stimulus port
-	// To make sure that nothing is transferred via SWO
-	// when changing the SWO prescaler etc.
-	//
-	StimulusRegs = ITM_ENA;
+	StimulusRegs =ITM_ENA;
 	StimulusRegs &= ~( 1 << ITM_PORT_BIT0 );
 	ITM_ENA = StimulusRegs; // Disable ITM stimulus port
 	ITM_TCR = 0;		 // Disable ITM
-
-	//
-	// Initialize SWO (prescaler, etc.)
-	//
 	TPIU_SPPR = 0x00000002;     // Select NRZ mode
 	TPIU_ACPR = TargetDiv - 1;  // Example: 72/48 = 1,5 MHz
 	ITM_TPR = 0x00000000;
 	DWT_CTRL = 0x400003FE;
 	FFCR = 0x00000100;
-	//
-	// Enable ITM and stimulus port
-	//
 	ITM_TCR = 0x1000D; // Enable ITM
 	ITM_ENA = StimulusRegs | ( 1 << ITM_PORT_BIT0 ); // Enable ITM stimulus port
 
+#else
+	
+	//
+	// Enable access to SWO registers
+	//
+
+	//DEMCR |= ( 1 << 24 );
+	CoreDebug->DEMCR  |= ( 1 << 24 );
+	//ITM_LSR = 0xC5ACCE55;
+	ITM->LAR = 0xC5ACCE55;
+	//
+	// Initially disable ITM and stimulus port
+	// To make sure that nothing is transferred via SWO
+	// when changing the SWO prescaler etc.
+	//
+	StimulusRegs =ITM->TER;// ITM_ENA;
+	StimulusRegs &= ~( 1 << ITM_PORT_BIT0 );
+	//ITM_ENA = StimulusRegs; // Disable ITM stimulus port
+	ITM->TER=  StimulusRegs;
+	//ITM_TCR = 0;		 // Disable ITM
+	ITM->TCR=0;
+
+	//
+	// Initialize SWO (prescaler, etc.)
+	//
+	//TPIU_SPPR = 0x00000002;     // Select NRZ mode
+	TPI->SPPR = 0x00000002;
+	//TPIU_ACPR = TargetDiv - 1;  // Example: 72/48 = 1,5 MHz
+	TPI->ACPR = TargetDiv - 1;
+	//ITM_TPR = 0x00000000;
+	ITM->TPR = 0x00000000;
+	//DWT_CTRL = 0x400003FE;
+	DWT->CTRL = 0x400003FE;
+	//FFCR = 0x00000100;
+	TPI->FFCR = 0x00000100;
+	//
+	// Enable ITM and stimulus port
+	//
+	//ITM_TCR = 0x1000D; // Enable ITM
+	ITM->TCR = 0x1000D;
+	//ITM_ENA = StimulusRegs | ( 1 << ITM_PORT_BIT0 ); // Enable ITM stimulus port
+	ITM->TER = StimulusRegs | ( 1 << ITM_PORT_BIT0 );
+#endif
 }
 /**
 * @brief  Inserts a delay time.
