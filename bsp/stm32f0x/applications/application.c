@@ -70,7 +70,7 @@ static void system_thread_entry(void* parameter)
 		rt_hw_led2_on();
 		//rt_hw_led1_on();
 		rt_thread_delay(RT_TICK_PER_SECOND);
-		buzzer_ctl(0);
+		//buzzer_ctl(0);
 		rt_hw_led2_off();
 		rt_thread_delay(RT_TICK_PER_SECOND);
 

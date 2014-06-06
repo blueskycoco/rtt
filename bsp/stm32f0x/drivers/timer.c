@@ -38,6 +38,7 @@ void buzzer_ctl(int flag)
 		TIM_ITConfig(TIM3, TIM_IT_CC1, ENABLE);
 		/* TIM2 enable counter */
 		TIM_Cmd(TIM3, ENABLE);
+		TIM_CtrlPWMOutputs(TIM3, ENABLE);
 	}
 	else
 	{
@@ -45,6 +46,7 @@ void buzzer_ctl(int flag)
 		TIM_ITConfig(TIM3, TIM_IT_CC1, DISABLE);
 		/* TIM2 enable counter */
 		TIM_Cmd(TIM3, DISABLE);
+		TIM_CtrlPWMOutputs(TIM1, DISABLE);
 	}
 
 }
@@ -52,14 +54,22 @@ void rt_hw_timer_init(void)
 {
     TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
     TIM_OCInitTypeDef        TIM_OCInitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure;
     uint16_t PrescalerValue = 0;
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-    GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1);
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP ;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_5);
 
     PrescalerValue = (uint16_t) (SystemCoreClock  / 10000) - 1;
-    RCC_Configuration();
+    //RCC_Configuration();
+     RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM16, ENABLE);
     /* TIM3 Configuration */
-    TIM_DeInit(TIM3);
+    TIM_DeInit(TIM16);
     TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
     TIM_OCStructInit(&TIM_OCInitStructure);  
     /* Time base configuration */
@@ -67,16 +77,25 @@ void rt_hw_timer_init(void)
     TIM_TimeBaseStructure.TIM_Prescaler = 0x0;       
     TIM_TimeBaseStructure.TIM_ClockDivision = 0x0;    
     TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;  
-    TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
-    TIM_PrescalerConfig(TIM3, PrescalerValue, TIM_PSCReloadMode_Immediate);
+    TIM_TimeBaseStructure.TIM_RepetitionCounter = 0;
+    TIM_TimeBaseInit(TIM16, &TIM_TimeBaseStructure);
+ //   TIM_PrescalerConfig(TIM3, PrescalerValue, TIM_PSCReloadMode_Immediate);
     
     /* Output Compare PWM Mode configuration */
-    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_Timing;
-    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;           
+    TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;//TIM_OCMode_Timing;
+    TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;       
+    TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable;
     TIM_OCInitStructure.TIM_Pulse = 100000;
-    TIM_OC1Init(TIM3, &TIM_OCInitStructure);
+    TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_Low;
+  TIM_OCInitStructure.TIM_OCNPolarity = TIM_OCNPolarity_High;
+  TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Set;
+  TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCIdleState_Reset;
+    TIM_OC1Init(TIM16, &TIM_OCInitStructure);
 
-    TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Disable);
+    //TIM_OC1PreloadConfig(TIM16, TIM_OCPreload_Enable);
+    //TIM_ARRPreloadConfig(TIM16, ENABLE);
+		TIM_Cmd(TIM16, ENABLE);
+	//	TIM_CtrlPWMOutputs(TIM16, ENABLE);
 
 }
 void TIM3_IRQHandler(void)
@@ -94,5 +113,5 @@ void TIM3_IRQHandler(void)
     }
     rt_interrupt_leave();
 }
-INIT_DEVICE_EXPORT(rt_hw_timer_init);
+//INIT_DEVICE_EXPORT(rt_hw_timer_init);
 
