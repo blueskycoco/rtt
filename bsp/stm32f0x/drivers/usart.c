@@ -171,4 +171,5 @@ void USART1_IRQHandler(void)
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
+INIT_DEVICE_EXPORT(uart_config);
 

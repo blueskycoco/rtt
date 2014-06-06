@@ -56,16 +56,19 @@ static void led1_thread_entry(void* parameter)
 #endif
 static void system_thread_entry(void* parameter)
 {
-	rt_hw_adc_init();
-    	rt_hw_timer_init();
-	init_18b20();
+
+	//rt_hw_adc_init();
+    	//rt_hw_timer_init();
+	//init_18b20();
 	while(1)
 	{
+		//rt_kprintf("1234\r\n");
 		rt_kprintf("temp %x\r\n",read_temp());
-		rt_kprintf("battery %x\r\n",read_adc(9));
-		rt_kprintf("shidu %x\r\n",read_adc(5));
-		buzzer_ctl(1);
+		//rt_kprintf("battery %x\r\n",read_adc(9));
+		//rt_kprintf("shidu %x\r\n",read_adc(5));
+		//buzzer_ctl(1);
 		rt_hw_led2_on();
+		//rt_hw_led1_on();
 		rt_thread_delay(RT_TICK_PER_SECOND);
 		buzzer_ctl(0);
 		rt_hw_led2_off();
@@ -86,7 +89,7 @@ static void rt_init_thread_entry(void* parameter)
 #ifdef  RT_USING_FINSH
     finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif  /* RT_USING_FINSH */
-
+//rt_hw_led1_off();
     /* Create led thread */
     system_thread = rt_thread_create("system",
     		system_thread_entry, RT_NULL,

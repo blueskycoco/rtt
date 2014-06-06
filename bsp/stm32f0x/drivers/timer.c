@@ -94,3 +94,5 @@ void TIM3_IRQHandler(void)
     }
     rt_interrupt_leave();
 }
+INIT_DEVICE_EXPORT(rt_hw_timer_init);
+
