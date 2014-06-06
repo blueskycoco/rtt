@@ -30,16 +30,35 @@ static void RCC_Configuration(void)
     NVIC_Init(&NVIC_InitStructure);
 
 }
+void buzzer_ctl(int flag)
+{
+	if(flag==1)
+	{
+		/* TIM Interrupts enable */
+		TIM_ITConfig(TIM3, TIM_IT_CC1, ENABLE);
+		/* TIM2 enable counter */
+		TIM_Cmd(TIM3, ENABLE);
+	}
+	else
+	{
+		/* TIM Interrupts enable */
+		TIM_ITConfig(TIM3, TIM_IT_CC1, DISABLE);
+		/* TIM2 enable counter */
+		TIM_Cmd(TIM3, DISABLE);
+	}
 
+}
 void rt_hw_timer_init(void)
 {
     TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
     TIM_OCInitTypeDef        TIM_OCInitStructure;
     uint16_t PrescalerValue = 0;
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_1);
 
     PrescalerValue = (uint16_t) (SystemCoreClock  / 10000) - 1;
     RCC_Configuration();
-    /* TIM2 Configuration */
+    /* TIM3 Configuration */
     TIM_DeInit(TIM3);
     TIM_TimeBaseStructInit(&TIM_TimeBaseStructure);
     TIM_OCStructInit(&TIM_OCInitStructure);  
@@ -55,27 +74,23 @@ void rt_hw_timer_init(void)
     TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_Timing;
     TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;           
     TIM_OCInitStructure.TIM_Pulse = 100000;
-    TIM_OC4Init(TIM3, &TIM_OCInitStructure);
+    TIM_OC1Init(TIM3, &TIM_OCInitStructure);
 
-    TIM_OC4PreloadConfig(TIM3, TIM_OCPreload_Disable);
+    TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Disable);
 
-    /* TIM Interrupts enable */
-    TIM_ITConfig(TIM3, TIM_IT_CC4, ENABLE);
-    /* TIM2 enable counter */
-    TIM_Cmd(TIM3, ENABLE);
 }
 void TIM3_IRQHandler(void)
 {
     uint16_t capture = 0;
     rt_interrupt_enter();
-    if (TIM_GetITStatus(TIM3, TIM_IT_CC4) != RESET)
+    if (TIM_GetITStatus(TIM3, TIM_IT_CC1) != RESET)
     {
-        TIM_ClearITPendingBit(TIM3, TIM_IT_CC4);
+        TIM_ClearITPendingBit(TIM3, TIM_IT_CC1);
 
         rt_kprintf("timer int\r\n");
         //read_batt();
-        capture = TIM_GetCapture4(TIM3);
-        TIM_SetCompare4(TIM3, capture + 1000);
+        capture = TIM_GetCapture1(TIM3);
+        TIM_SetCompare1(TIM3, capture + 1000);
     }
     rt_interrupt_leave();
 }

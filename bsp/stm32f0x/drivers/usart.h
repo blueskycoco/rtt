@@ -19,12 +19,7 @@
 #include <rtthread.h>
 #include "stm32f0xx.h"
 
-#define RT_USING_UART1
-//#define RT_USING_UART2
-
-#define UART_ENABLE_IRQ(n)            NVIC_EnableIRQ((n))
-#define UART_DISABLE_IRQ(n)           NVIC_DisableIRQ((n))
-
-void rt_hw_usart_init(void);
-
+void uart_config();
+int uart_send(int index,unsigned char byte);
+int uart_recv(int index);
 #endif
