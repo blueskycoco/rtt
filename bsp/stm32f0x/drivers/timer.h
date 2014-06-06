@@ -20,5 +20,6 @@
 #include "stm32f0xx.h"
 
 void rt_hw_timer_init(void);
+void buzzer_ctl(int flag);
 
 #endif

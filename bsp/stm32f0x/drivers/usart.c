@@ -157,6 +157,7 @@ void USART1_IRQHandler(void)
 			break;
 
 			//serial_ringbuffer_putc(serial->int_rx, ch);
+			rt_kprintf("<< %\r\n",ch);
 		}
 		/* clear interrupt */
 		USART_ClearITPendingBit(USART1, USART_IT_RXNE);

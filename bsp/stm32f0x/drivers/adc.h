@@ -19,7 +19,6 @@
 #include <rtthread.h>
 #include "stm32f0xx.h"
 
-#define RT_USING_ADC
 uint16_t read_adc(unsigned char channel);
 void rt_hw_adc_init(void);
 

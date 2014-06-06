@@ -27,7 +27,7 @@
 #endif  /* RT_USING_COMPONENTS_INIT */
 
 #include "led.h"
-
+#if 0
 /* led thread entry */
 static void led_thread_entry(void* parameter)
 {
@@ -42,11 +42,10 @@ static void led_thread_entry(void* parameter)
 }
 static void led1_thread_entry(void* parameter)
 {
-	init_18b20();
 
 	while(1)
 	{
-		read_temp();
+		rt_kprintf("temp %x\r\n",read_temp());
 		rt_hw_led2_on();
 		rt_thread_delay(RT_TICK_PER_SECOND);
 
@@ -54,10 +53,29 @@ static void led1_thread_entry(void* parameter)
 		rt_thread_delay(RT_TICK_PER_SECOND/2);
 	}
 }
+#endif
+static void system_thread_entry(void* parameter)
+{
+	rt_hw_adc_init();
+    	rt_hw_timer_init();
+	init_18b20();
+	while(1)
+	{
+		rt_kprintf("temp %x\r\n",read_temp());
+		rt_kprintf("battery %x\r\n",read_adc(9));
+		rt_kprintf("shidu %x\r\n",read_adc(5));
+		buzzer_ctl(1);
+		rt_hw_led2_on();
+		rt_thread_delay(RT_TICK_PER_SECOND);
+		buzzer_ctl(0);
+		rt_hw_led2_off();
+		rt_thread_delay(RT_TICK_PER_SECOND);
 
+	}
+}
 static void rt_init_thread_entry(void* parameter)
 {
-	rt_thread_t led_thread;
+	rt_thread_t system_thread;
 
 /* Initialization RT-Thread Components */
 #ifdef RT_USING_COMPONENTS_INIT
@@ -70,16 +88,11 @@ static void rt_init_thread_entry(void* parameter)
 #endif  /* RT_USING_FINSH */
 
     /* Create led thread */
-    led_thread = rt_thread_create("led",
-    		led_thread_entry, RT_NULL,
-    		256, 20, 20);
-    if(led_thread != RT_NULL)
-    	rt_thread_startup(led_thread);
-        led_thread = rt_thread_create("led1",
-    		led1_thread_entry, RT_NULL,
-    		256, 20, 20);
-    if(led_thread != RT_NULL)
-    	rt_thread_startup(led_thread);
+    system_thread = rt_thread_create("system",
+    		system_thread_entry, RT_NULL,
+    		1024, 20, 20);
+    if(system_thread != RT_NULL)
+    	rt_thread_startup(system_thread);
 
 }
 
