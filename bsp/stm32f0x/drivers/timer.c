@@ -21,7 +21,7 @@ void buzzer_ctl(int flag)
   static uint16_t x=0;
   if(flag==1)
   {
-	rt_kprintf("compare %d\r\n",TIM_GetCapture1(TIM3));
+	//rt_kprintf("compare %d\r\n",TIM_GetCapture1(TIM3));
 	if(x==MAX_LEVEL)
 	  x=PLUS;
 	else
@@ -76,5 +76,5 @@ void rt_hw_timer_init(void)
   TIM_Cmd(TIM3, ENABLE);
   TIM_CtrlPWMOutputs(TIM3, ENABLE);
 }
-INIT_DEVICE_EXPORT(rt_hw_timer_init);
+//INIT_DEVICE_EXPORT(rt_hw_timer_init);
 

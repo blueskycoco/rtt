@@ -171,5 +171,16 @@ void USART1_IRQHandler(void)
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
+void wifi_start()
+{
+	//unsigned char tmp[3]={"+++"};
+	rt_kprintf("wifi_start 1\r\n");
+	uart_send(0,'+');
+	uart_send(0,'+');
+	uart_send(0,'+');
+	uart_send(0,'\r');
+	uart_send(0,'\n');
+	rt_kprintf("wifi_start 2\r\n");
+}
 INIT_DEVICE_EXPORT(uart_config);
 

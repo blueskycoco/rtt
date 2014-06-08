@@ -62,13 +62,14 @@ static void system_thread_entry(void* parameter)
     	//rt_hw_timer_init();
 	//init_18b20();
 	int x;
+	wifi_start();
 	while(1)
 	{
 		//rt_kprintf("1234\r\n");
 		x=ds18b20_read();
 		rt_kprintf("temp %d.%doC\r\n",x>>8,x&0xff);
-		//rt_kprintf("battery %x\r\n",read_adc(9));
-		//rt_kprintf("shidu %x\r\n",read_adc(5));
+		rt_kprintf("battery %d\r\n",read_adc(9));
+		rt_kprintf("shidu %d\r\n",read_adc(5));
 		buzzer_ctl(1);
 		rt_hw_led2_on();
 		//rt_hw_led1_on();
