@@ -147,9 +147,11 @@ void USART1_IRQHandler(void)
 
 	int ch=-1;
 	/* enter interrupt */
+	rt_kprintf("Enter usart1 recv  int\r\n");
 	rt_interrupt_enter();
 	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
 	{
+		
 		while (1)
 		{
 			ch = uart_recv(0);
@@ -171,16 +173,10 @@ void USART1_IRQHandler(void)
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
-void wifi_start()
+void wifi_send(const char *s)
 {
-	//unsigned char tmp[3]={"+++"};
-	rt_kprintf("wifi_start 1\r\n");
-	uart_send(0,'+');
-	uart_send(0,'+');
-	uart_send(0,'+');
-	uart_send(0,'\r');
-	uart_send(0,'\n');
-	rt_kprintf("wifi_start 2\r\n");
+	while(*s!='\0')
+		uart_send(0,*s++);
 }
 INIT_DEVICE_EXPORT(uart_config);
 
