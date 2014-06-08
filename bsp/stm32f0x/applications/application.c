@@ -27,6 +27,7 @@
 #endif  /* RT_USING_COMPONENTS_INIT */
 
 #include "led.h"
+extern unsigned short ds18b20_read(void);
 #if 0
 /* led thread entry */
 static void led_thread_entry(void* parameter)
@@ -60,10 +61,12 @@ static void system_thread_entry(void* parameter)
 	//rt_hw_adc_init();
     	//rt_hw_timer_init();
 	//init_18b20();
+	int x;
 	while(1)
 	{
 		//rt_kprintf("1234\r\n");
-		rt_kprintf("temp %x\r\n",read_temp());
+		x=ds18b20_read();
+		rt_kprintf("temp %d.%doC\r\n",x>>8,x&0xff);
 		//rt_kprintf("battery %x\r\n",read_adc(9));
 		//rt_kprintf("shidu %x\r\n",read_adc(5));
 		buzzer_ctl(1);
@@ -93,7 +96,7 @@ static void rt_init_thread_entry(void* parameter)
     /* Create led thread */
     system_thread = rt_thread_create("system",
     		system_thread_entry, RT_NULL,
-    		1024, 20, 20);
+    		2048, 20, 20);
     if(system_thread != RT_NULL)
     	rt_thread_startup(system_thread);
 
