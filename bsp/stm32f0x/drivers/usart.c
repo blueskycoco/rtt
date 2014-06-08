@@ -80,7 +80,8 @@ void uart_config()
 	NVIC_InitStructure.NVIC_IRQChannelPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
-
+	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
+	NVIC_Init(&NVIC_InitStructure);
 	USART_InitStructure.USART_BaudRate = 115200;
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
@@ -99,8 +100,8 @@ void uart_config()
 	/* Enable USART */
 	USART_Cmd(USART2, ENABLE);
 	/* enable interrupt */
-	//USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
-	//NVIC_EnableIRQ(USART2_IRQn);
+	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
+	NVIC_EnableIRQ(USART2_IRQn);
 
 
 	return ;
@@ -173,6 +174,38 @@ void USART1_IRQHandler(void)
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
+void USART2_IRQHandler(void)
+{
+
+	int ch=-1;
+	/* enter interrupt */
+	wifi_send("Enter usart2 recv  int\r\n");
+	rt_interrupt_enter();
+	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
+	{
+		
+		while (1)
+		{
+			ch = uart_recv(0);
+			if (ch == -1)
+			break;
+
+			//serial_ringbuffer_putc(serial->int_rx, ch);
+			//rt_kprintf("<< %\r\n",ch);
+		}
+		/* clear interrupt */
+		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
+	}
+	if (USART_GetITStatus(USART2, USART_IT_TC) != RESET)
+	{
+		/* clear interrupt */
+		USART_ClearITPendingBit(USART2, USART_IT_TC);
+	}
+
+	/* leave interrupt */
+	rt_interrupt_leave();
+}
+
 void wifi_send(const char *s)
 {
 	while(*s!='\0')
