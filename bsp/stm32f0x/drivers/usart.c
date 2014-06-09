@@ -220,5 +220,5 @@ void wifi_send(const char *s)
 	while(*s!='\0')
 		uart_send(0,*s++);
 }
-INIT_DEVICE_EXPORT(uart_config);
+//INIT_DEVICE_EXPORT(uart_config);
 

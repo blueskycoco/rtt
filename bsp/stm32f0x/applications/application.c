@@ -66,23 +66,23 @@ static void system_thread_entry(void* parameter)
 	while(1)
 	{
 		//rt_kprintf("1234\r\n");
-		x=ds18b20_read();
-		rt_sprintf(buf,"temp %d.%doC\r\nbattery %d\r\nshidu %d\r\n",x>>8,x&0xff,read_adc(9),read_adc(5));
+		//x=ds18b20_read();
+		//rt_sprintf(buf,"temp %d.%doC\r\nbattery %d\r\nshidu %d\r\n",x>>8,x&0xff,read_adc(9),read_adc(5));
 		//rt_kprintf("temp %d.%doC\r\n",x>>8,x&0xff);
 		//rt_kprintf("battery %d\r\n",read_adc(9));
 		//rt_kprintf("shidu %d\r\n",read_adc(5));
-		rt_kprintf("%s",buf);
+		//rt_kprintf("%s",buf);
 		//wifi_send("temp ");
 		//wifi_send(x>>8+40);
 		//wifi_send(".");
 		//wifi_send(x&0xff+40);
 		//wifi_send("oC\r\n");
-		wifi_send(buf);
-		buzzer_ctl(1);
+		//wifi_send(buf);
+		//buzzer_ctl(1);
 		rt_hw_led2_on();
 		//rt_hw_led1_on();
 		rt_thread_delay(RT_TICK_PER_SECOND);
-		buzzer_ctl(0);
+		//buzzer_ctl(0);
 		rt_hw_led2_off();
 		rt_thread_delay(RT_TICK_PER_SECOND);
 
@@ -105,7 +105,7 @@ static void rt_init_thread_entry(void* parameter)
     /* Create led thread */
     system_thread = rt_thread_create("system",
     		system_thread_entry, RT_NULL,
-    		2048, 20, 20);
+    		512, 20, 20);
     if(system_thread != RT_NULL)
     	rt_thread_startup(system_thread);
 
