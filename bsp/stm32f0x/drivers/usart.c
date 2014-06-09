@@ -91,18 +91,18 @@ void uart_config()
 	USART_Init(USART1, &USART_InitStructure);
 
 	/* Enable USART */
-	USART_Cmd(USART1, ENABLE);
 	/* enable interrupt */
 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 	NVIC_EnableIRQ(USART1_IRQn);
 
+	USART_Cmd(USART1, ENABLE);
 	USART_Init(USART2, &USART_InitStructure);
 	/* Enable USART */
-	USART_Cmd(USART2, ENABLE);
 	/* enable interrupt */
 	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
 	NVIC_EnableIRQ(USART2_IRQn);
 
+	USART_Cmd(USART2, ENABLE);
 
 	return ;
 }
@@ -130,6 +130,7 @@ int uart_recv(int index)
 		if (USART1->ISR & USART_FLAG_RXNE)
 		{
 			ch = USART1->RDR & 0xff;
+			
 		}
 	}
 	else	
@@ -148,8 +149,9 @@ void USART1_IRQHandler(void)
 
 	int ch=-1;
 	/* enter interrupt */
-	rt_kprintf("Enter usart1 recv  int\r\n");
+	//rt_kprintf("Enter usart1 recv  int\r\n");
 	rt_interrupt_enter();
+	//USART_ITConfig(USART1, USART_IT_RXNE, DISABLE);
 	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
 	{
 		
@@ -160,7 +162,7 @@ void USART1_IRQHandler(void)
 			break;
 
 			//serial_ringbuffer_putc(serial->int_rx, ch);
-			rt_kprintf("<< %\r\n",ch);
+			//rt_kprintf("<< %c\r\n",ch);
 		}
 		/* clear interrupt */
 		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
@@ -170,7 +172,7 @@ void USART1_IRQHandler(void)
 		/* clear interrupt */
 		USART_ClearITPendingBit(USART1, USART_IT_TC);
 	}
-
+	//USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
@@ -178,23 +180,30 @@ void USART2_IRQHandler(void)
 {
 
 	int ch=-1;
+	unsigned char buf[20];
 	/* enter interrupt */
-	wifi_send("Enter usart2 recv  int\r\n");
+	//rt_sprintf(buf,"Enter usart2 recv int %x\r\n",USART_GetITStatus(USART2, USART_IT_RXNE));
+	//wifi_send("Enter usart2 recv  int ");
+	//wifi_send(buf);
+	//wifi_send("\r\n");
 	rt_interrupt_enter();
 	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
 	{
-		
+		//wifi_send("2\r\n");
 		while (1)
 		{
-			ch = uart_recv(0);
+			ch = uart_recv(1);
+			//rt_sprintf(buf,"rcv %c\r\n",ch);
+			//wifi_send(buf);
 			if (ch == -1)
 			break;
 
 			//serial_ringbuffer_putc(serial->int_rx, ch);
-			//rt_kprintf("<< %\r\n",ch);
+			//rt_kprintf("<< %c\r\n",ch);
 		}
 		/* clear interrupt */
 		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
+		//wifi_send("3\r\n");
 	}
 	if (USART_GetITStatus(USART2, USART_IT_TC) != RESET)
 	{
