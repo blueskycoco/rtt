@@ -140,5 +140,5 @@ uint16_t read_adc(unsigned char channel)
 	  rt_kprintf("Channel %d , Voltage %d ==> %d\r\n",channel , ADC1ConvertedVoltage,ADC1ConvertedValue);
 	  return ADC1ConvertedVoltage;
 }
-//INIT_DEVICE_EXPORT(rt_hw_adc_init);
+INIT_DEVICE_EXPORT(rt_hw_adc_init);
 

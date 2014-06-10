@@ -17,10 +17,10 @@
 #include "usart.h"
 #define USE_UART2 0
 /* USART1 */
-#define UART1_GPIO_TX			GPIO_Pin_9
-#define UART1_GPIO_TX_SOURCE	GPIO_PinSource9
-#define UART1_GPIO_RX			GPIO_Pin_10
-#define UART1_GPIO_RX_SOURCE	GPIO_PinSource10
+#define UART1_GPIO_TX			GPIO_Pin_2
+#define UART1_GPIO_TX_SOURCE	GPIO_PinSource2
+#define UART1_GPIO_RX			GPIO_Pin_3
+#define UART1_GPIO_RX_SOURCE	GPIO_PinSource3
 #define UART1_GPIO_AF			GPIO_AF_1
 #define UART1_GPIO				GPIOA
 #if USE_UART2
@@ -237,5 +237,5 @@ void wifi_send(const char *s)
 	while(*s!='\0')
 		uart_send(0,*s++);
 }
-//INIT_DEVICE_EXPORT(uart_config);
+INIT_DEVICE_EXPORT(uart_config);
 

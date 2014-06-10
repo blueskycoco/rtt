@@ -221,5 +221,5 @@ unsigned short ds18b20_read(void)
  //rt_kprintf("read 3\r\n");
  return  Temperature;
 }
-//INIT_DEVICE_EXPORT(ds18b20_start);
+INIT_DEVICE_EXPORT(ds18b20_start);
 

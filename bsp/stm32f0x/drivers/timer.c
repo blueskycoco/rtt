@@ -73,8 +73,8 @@ void rt_hw_timer_init(void)
   TIM_OCInitStructure.TIM_OCIdleState = TIM_OCIdleState_Reset;
   TIM_OCInitStructure.TIM_OCNIdleState = TIM_OCIdleState_Reset;
   TIM_OC1Init(TIM3, &TIM_OCInitStructure);
-  TIM_Cmd(TIM3, ENABLE);
+  //TIM_Cmd(TIM3, ENABLE);
   TIM_CtrlPWMOutputs(TIM3, ENABLE);
 }
-//INIT_DEVICE_EXPORT(rt_hw_timer_init);
+INIT_DEVICE_EXPORT(rt_hw_timer_init);
 

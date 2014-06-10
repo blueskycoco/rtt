@@ -66,8 +66,8 @@ static void system_thread_entry(void* parameter)
 	while(1)
 	{
 		//rt_kprintf("1234\r\n");
-		//x=ds18b20_read();
-		//rt_sprintf(buf,"temp %d.%doC\r\nbattery %d\r\nshidu %d\r\n",x>>8,x&0xff,read_adc(9),read_adc(5));
+		x=ds18b20_read();
+		rt_sprintf(buf,"temp %d.%doC\r\nbattery %d\r\nshidu %d\r\n",x>>8,x&0xff,read_adc(9),read_adc(5));
 		//rt_kprintf("temp %d.%doC\r\n",x>>8,x&0xff);
 		//rt_kprintf("battery %d\r\n",read_adc(9));
 		//rt_kprintf("shidu %d\r\n",read_adc(5));
@@ -77,7 +77,7 @@ static void system_thread_entry(void* parameter)
 		//wifi_send(".");
 		//wifi_send(x&0xff+40);
 		//wifi_send("oC\r\n");
-		//wifi_send(buf);
+		wifi_send(buf);
 		//buzzer_ctl(1);
 		rt_hw_led2_on();
 		//rt_hw_led1_on();
