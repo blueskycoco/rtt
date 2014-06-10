@@ -14,7 +14,7 @@ src += Glob('STM32F0xx_StdPeriph_Driver/src/*.c')
 
 #add for startup script 
 if rtconfig.CROSS_TOOL == 'gcc':
-     src = src + ['CMSIS/Device/ST/STM32F0xx/Source/Templates/gcc_ride7/startup_stm32f030.s']
+     src = src + ['CMSIS/Device/ST/STM32F0xx/Source/Templates/gcc_ride7/startup_stm32f0xx.s']
 elif rtconfig.CROSS_TOOL == 'keil':
      src = src + ['CMSIS/Device/ST/STM32F0xx/Source/Templates/arm/startup_stm32f0xx.s']
 elif rtconfig.CROSS_TOOL == 'iar':

@@ -40,7 +40,7 @@ void rt_hw_led_init(void)
     //GPIO_Init(GPIOC, &GPIO_InitStructure);
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4|GPIO_Pin_7;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
-    GPIO_SetBits(GPIOA, GPIO_Pin_7);
+    //GPIO_SetBits(GPIOA, GPIO_Pin_7);
     //rt_hw_led2_off();
     //while(1);
 }

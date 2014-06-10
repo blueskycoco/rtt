@@ -133,6 +133,7 @@ void SysTick_Handler(void)
  */
 void rt_hw_board_init()
 {
+
 	/* NVIC Configuration */
 	NVIC_Configuration();
 	
@@ -151,10 +152,12 @@ void rt_hw_board_init()
 #ifdef PRINT_RCC_FREQ_INFO
 	print_rcc_freq_info();
 #endif
+
 	/* Call components board initial (use INIT_BOARD_EXPORT()) */
 #ifdef RT_USING_COMPONENTS_INIT
     rt_components_board_init();
 #endif
+
 }
 void rt_hw_console_output(const char* string)
 {
@@ -169,7 +172,7 @@ void rt_hw_console_output(const char* string)
 		string++;
 	}
 #else
-wifi_send(string);
+//wifi_send(string);
 #endif
 	//rt_hw_led1_off();
 }
