@@ -1,9 +1,9 @@
-;******************** (C) COPYRIGHT 2013 STMicroelectronics ********************
+;******************** (C) COPYRIGHT 2014 STMicroelectronics ********************
 ;* File Name          : startup_stm32f0xx.s
 ;* Author             : MCD Application Team
-;* Version            : V1.2.1
-;* Date               : 22-November-2013
-;* Description        : STM32F0xx Medium-density devices vector table for MDK-ARM toolchain.
+;* Version            : V1.3.1
+;* Date               : 17-January-2014 
+;* Description        : STM32F051 devices vector table for MDK-ARM toolchain.
 ;*                      This module performs:
 ;*                      - Set the initial SP
 ;*                      - Set the initial PC == Reset_Handler

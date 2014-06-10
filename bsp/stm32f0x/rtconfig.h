@@ -68,11 +68,11 @@
 /*#define RT_USING_SERIAL*/
 
 /* SECTION: Console options */
-/*#define RT_USING_CONSOLE*/
+#define RT_USING_CONSOLE
 /* the buffer size of console*/
 #define RT_CONSOLEBUF_SIZE	128
 // <string name="RT_CONSOLE_DEVICE_NAME" description="The device name for console" default="uart1" />
-#define RT_CONSOLE_DEVICE_NAME	    "uart2"
+#define RT_CONSOLE_DEVICE_NAME	    "uart1"
 
 
 

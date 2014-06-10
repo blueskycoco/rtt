@@ -2,14 +2,14 @@
   ******************************************************************************
   * @file    stm32f0xx_i2c_cpal_hal.h
   * @author  MCD Application Team
-  * @version V1.0.0
-  * @date    20-April-2012
+  * @version V1.1.0
+  * @date    16-January-2014
   * @brief   This file contains all the functions prototypes for the CPAL_I2C_HAL
   *          firmware layer.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT 2014 STMicroelectronics</center></h2>
   *
   * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
   * You may not use this file except in compliance with the License.
@@ -275,9 +275,15 @@ extern "C" {
 #define CPAL_I2C2_DMA_CLK               RCC_AHBPeriph_DMA1
 
 #define CPAL_I2C2_IT_IRQn               I2C2_IRQn
-#define CPAL_I2C2_DMA_IRQn              DMA1_Channel4_5_IRQn
+#ifdef STM32F072
+ #define CPAL_I2C2_DMA_IRQn              DMA1_Channel4_5_6_7_IRQn
+ #define CPAL_I2C2_DMA_IRQHandler        DMA1_Channel4_5_6_7IRQHandler
+#else
+ #define CPAL_I2C2_DMA_IRQn              DMA1_Channel4_5_IRQn
+ #define CPAL_I2C2_DMA_IRQHandler        DMA1_Channel4_5_IRQHandler
+#endif /* STM32F072 */ 
 
-#define CPAL_I2C2_DMA_IRQHandler        DMA1_Channel4_5_IRQHandler
+
 
 #define CPAL_I2C2_DMA_TX_TC_FLAG        DMA1_FLAG_TC4
 #define CPAL_I2C2_DMA_TX_HT_FLAG        DMA1_FLAG_HT4

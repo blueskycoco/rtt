@@ -15,7 +15,7 @@
 #include <stm32f0xx.h>
 //#include <rtdevice.h>
 #include "usart.h"
-
+#define USE_UART2 0
 /* USART1 */
 #define UART1_GPIO_TX			GPIO_Pin_9
 #define UART1_GPIO_TX_SOURCE	GPIO_PinSource9
@@ -23,7 +23,7 @@
 #define UART1_GPIO_RX_SOURCE	GPIO_PinSource10
 #define UART1_GPIO_AF			GPIO_AF_1
 #define UART1_GPIO				GPIOA
-
+#if USE_UART2
 /* USART2 */
 #define UART2_GPIO_TX			GPIO_Pin_2
 #define UART2_GPIO_TX_SOURCE	GPIO_PinSource2
@@ -31,7 +31,7 @@
 #define UART2_GPIO_RX_SOURCE	GPIO_PinSource3
 #define UART2_GPIO_AF			GPIO_AF_1
 #define UART2_GPIO				GPIOA
-
+#endif
 void uart_config()
 {
 	USART_InitTypeDef USART_InitStructure;
@@ -41,10 +41,6 @@ void uart_config()
 	/* Enable USART clock */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 
-	/* Enable GPIO clock */
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-	/* Enable USART clock */
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 
 	/* Connect PXx to USARTx_Tx */
 	GPIO_PinAFConfig(UART1_GPIO, UART1_GPIO_TX_SOURCE, UART1_GPIO_AF);
@@ -60,19 +56,6 @@ void uart_config()
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 	GPIO_Init(UART1_GPIO, &GPIO_InitStructure);
 
-	/* Connect PXx to USARTx_Tx */
-	GPIO_PinAFConfig(UART2_GPIO, UART2_GPIO_TX_SOURCE, UART2_GPIO_AF);
-
-	/* Connect PXx to USARTx_Rx */
-	GPIO_PinAFConfig(UART2_GPIO, UART2_GPIO_RX_SOURCE, UART2_GPIO_AF);
-
-	/* Configure USART Tx, Rx as alternate function push-pull */
-	GPIO_InitStructure.GPIO_Pin = UART2_GPIO_TX | UART2_GPIO_RX;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-	GPIO_Init(UART2_GPIO, &GPIO_InitStructure);
 	NVIC_InitTypeDef NVIC_InitStructure;
 
 	/* Enable the USART Interrupt */
@@ -80,8 +63,7 @@ void uart_config()
 	NVIC_InitStructure.NVIC_IRQChannelPriority = 0;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
-	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
-	NVIC_Init(&NVIC_InitStructure);
+
 	USART_InitStructure.USART_BaudRate = 115200;
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
@@ -94,8 +76,30 @@ void uart_config()
 	/* enable interrupt */
 	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 	NVIC_EnableIRQ(USART1_IRQn);
-
 	USART_Cmd(USART1, ENABLE);
+#if USE_UART2
+	/* Enable GPIO clock */
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+	/* Enable USART clock */
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
+
+	/* Connect PXx to USARTx_Tx */
+	GPIO_PinAFConfig(UART2_GPIO, UART2_GPIO_TX_SOURCE, UART2_GPIO_AF);
+
+	/* Connect PXx to USARTx_Rx */
+	GPIO_PinAFConfig(UART2_GPIO, UART2_GPIO_RX_SOURCE, UART2_GPIO_AF);
+	
+	/* Configure USART Tx, Rx as alternate function push-pull */
+	GPIO_InitStructure.GPIO_Pin = UART2_GPIO_TX | UART2_GPIO_RX;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+	GPIO_Init(UART2_GPIO, &GPIO_InitStructure);
+	
+	NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
+	NVIC_Init(&NVIC_InitStructure);
+
 	USART_Init(USART2, &USART_InitStructure);
 	/* Enable USART */
 	/* enable interrupt */
@@ -103,12 +107,13 @@ void uart_config()
 	NVIC_EnableIRQ(USART2_IRQn);
 
 	USART_Cmd(USART2, ENABLE);
-
+#endif
 	return ;
 }
 
 int uart_send(int index,unsigned char byte)
 {
+#if USE_UART2
 	if(index==0)
 	{
 		while (!(USART1->ISR & USART_FLAG_TXE));
@@ -119,12 +124,16 @@ int uart_send(int index,unsigned char byte)
 		while (!(USART2->ISR & USART_FLAG_TXE));
 		USART2->TDR = byte;
 	}
-
+#else
+	while (!(USART1->ISR & USART_FLAG_TXE));
+	USART1->TDR = byte;
+#endif
 }
 int uart_recv(int index)
 {
 	int ch;
 	ch = -1;
+#if USE_UART2
 	if(index==0)
 	{
 		if (USART1->ISR & USART_FLAG_RXNE)
@@ -140,7 +149,14 @@ int uart_recv(int index)
 			ch = USART2->RDR & 0xff;
 		}
 	}
+#else
+if (USART1->ISR & USART_FLAG_RXNE)
+{
+	ch = USART1->RDR & 0xff;
+	
+}
 
+#endif
 	return ch;
 
 }
@@ -176,6 +192,7 @@ void USART1_IRQHandler(void)
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
+#if USE_UART2
 void USART2_IRQHandler(void)
 {
 
@@ -214,11 +231,11 @@ void USART2_IRQHandler(void)
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
-
+#endif
 void wifi_send(const char *s)
 {
 	while(*s!='\0')
 		uart_send(0,*s++);
 }
-//INIT_DEVICE_EXPORT(uart_config);
+INIT_DEVICE_EXPORT(uart_config);
 

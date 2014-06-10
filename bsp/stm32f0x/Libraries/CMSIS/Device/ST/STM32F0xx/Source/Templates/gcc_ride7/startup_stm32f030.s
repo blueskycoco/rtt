@@ -1,10 +1,10 @@
 /**
   ******************************************************************************
-  * @file      startup_stm32f030.s
+  * @file      startup_stm32f0xx.s
   * @author    MCD Application Team
-  * @version   V1.2.1
-  * @date      22-November-2013
-  * @brief     STM32F030 devices vector table for RIDE7 toolchain.
+  * @version   V1.3.1
+  * @date      17-January-2014
+  * @brief     STM32F030 Devices vector table for RIDE7 toolchain.
   *            This module performs:
   *                - Set the initial SP
   *                - Set the initial PC == Reset_Handler,
@@ -17,7 +17,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2013 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT 2014 STMicroelectronics</center></h2>
   *
   * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
   * You may not use this file except in compliance with the License.
@@ -141,6 +141,7 @@ Infinite_Loop:
 g_pfnVectors:
   .word _estack
   .word Reset_Handler
+
   .word NMI_Handler
   .word HardFault_Handler
   .word 0
@@ -155,24 +156,26 @@ g_pfnVectors:
   .word 0
   .word PendSV_Handler
   .word SysTick_Handler
+
+
   .word WWDG_IRQHandler
-  .word 0
+  .word 0  
   .word RTC_IRQHandler
   .word FLASH_IRQHandler
   .word RCC_IRQHandler
   .word EXTI0_1_IRQHandler
   .word EXTI2_3_IRQHandler
   .word EXTI4_15_IRQHandler
-  .word 0
+  .word 0  
   .word DMA1_Channel1_IRQHandler
   .word DMA1_Channel2_3_IRQHandler
   .word DMA1_Channel4_5_IRQHandler
   .word ADC1_IRQHandler 
   .word TIM1_BRK_UP_TRG_COM_IRQHandler
   .word TIM1_CC_IRQHandler
-  .word 0
+  .word 0  
   .word TIM3_IRQHandler
-  .word 0
+  .word 0   
   .word 0  
   .word TIM14_IRQHandler
   .word TIM15_IRQHandler
@@ -189,6 +192,7 @@ g_pfnVectors:
   .word 0
   .word BootRAM          /* @0x108. This is for boot in RAM mode for 
                             STM32F0xx devices. */
+ 
 
 /*******************************************************************************
 *
@@ -215,7 +219,7 @@ g_pfnVectors:
 
   .weak WWDG_IRQHandler
   .thumb_set WWDG_IRQHandler,Default_Handler
-
+ 
   .weak RTC_IRQHandler
   .thumb_set RTC_IRQHandler,Default_Handler
   
@@ -251,10 +255,10 @@ g_pfnVectors:
   
   .weak TIM1_CC_IRQHandler
   .thumb_set TIM1_CC_IRQHandler,Default_Handler
-  
+    
   .weak TIM3_IRQHandler
   .thumb_set TIM3_IRQHandler,Default_Handler
-  
+    
   .weak TIM14_IRQHandler
   .thumb_set TIM14_IRQHandler,Default_Handler
   
@@ -285,5 +289,6 @@ g_pfnVectors:
   .weak USART2_IRQHandler
   .thumb_set USART2_IRQHandler,Default_Handler
   
+
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 

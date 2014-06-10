@@ -159,14 +159,18 @@ void rt_hw_board_init()
 void rt_hw_console_output(const char* string)
 {
 //rt_hw_led1_on();
+#if 0
 	while (*string)
 	{
-		//if (*string=='\n')
-		//	uart_send(1,'\r');
+		if (*string=='\n')
+			uart_send(1,'\r');
 		
-		//	uart_send(1,*string);
+			uart_send(1,*string);
 		string++;
 	}
+#else
+wifi_send(string);
+#endif
 	//rt_hw_led1_off();
 }
 
