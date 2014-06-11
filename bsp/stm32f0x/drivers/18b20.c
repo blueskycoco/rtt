@@ -69,7 +69,8 @@ void Delay_us(unsigned long Nus)
 } 
 unsigned char ResetDS18B20(void)
 {
- unsigned char resport;
+ unsigned char resport=1;
+ unsigned long x=0;
  SetDQ();
  Delay_us(50);
  
@@ -82,14 +83,15 @@ unsigned char ResetDS18B20(void)
 //GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
 //GPIO_Init(GPIOA, &GPIO_InitStructure);	
 
- while(GetDQ());
+ while(GetDQ()) x++;
  Delay_us(500);  //500us
  //		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 //		GPIO_Init(GPIOA, &GPIO_InitStructure);	
 
  SetDQ();
 // rt_kprintf("ResetDS18B20 2\r\n");
-
+if(x>10000000)
+	resport=0;
  return resport;
 }
 void DS18B20WriteByte(unsigned char Dat)
@@ -168,11 +170,19 @@ void DS18B20Init(unsigned char Precision,unsigned char AlarmTH,unsigned char Ala
 
 }
 */
-void DS18B20StartConvert(void)
+unsigned char DS18B20StartConvert(void)
 {
- ResetDS18B20();
- DS18B20WriteByte(SkipROM); 
- DS18B20WriteByte(StartConvert); 
+	unsigned char result=0;
+	result= ResetDS18B20();
+	if(result==0)
+	{
+		return 0;
+	}else
+	{
+		 DS18B20WriteByte(SkipROM); 
+		 DS18B20WriteByte(StartConvert); 
+	}
+	return 1;
 }
 void DS18B20_Configuration(void)
 {
@@ -186,39 +196,49 @@ void DS18B20_Configuration(void)
  GPIO_Init(DS_PORT, &GPIO_InitStructure);
 }
 
-void ds18b20_start(void)
+unsigned char  ds18b20_start(void)
 {
- DS18B20_Configuration();
-// DS18B20Init(DS_PRECISION, DS_AlarmTH, DS_AlarmTL);
- DS18B20StartConvert();
+	 DS18B20_Configuration();
+	// DS18B20Init(DS_PRECISION, DS_AlarmTH, DS_AlarmTL);
+	 return DS18B20StartConvert();
 }
 unsigned short ds18b20_read(void)
 {
- unsigned char TemperatureL,TemperatureH;
- unsigned int  Temperature;
- //rt_kprintf("read 0\r\n");
-  ResetDS18B20();
- DS18B20WriteByte(SkipROM); 
- DS18B20WriteByte(ReadScratchpad);
- TemperatureL=DS18B20ReadByte();
- TemperatureH=DS18B20ReadByte(); 
- //rt_kprintf("read 1\r\n");
- ResetDS18B20();
- if(TemperatureH & 0x80)
-  {
-  TemperatureH=(~TemperatureH) | 0x08;
-  TemperatureL=~TemperatureL+1;
-  if(TemperatureL==0)
-   TemperatureH+=1;
-  }
- TemperatureH=(TemperatureH<<4)+((TemperatureL&0xf0)>>4);
- TemperatureL=TempX_TAB[TemperatureL&0x0f];
- //bit0-bit7为小数位，bit8-bit14为整数位，bit15为正负位
- Temperature=TemperatureH;
- Temperature=(Temperature<<8) | TemperatureL; 
-//rt_kprintf("read 2\r\n");
- DS18B20StartConvert();
- //rt_kprintf("read 3\r\n");
+	unsigned char TemperatureL,TemperatureH;
+	unsigned int  Temperature,result=0;
+	//rt_kprintf("read 0\r\n");
+	result=ResetDS18B20();
+	if(result==0)
+		return 0;
+	else
+	{
+		DS18B20WriteByte(SkipROM); 
+		DS18B20WriteByte(ReadScratchpad);
+		TemperatureL=DS18B20ReadByte();
+		TemperatureH=DS18B20ReadByte(); 
+		//rt_kprintf("read 1\r\n");
+		result=ResetDS18B20();
+		if(result==0)
+			return 0;
+		else
+		{
+			if(TemperatureH & 0x80)
+			{
+				TemperatureH=(~TemperatureH) | 0x08;
+				TemperatureL=~TemperatureL+1;
+				if(TemperatureL==0)
+					TemperatureH+=1;
+			}
+			TemperatureH=(TemperatureH<<4)+((TemperatureL&0xf0)>>4);
+			TemperatureL=TempX_TAB[TemperatureL&0x0f];
+			//bit0-bit7为小数位，bit8-bit14为整数位，bit15为正负位
+			Temperature=TemperatureH;
+			Temperature=(Temperature<<8) | TemperatureL; 
+			//rt_kprintf("read 2\r\n");
+			DS18B20StartConvert();
+		}
+	}
+	//rt_kprintf("read 3\r\n");
  return  Temperature;
 }
 INIT_DEVICE_EXPORT(ds18b20_start);
