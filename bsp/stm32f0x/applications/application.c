@@ -73,7 +73,13 @@ void save_env()
 }
 int read_env()
 {
-	rt_memcpy((void *)(&g_sys_env),(const void *)((__IO uint32_t *)ENV_FLASH_ADDR),sizeof(struct _sys_env));
+	//unsigned char buf[40];
+	rt_memcpy(&g_sys_env,(volatile unsigned long *)ENV_FLASH_ADDR,sizeof(struct _sys_env));
+	//rt_sprintf(buf,"%d,%d,%d,%d,%x,%x,%x,%x,%x,%x",g_sys_env.b_led_alarm_open,g_sys_env.b_temp_buzzer_open,g_sys_env.b_hum_buzzer_open,g_sys_env.hum_alarm_type,
+	//		g_sys_env.device_id,g_sys_env.battery_low_val,g_sys_env.hum_judge_val,g_sys_env.temp_low_val,g_sys_env.temp_high_val,g_sys_env.crc);
+	//wifi_send(buf,40);
+	//rt_sprintf(buf,"%x,%x",g_sys_env.crc,g_sys_env.b_led_alarm_open+g_sys_env.b_temp_buzzer_open+g_sys_env.b_hum_buzzer_open+g_sys_env.hum_alarm_type+g_sys_env.device_id+g_sys_env.battery_low_val+g_sys_env.hum_judge_val+g_sys_env.temp_low_val+g_sys_env.temp_high_val);
+	//wifi_send(buf,20);
 	if((g_sys_env.b_led_alarm_open+g_sys_env.b_temp_buzzer_open+g_sys_env.b_hum_buzzer_open+g_sys_env.hum_alarm_type+g_sys_env.device_id+g_sys_env.battery_low_val+g_sys_env.hum_judge_val+g_sys_env.temp_low_val+g_sys_env.temp_high_val)!=g_sys_env.crc)
 		return 0;
 	else
