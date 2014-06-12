@@ -172,7 +172,7 @@ void rt_hw_console_output(const char* string)
 		string++;
 	}
 #else
-wifi_send(string);
+//wifi_send(string);
 #endif
 	//rt_hw_led1_off();
 }

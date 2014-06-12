@@ -284,10 +284,12 @@ void USART2_IRQHandler(void)
 	rt_interrupt_leave();
 }
 #endif
-void wifi_send(const char *s)
+void wifi_send(const char *s,int len)
 {
-	while(*s!='\0')
-		uart_send(0,*s++);
+	//while(*s!='\0')
+	int i;
+		for(i=0;i<len;i++)
+		uart_send(0,s[i]);
 }
 unsigned long wifi_rcv(const char *s,int size)
 {

@@ -14,8 +14,8 @@
 
 #include <stm32f0xx.h>
 #include "timer.h"
-#define MAX_LEVEL 15000
-#define PLUS	1000
+#define MAX_LEVEL 4000
+#define PLUS	100
 void buzzer_ctl(int flag,int plus)
 {
   //static uint16_t x=0;
@@ -76,5 +76,5 @@ void rt_hw_timer_init(void)
   //TIM_Cmd(TIM3, ENABLE);
   TIM_CtrlPWMOutputs(TIM3, ENABLE);
 }
-INIT_DEVICE_EXPORT(rt_hw_timer_init);
+//INIT_DEVICE_EXPORT(rt_hw_timer_init);
 
