@@ -32,10 +32,23 @@
 #define UART2_GPIO_AF			GPIO_AF_1
 #define UART2_GPIO				GPIOA
 #endif
+#define RT_SERIAL_RB_BUFSZ 64
+struct serial_ringbuffer
+{
+    unsigned char  buffer[RT_SERIAL_RB_BUFSZ];
+    unsigned short put_index, get_index;
+};
+struct serial_ringbuffer *rbuffer;
+
 void uart_config()
 {
 	USART_InitTypeDef USART_InitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure;
+	rbuffer=rt_malloc(sizeof(struct serial_ringbuffer));
+	rt_memset(rbuffer->buffer, 0, sizeof(rbuffer->buffer));
+	rbuffer->put_index = 0;
+	rbuffer->get_index = 0;
+
 	/* Enable GPIO clock */
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 	/* Enable USART clock */
@@ -129,9 +142,9 @@ int uart_send(int index,unsigned char byte)
 	USART1->TDR = byte;
 #endif
 }
-int uart_recv(int index)
+char uart_recv(int index)
 {
-	int ch;
+	char ch;
 	ch = -1;
 #if USE_UART2
 	if(index==0)
@@ -160,6 +173,45 @@ if (USART1->ISR & USART_FLAG_RXNE)
 	return ch;
 
 }
+void serial_ringbuffer_putc(struct serial_ringbuffer *rbuffer,
+                                      char                      ch)
+{
+    rt_base_t level;
+
+    /* disable interrupt */
+    level = rt_hw_interrupt_disable();
+
+    rbuffer->buffer[rbuffer->put_index] = ch;
+    rbuffer->put_index = (rbuffer->put_index + 1) & (RT_SERIAL_RB_BUFSZ - 1);
+
+    /* if the next position is read index, discard this 'read char' */
+    if (rbuffer->put_index == rbuffer->get_index)
+    {
+        rbuffer->get_index = (rbuffer->get_index + 1) & (RT_SERIAL_RB_BUFSZ - 1);
+    }
+
+    /* enable interrupt */
+    rt_hw_interrupt_enable(level);
+}
+int serial_ringbuffer_getc(struct serial_ringbuffer *rbuffer)
+{
+    int ch;
+    rt_base_t level;
+
+    ch = -1;
+    /* disable interrupt */
+    level = rt_hw_interrupt_disable();
+    if (rbuffer->get_index != rbuffer->put_index)
+    {
+        ch = rbuffer->buffer[rbuffer->get_index];
+        rbuffer->get_index = (rbuffer->get_index + 1) & (RT_SERIAL_RB_BUFSZ - 1);
+    }
+    /* enable interrupt */
+    rt_hw_interrupt_enable(level);
+
+    return ch;
+}
+
 void USART1_IRQHandler(void)
 {
 
@@ -177,7 +229,7 @@ void USART1_IRQHandler(void)
 			if (ch == -1)
 			break;
 
-			//serial_ringbuffer_putc(serial->int_rx, ch);
+			serial_ringbuffer_putc(rbuffer, ch);
 			//rt_kprintf("<< %c\r\n",ch);
 		}
 		/* clear interrupt */
@@ -215,7 +267,7 @@ void USART2_IRQHandler(void)
 			if (ch == -1)
 			break;
 
-			//serial_ringbuffer_putc(serial->int_rx, ch);
+			//serial_ringbuffer_putc(rbuffer, ch);
 			//rt_kprintf("<< %c\r\n",ch);
 		}
 		/* clear interrupt */
@@ -237,5 +289,28 @@ void wifi_send(const char *s)
 	while(*s!='\0')
 		uart_send(0,*s++);
 }
+unsigned long wifi_rcv(const char *s,int size)
+{
+	unsigned char *ptr;
+	unsigned long read_nbytes;
+	ptr = (unsigned char  *)s;
+
+	while (size)
+	{
+	    int ch;
+	
+	    ch = serial_ringbuffer_getc(rbuffer);
+	    if (ch == -1)
+		  break;
+	
+	    *ptr = ch & 0xff;
+	    ptr ++;
+	    size --;
+	}
+	
+	read_nbytes = (rt_uint32_t)ptr - (rt_uint32_t)s;
+	return read_nbytes;
+}
+
 INIT_DEVICE_EXPORT(uart_config);
 

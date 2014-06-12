@@ -16,17 +16,17 @@
 #include "timer.h"
 #define MAX_LEVEL 15000
 #define PLUS	1000
-void buzzer_ctl(int flag)
+void buzzer_ctl(int flag,int plus)
 {
-  static uint16_t x=0;
+  //static uint16_t x=0;
   if(flag==1)
   {
 	//rt_kprintf("compare %d\r\n",TIM_GetCapture1(TIM3));
-	if(x==MAX_LEVEL)
-	  x=PLUS;
-	else
-	  x=x+PLUS;
-	TIM_SetCompare1(TIM3, x);
+	//if(x==MAX_LEVEL)
+	  //x=plus;
+	//else
+	  //x=x+plus;
+	TIM_SetCompare1(TIM3, plus);
 	TIM_Cmd(TIM3, ENABLE);
   }
   else

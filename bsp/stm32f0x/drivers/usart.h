@@ -20,6 +20,7 @@
 #include "stm32f0xx.h"
 
 void uart_config();
-int uart_send(int index,unsigned char byte);
-int uart_recv(int index);
+void wifi_send(const char *s);
+unsigned long wifi_rcv(const char *s,int size);
+
 #endif
