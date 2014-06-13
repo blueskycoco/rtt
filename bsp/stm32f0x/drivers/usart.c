@@ -31,7 +31,7 @@
 #define UART2_GPIO_RX_SOURCE	GPIO_PinSource3
 #define UART2_GPIO_AF			GPIO_AF_1
 #define UART2_GPIO				GPIOA
-#endif
+
 #define RT_SERIAL_RB_BUFSZ 64
 struct serial_ringbuffer
 {
@@ -39,15 +39,16 @@ struct serial_ringbuffer
     unsigned short put_index, get_index;
 };
 struct serial_ringbuffer *rbuffer;
+#endif
 
-void uart_config()
+int uart_config()
 {
 	USART_InitTypeDef USART_InitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure;
-	rbuffer=rt_malloc(sizeof(struct serial_ringbuffer));
-	rt_memset(rbuffer->buffer, 0, sizeof(rbuffer->buffer));
-	rbuffer->put_index = 0;
-	rbuffer->get_index = 0;
+//	rbuffer=rt_malloc(sizeof(struct serial_ringbuffer));
+//	rt_memset(rbuffer->buffer, 0, sizeof(rbuffer->buffer));
+//	rbuffer->put_index = 0;
+//	rbuffer->get_index = 0;
 
 	/* Enable GPIO clock */
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
@@ -121,7 +122,7 @@ void uart_config()
 
 	USART_Cmd(USART2, ENABLE);
 #endif
-	return ;
+	return 0;
 }
 
 int uart_send(int index,unsigned char byte)
@@ -163,16 +164,16 @@ char uart_recv(int index)
 		}
 	}
 #else
-if (USART1->ISR & USART_FLAG_RXNE)
-{
-	ch = USART1->RDR & 0xff;
-	
-}
-
+	if (USART1->ISR & USART_FLAG_RXNE)
+	{
+		ch = USART1->RDR & 0xff;
+		
+	}
 #endif
 	return ch;
 
 }
+#if USE_UART2
 void serial_ringbuffer_putc(struct serial_ringbuffer *rbuffer,
                                       char                      ch)
 {
@@ -244,7 +245,7 @@ void USART1_IRQHandler(void)
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
-#if USE_UART2
+
 void USART2_IRQHandler(void)
 {
 
@@ -286,17 +287,18 @@ void USART2_IRQHandler(void)
 #endif
 void wifi_send(const char *s,int len)
 {
-	//while(*s!='\0')
 	int i;
-		for(i=0;i<len;i++)
-		uart_send(0,s[i]);
+	for(i=0;i<len;i++)
+	uart_send(0,s[i]);
 }
 unsigned long wifi_rcv(const char *s,int size)
 {
 	unsigned char *ptr;
+	int i=0;
 	unsigned long read_nbytes;
 	ptr = (unsigned char  *)s;
 
+#if USE_UART2
 	while (size)
 	{
 	    int ch;
@@ -305,13 +307,36 @@ unsigned long wifi_rcv(const char *s,int size)
 	    if (ch == -1)
 		  break;
 	
-	    //uart_send(0,ch);
 	    *ptr = ch & 0xff;
 	    ptr ++;
 	    size --;
 	}
 	
 	read_nbytes = (rt_uint32_t)ptr - (rt_uint32_t)s;
+#else
+	while(size)
+	{
+		int ch;
+		ch=uart_recv(0);
+		if(ch!=-1)
+		{
+
+			*ptr = ch & 0xff;
+			    ptr ++;
+			    size --;
+		}
+		else
+		{
+			Delay_us(1);
+			i++;
+			if(i==30)
+			{
+				read_nbytes = (rt_uint32_t)ptr - (rt_uint32_t)s;
+				break;
+			}
+		}
+	}
+#endif
 	return read_nbytes;
 }
 

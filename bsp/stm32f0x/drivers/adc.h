@@ -20,6 +20,6 @@
 #include "stm32f0xx.h"
 
 uint16_t read_adc(unsigned char channel);
-void rt_hw_adc_init(void);
+int rt_hw_adc_init(void);
 
 #endif

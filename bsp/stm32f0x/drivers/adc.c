@@ -86,7 +86,7 @@ void key_config()
 
 }
 #endif
-void rt_hw_adc_init(void)
+int rt_hw_adc_init(void)
 {
 	  ADC_InitTypeDef     ADC_InitStructure;
 	 // key_config();

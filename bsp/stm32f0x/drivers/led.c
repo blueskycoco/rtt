@@ -24,7 +24,7 @@ LED_RED  : PC9
 */
 
 /* Initial led gpio pin  */
-void rt_hw_led_init(void)
+int rt_hw_led_init(void)
 {
     GPIO_InitTypeDef  GPIO_InitStructure;
 
@@ -46,6 +46,7 @@ void rt_hw_led_init(void)
     //GPIO_SetBits(GPIOA, GPIO_Pin_7);
     //rt_hw_led2_off();
     //while(1);
+    return 0;
 }
 
 /* Initial components for device */

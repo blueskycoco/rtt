@@ -196,7 +196,7 @@ void DS18B20_Configuration(void)
  GPIO_Init(DS_PORT, &GPIO_InitStructure);
 }
 
-unsigned char  ds18b20_start(void)
+int  ds18b20_start(void)
 {
 	 DS18B20_Configuration();
 	// DS18B20Init(DS_PRECISION, DS_AlarmTH, DS_AlarmTL);
