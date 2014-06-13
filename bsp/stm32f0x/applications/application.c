@@ -398,9 +398,10 @@ static void system_thread_check_entry(void* parameter)
 	rt_thread_delay(10*RT_TICK_PER_SECOND);
 #else
 	/**/
+	unsigned char buf2[30];
 	x=ds18b20_read();
-	rt_sprintf(buf,"temp %d.%doC\r\nbattery %d\r\nshidu %d\r\nhum_connect %d\r\n",x>>8,x&0xff,read_adc(9),read_adc(5),GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0));
-	wifi_send(buf);
+	rt_sprintf(buf2,"temp %d.%doC\r\nbattery %d\r\nshidu %d\r\nhum_connect %d\r\n",x>>8,x&0xff,read_adc(9),read_adc(5),!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0));
+	wifi_send(buf2,rt_strlen(buf2));
 	//buzzer_ctl(1);
 	rt_hw_led2_on();
 	//rt_hw_led1_on();
@@ -438,9 +439,10 @@ static void system_thread_param_entry(void* parameter)
 	x=wifi_rcv(&y,1);
 	if(x!=0)
 	{
-	  buf2[len]=y;			
+	  buf2[len]=y;	
 	  len++;
 	}
+	continue;
 	if(len==13)
 	{	/*got command*/
 	  if((buf2[0]==0xf5)&&(buf2[1]==0x8a)&&(buf2[2]==0x00)&&(buf2[4]==0x12)&&(buf2[5]==0x55)&&(buf2[6]==0x55)&&(buf2[10]==0xfa))

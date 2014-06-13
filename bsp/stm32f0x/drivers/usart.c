@@ -228,7 +228,7 @@ void USART1_IRQHandler(void)
 			ch = uart_recv(0);
 			if (ch == -1)
 			break;
-
+			//uart_send(0,ch);
 			serial_ringbuffer_putc(rbuffer, ch);
 			//rt_kprintf("<< %c\r\n",ch);
 		}
@@ -305,6 +305,7 @@ unsigned long wifi_rcv(const char *s,int size)
 	    if (ch == -1)
 		  break;
 	
+	    //uart_send(0,ch);
 	    *ptr = ch & 0xff;
 	    ptr ++;
 	    size --;
