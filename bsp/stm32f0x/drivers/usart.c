@@ -314,6 +314,20 @@ unsigned long wifi_rcv(char *s,int size)
 	//uart_send(0,*(ptr+i));
 	return size;
 }
+void wifi_sleep()
+{
+	wifi_send("+++",3);
+	rt_thread_delay(100);
+	wifi_send("a",1);
+	rt_thread_delay(100);
+}
 
+void wifi_wakeup()
+{
+	wifi_send("+++",3);
+	rt_thread_delay(100);
+	wifi_send("a",1);
+
+}
 INIT_DEVICE_EXPORT(uart_config);
 

@@ -380,6 +380,7 @@ static void system_thread_check_entry(void* parameter)
   //unsigned char buf_send[39];
   unsigned char index=0;
   unsigned char alarm_type[3];
+  long m=0;
   //unsigned char buf2[30];
 #if 0
   unsigned char command_up[8][13]={
@@ -468,10 +469,26 @@ static void system_thread_check_entry(void* parameter)
 	  if(x<g_sys_env.hum_judge_val)
 	  {
 		if(hum_check_count <255)
-		  hum_check_count++;
+		{
+			hum_check_count++;			
+		}
+		/*m=0;
+		while(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)==Bit_RESET)
+		{
+			rt_thread_delay(1)
+			m++;
+			if(m>100*600)
+				break;
+			
+		}
+		if(m>=100*600)
+		{temp 
+			
+		}*/
 	  }
 	  else
 		hum_check_count=0;
+	  #if 1
 	  switch(hum_check_count)
 	  {
 		case 1:
@@ -556,7 +573,9 @@ static void system_thread_check_entry(void* parameter)
 		  break;
 
 	  }
+	  #endif
 	}
+	
 	if(index!=0)
 	{
 		wifi_send(buf,index*13);
