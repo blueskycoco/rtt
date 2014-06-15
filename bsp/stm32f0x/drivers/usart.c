@@ -15,6 +15,7 @@
 #include <stm32f0xx.h>
 //#include <rtdevice.h>
 #include "usart.h"
+#include "led.h"
 #define USE_UART2 0
 /* USART1 */
 #define UART1_GPIO_TX			GPIO_Pin_2
@@ -31,7 +32,7 @@
 #define UART2_GPIO_RX_SOURCE	GPIO_PinSource3
 #define UART2_GPIO_AF			GPIO_AF_1
 #define UART2_GPIO				GPIOA
-
+#endif
 #define RT_SERIAL_RB_BUFSZ 64
 struct serial_ringbuffer
 {
@@ -39,16 +40,16 @@ struct serial_ringbuffer
     unsigned short put_index, get_index;
 };
 struct serial_ringbuffer *rbuffer;
-#endif
+
 
 int uart_config()
 {
 	USART_InitTypeDef USART_InitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure;
-//	rbuffer=rt_malloc(sizeof(struct serial_ringbuffer));
-//	rt_memset(rbuffer->buffer, 0, sizeof(rbuffer->buffer));
-//	rbuffer->put_index = 0;
-//	rbuffer->get_index = 0;
+	rbuffer=rt_malloc(sizeof(struct serial_ringbuffer));
+	rt_memset(rbuffer->buffer, 0, sizeof(rbuffer->buffer));
+	rbuffer->put_index = 0;
+	rbuffer->get_index = 0;
 
 	/* Enable GPIO clock */
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
@@ -173,7 +174,7 @@ char uart_recv(int index)
 	return ch;
 
 }
-#if USE_UART2
+
 void serial_ringbuffer_putc(struct serial_ringbuffer *rbuffer,
                                       char                      ch)
 {
@@ -199,7 +200,7 @@ int serial_ringbuffer_getc(struct serial_ringbuffer *rbuffer)
     int ch;
     rt_base_t level;
 
-    ch = -1;
+    ch = 0xff;
     /* disable interrupt */
     level = rt_hw_interrupt_disable();
     if (rbuffer->get_index != rbuffer->put_index)
@@ -218,20 +219,17 @@ void USART1_IRQHandler(void)
 
 	int ch=-1;
 	/* enter interrupt */
-	//rt_kprintf("Enter usart1 recv  int\r\n");
+	
 	rt_interrupt_enter();
-	//USART_ITConfig(USART1, USART_IT_RXNE, DISABLE);
 	if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
 	{
-		
 		while (1)
 		{
 			ch = uart_recv(0);
-			if (ch == -1)
+			if (ch == 0xff)
 			break;
 			//uart_send(0,ch);
 			serial_ringbuffer_putc(rbuffer, ch);
-			//rt_kprintf("<< %c\r\n",ch);
 		}
 		/* clear interrupt */
 		USART_ClearITPendingBit(USART1, USART_IT_RXNE);
@@ -241,11 +239,10 @@ void USART1_IRQHandler(void)
 		/* clear interrupt */
 		USART_ClearITPendingBit(USART1, USART_IT_TC);
 	}
-	//USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
-
+#if USE_UART2
 void USART2_IRQHandler(void)
 {
 
@@ -291,53 +288,31 @@ void wifi_send(const char *s,int len)
 	for(i=0;i<len;i++)
 	uart_send(0,s[i]);
 }
-unsigned long wifi_rcv(const char *s,int size)
+unsigned long wifi_rcv(char *s,int size)
 {
-	unsigned char *ptr;
-	int i=0;
+	//unsigned char *ptr;
+	int i=0,j;
 	unsigned long read_nbytes;
-	ptr = (unsigned char  *)s;
-
-#if USE_UART2
-	while (size)
+	//ptr = (unsigned char  *)s;
+	
+	int ch;
+	j=0;
+	for(i=0;i<size;i++)
 	{
-	    int ch;
-	
-	    ch = serial_ringbuffer_getc(rbuffer);
-	    if (ch == -1)
-		  break;
-	
-	    *ptr = ch & 0xff;
-	    ptr ++;
-	    size --;
-	}
-	
-	read_nbytes = (rt_uint32_t)ptr - (rt_uint32_t)s;
-#else
-	while(size)
-	{
-		int ch;
-		ch=uart_recv(0);
-		if(ch!=-1)
+		while((ch=serial_ringbuffer_getc(rbuffer))==0xff)
 		{
-
-			*ptr = ch & 0xff;
-			    ptr ++;
-			    size --;
-		}
-		else
-		{
+			j++;
 			Delay_us(1);
-			i++;
-			if(i==30)
-			{
-				read_nbytes = (rt_uint32_t)ptr - (rt_uint32_t)s;
-				break;
-			}
+			if(j==3000)
+				return 0;
 		}
+		*s=ch;
+		s++;
 	}
-#endif
-	return read_nbytes;
+	//ptr=(unsigned char *)s;
+	//for(i=0;i<size;i++)
+	//uart_send(0,*(ptr+i));
+	return size;
 }
 
 INIT_DEVICE_EXPORT(uart_config);

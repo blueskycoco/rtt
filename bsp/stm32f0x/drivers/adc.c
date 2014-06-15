@@ -106,10 +106,11 @@ int rt_hw_adc_init(void)
 	  ADC_InitStructure.ADC_DataAlign = ADC_DataAlign_Right;
 	  ADC_InitStructure.ADC_ScanDirection = ADC_ScanDirection_Upward;
 	  ADC_Init(ADC1, &ADC_InitStructure); 
-
+	  //ADC_DiscModeCmd(ADC1,ENABLE);
 	  /* Convert the ADC1 Channel 11 with 239.5 Cycles as
 	   * sampling time */ 
-	  //ADC_ChannelConfig(ADC1, ADC_Channel_1 , ADC_SampleTime_239_5Cycles);   
+	  ADC_ChannelConfig(ADC1, ADC_Channel_9|ADC_Channel_5, ADC_SampleTime_239_5Cycles);   
+	  //ADC_GetCalibrationFactor(ADC1);
 	  //ADC_ChannelConfig(ADC1, ADC_Channel_5 , ADC_SampleTime_239_5Cycles);   
 	  /* ADC Calibration */
 	  ADC_GetCalibrationFactor(ADC1);
@@ -119,25 +120,28 @@ int rt_hw_adc_init(void)
 
 	  /* Wait the ADRDY falg */
 	  while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_ADRDY)); 
-
 }
 /*channel 5 for shidu , channel 9 for battery vol */
 uint16_t read_adc(unsigned char channel)
 {
+	int i;
 	  __IO uint16_t  ADC1ConvertedValue = 0, ADC1ConvertedVoltage = 0;
-	  /* ADC1 regular Software Start Conv */ 
-	  ADC_ChannelConfig(ADC1, channel,ADC_SampleTime_7_5Cycles);
-	  ADC_StartOfConversion(ADC1);
+	  
+	  
+	ADC_StartOfConversion(ADC1);
 	  /* Test EOC flag */
-	  while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);
-
+	  while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);	
 	  /* Get ADC1 converted data */
 	  ADC1ConvertedValue =ADC_GetConversionValue(ADC1);
+	  if(channel==9)
+	  {
+	  	  //ADC_StartOfConversion(ADC1);
+		  while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);	
+		  ADC1ConvertedValue =ADC_GetConversionValue(ADC1);		  
+	  }	  
 	  ADC_StopOfConversion(ADC1);
-
 	  /* Compute the voltage */
 	  ADC1ConvertedVoltage = (ADC1ConvertedValue *3300)/0xFFF;
-	  rt_kprintf("Channel %d , Voltage %d ==> %d\r\n",channel , ADC1ConvertedVoltage,ADC1ConvertedValue);
 	  return ADC1ConvertedVoltage;
 }
 INIT_DEVICE_EXPORT(rt_hw_adc_init);

@@ -60,16 +60,15 @@ sys_env g_sys_env;
 extern unsigned short ds18b20_read(void);
 void save_env()
 {
-  return;
   FLASH_Unlock();
   FLASH_ClearFlag(FLASH_FLAG_EOP | FLASH_FLAG_PGERR | FLASH_FLAG_WRPERR);
   FLASH_ErasePage(ENV_FLASH_ADDR);
-  FLASH_ProgramWord(ENV_FLASH_ADDR,(g_sys_env.b_led_alarm_open<<24|g_sys_env.b_temp_buzzer_open<<16|g_sys_env.b_hum_buzzer_open<<8|g_sys_env.hum_alarm_type));
-  FLASH_ProgramWord(ENV_FLASH_ADDR+4,(g_sys_env.device_id<<16|g_sys_env.battery_low_val));
-  FLASH_ProgramWord(ENV_FLASH_ADDR+8,(g_sys_env.hum_judge_val<<16|g_sys_env.temp_low_val));
+  FLASH_ProgramWord(ENV_FLASH_ADDR,(g_sys_env.b_led_alarm_open|g_sys_env.b_temp_buzzer_open<<8|g_sys_env.b_hum_buzzer_open<<16|g_sys_env.hum_alarm_type<<24));
+  FLASH_ProgramWord(ENV_FLASH_ADDR+4,(g_sys_env.device_id|g_sys_env.battery_low_val<<16));
+  FLASH_ProgramWord(ENV_FLASH_ADDR+8,(g_sys_env.hum_judge_val|g_sys_env.temp_low_val<<16));
   g_sys_env.crc=g_sys_env.b_led_alarm_open+g_sys_env.b_temp_buzzer_open+g_sys_env.b_hum_buzzer_open+g_sys_env.hum_alarm_type+g_sys_env.device_id+g_sys_env.battery_low_val+g_sys_env.hum_judge_val+g_sys_env.temp_low_val+g_sys_env.temp_high_val;
 
-  FLASH_ProgramWord(ENV_FLASH_ADDR+12,(g_sys_env.temp_high_val<<16|g_sys_env.crc));
+  FLASH_ProgramWord(ENV_FLASH_ADDR+12,(g_sys_env.temp_high_val|g_sys_env.crc<<16));
   FLASH_Lock();
 }
 int read_env()
@@ -94,12 +93,12 @@ void local_alarm(int plus,int loop,int buzzer,int led)
 	  	buzzer_ctl(1,plus);
 	  if(led)
 	  	rt_hw_led2_on();
-	  rt_thread_delay(1);	
+	  rt_thread_delay(loop*10);	
 	  if(buzzer)
 	  	buzzer_ctl(0);
 	  if(led)
 	  	rt_hw_led2_off();
-	  rt_thread_delay(1);		
+	  rt_thread_delay(loop*10);		
 	
 	}
 }
@@ -273,13 +272,25 @@ void check_server_command()
   };
 #endif
 	  unsigned char buf2[13]={0,0,0,0,0,0,0,0,0,0,0,0,0};
-	  int len=0,x,crc;
-	len=wifi_rcv(buf2,13);
+	  unsigned char *ptr=buf2;
+	  int len=0,x;
+	  unsigned char crc;
+	len=wifi_rcv(ptr,13);
+	
+	#if 1
 	if(len==13)
 	{	/*got command*/
+		//wifi_send(buf2,13);
 	  if((buf2[0]==0xf5)&&(buf2[1]==0x8a)&&(buf2[2]==0x00)&&(buf2[4]==0x12)&&(buf2[5]==0x55)&&(buf2[6]==0x55)&&(buf2[10]==0xfa))
 	  {
-		crc=(~(buf2[1]+buf2[2]+buf2[3]+buf2[4]+buf2[5]+buf2[6]+buf2[7]+buf2[8])+1)%128;
+	  	//wifi_send(buf2,13);
+		crc=((int)(~(buf2[1]+buf2[2]+buf2[3]+buf2[4]+buf2[5]+buf2[6]+buf2[7]+buf2[8])+1))%128;
+		//buf2[9]=crc;
+		//buf2[11]=(g_sys_env.device_id&0xff00)>>8;
+		//buf2[12]=g_sys_env.device_id&0xff;
+		//wifi_send(buf2,13);
+		if(crc>128)
+			crc=crc%128;
 		if((buf2[3]==0x19)&&(buf2[7]==0x15)&&(buf2[8]==0x17)&&(buf2[9]==crc))
 		{	/*set device id,last 0x00,0x00 is id*/
 		  g_sys_env.device_id=(buf2[11]<<8)|buf2[12];
@@ -288,61 +299,62 @@ void check_server_command()
 		}
 		else
 		{
-		  if((buf2[3]==0x09)&&(buf2[7]==0x05)&&(buf2[8]==0x17)&&(buf2[9]==crc)&&(buf2[11]==(g_sys_env.device_id&0xff00>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
+		
+		  if((buf2[3]==0x09)&&(buf2[7]==0x05)&&(buf2[8]==0x17)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
 		  {/*close Hum buzzer alarm*/
 			g_sys_env.b_hum_buzzer_open=0;
 			wifi_send(buf2,13);
 			save_env();
 		  }
-		  if((buf2[3]==0x10)&&(buf2[7]==0x06)&&(buf2[8]==0x14)&&(buf2[9]==crc)&&(buf2[11]==(g_sys_env.device_id&0xff00>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
+		  if((buf2[3]==0x10)&&(buf2[7]==0x06)&&(buf2[8]==0x14)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
 		  {/*open Hum buzzer alarm*/
 			g_sys_env.b_hum_buzzer_open=1;
 			wifi_send(buf2,13);
 			save_env();
 		  }
-		  if((buf2[3]==0x11)&&(buf2[7]==0x07)&&(buf2[8]==0x15)&&(buf2[9]==crc)&&(buf2[11]==(g_sys_env.device_id&0xff00>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
+		  if((buf2[3]==0x11)&&(buf2[7]==0x07)&&(buf2[8]==0x15)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
 		  {/*set Hum alarm 1*/
 			g_sys_env.hum_alarm_type=1;
 			wifi_send(buf2,13);
 			save_env();
 		  }
-		  if((buf2[3]==0x12)&&(buf2[7]==0x08)&&(buf2[8]==0x1a)&&(buf2[9]==crc)&&(buf2[11]==(g_sys_env.device_id&0xff00>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
+		  if((buf2[3]==0x12)&&(buf2[7]==0x08)&&(buf2[8]==0x1a)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
 		  {/*set Hum alarm 2*/
 			g_sys_env.hum_alarm_type=2;
 			wifi_send(buf2,13);
 			save_env();
 		  }
-		  if((buf2[3]==0x13)&&(buf2[7]==0x09)&&(buf2[8]==0x1b)&&(buf2[9]==crc)&&(buf2[11]==(g_sys_env.device_id&0xff00>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
+		  if((buf2[3]==0x13)&&(buf2[7]==0x09)&&(buf2[8]==0x1b)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
 		  {/*set Hum alarm 3*/
 			g_sys_env.hum_alarm_type=3;
 			wifi_send(buf2,13);
 			save_env();
 		  }
-		  if((buf2[3]==0x14)&&(buf2[7]==0x10)&&(buf2[8]==0x02)&&(buf2[9]==crc)&&(buf2[11]==(g_sys_env.device_id&0xff00>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
+		  if((buf2[3]==0x14)&&(buf2[7]==0x10)&&(buf2[8]==0x02)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
 		  {/*set Hum alarm 4*/
 			g_sys_env.hum_alarm_type=4;
 			wifi_send(buf2,13);
 			save_env();
 		  }
-		  if((buf2[3]==0x15)&&(buf2[7]==0x11)&&(buf2[8]==0x03)&&(buf2[9]==crc)&&(buf2[11]==(g_sys_env.device_id&0xff00>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
+		  if((buf2[3]==0x15)&&(buf2[7]==0x11)&&(buf2[8]==0x03)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
 		  {/*close led alarm*/
 			g_sys_env.b_led_alarm_open=0;
 			wifi_send(buf2,13);
 			save_env();
 		  }
-		  if((buf2[3]==0x16)&&(buf2[7]==0x12)&&(buf2[8]==0x00)&&(buf2[9]==crc)&&(buf2[11]==(g_sys_env.device_id&0xff00>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
+		  if((buf2[3]==0x16)&&(buf2[7]==0x12)&&(buf2[8]==0x00)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
 		  {/*open led alarm*/
 			g_sys_env.b_led_alarm_open=1;
 			wifi_send(buf2,13);
 			save_env();
 		  }
-		  if((buf2[3]==0x17)&&(buf2[7]==0x13)&&(buf2[8]==0x01)&&(buf2[9]==crc)&&(buf2[11]==(g_sys_env.device_id&0xff00>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
+		  if((buf2[3]==0x17)&&(buf2[7]==0x13)&&(buf2[8]==0x01)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
 		  {/*close Temp buzzer alarm*/
 			g_sys_env.b_temp_buzzer_open=0;
 			wifi_send(buf2,13);
 			save_env();
 		  }
-		  if((buf2[3]==0x18)&&(buf2[7]==0x14)&&(buf2[8]==0x06)&&(buf2[9]==crc)&&(buf2[11]==(g_sys_env.device_id&0xff00>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
+		  if((buf2[3]==0x18)&&(buf2[7]==0x14)&&(buf2[8]==0x06)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
 		  {/*open Temp buzzer alarm*/
 			g_sys_env.b_temp_buzzer_open=1;
 			wifi_send(buf2,13);
@@ -354,6 +366,7 @@ void check_server_command()
 
 	  }
 	}
+	#endif
 }
 
 static void system_thread_check_entry(void* parameter)
@@ -367,6 +380,7 @@ static void system_thread_check_entry(void* parameter)
   //unsigned char buf_send[39];
   unsigned char index=0;
   unsigned char alarm_type[3];
+  //unsigned char buf2[30];
 #if 0
   unsigned char command_up[8][13]={
 	{0xF5,0x8A,0x00,0x01,0x00,0x55,0x55,0x01,0x01,0x26,0xfa,0x00,0x00},/*Hum lost*/
@@ -385,6 +399,7 @@ static void system_thread_check_entry(void* parameter)
   #if 1
   	/*check server command*/
   	check_server_command();  	
+  	index=0;
 	/*check battery low*/
 	x=read_adc(BATTERY_ADC_CHANNEL);
 	if(x<g_sys_env.battery_low_val)
@@ -395,6 +410,8 @@ static void system_thread_check_entry(void* parameter)
 		  buf[index*13+7]=0x05;
 		  buf[index*13+8]=0x17;
 		  buf[index*13+9]=(~(buf[index*13+1]+buf[index*13+2]+buf[index*13+3]+buf[index*13+4]+buf[index*13+5]+buf[index*13+6]+buf[index*13+7]+buf[index*13+8])+1)%128;
+		  if(buf[index*13+9]>=128)
+		  	buf[index*13+9]=buf[index*13+9]%128;
 		  buf[index*13+11]=(g_sys_env.device_id&0xff00)>>8;
 		  buf[index*13+12]=g_sys_env.device_id&0xff;
 		  alarm_type[index++]=LOCAL_ALARM_BATTERY_LOW;
@@ -408,6 +425,8 @@ static void system_thread_check_entry(void* parameter)
 		  buf[index*13+7]=0x05;
 		  buf[index*13+8]=0x05;
 		  buf[index*13+9]=(~(buf[index*13+1]+buf[index*13+2]+buf[index*13+3]+buf[index*13+4]+buf[index*13+5]+buf[index*13+6]+buf[index*13+7]+buf[index*13+8])+1)%128;
+		  if(buf[index*13+9]>=128)
+		  	buf[index*13+9]=buf[index*13+9]%128;
 		  buf[index*13+11]=(g_sys_env.device_id&0xff00)>>8;
 		  buf[index*13+12]=g_sys_env.device_id&0xff;
 		  alarm_type[index++]=LOCAL_ALARM_TEMP_LOST;
@@ -421,6 +440,9 @@ static void system_thread_check_entry(void* parameter)
 		  buf[index*13+7]=0x05;
 		  buf[index*13+8]=0x14;
 		  buf[index*13+9]=(~(buf[index*13+1]+buf[index*13+2]+buf[index*13+3]+buf[4]+buf[5]+buf[6]+buf[7]+buf[8])+1)%128;
+		  if(buf[index*13+9]>=128)
+		  	buf[index*13+9]=buf[index*13+9]%128;
+
 		  buf[index*13+11]=(g_sys_env.device_id&0xff00)>>8;
 		  buf[index*13+12]=g_sys_env.device_id&0xff;
 		  alarm_type[index++]=LOCAL_ALARM_TEMP;
@@ -434,6 +456,8 @@ static void system_thread_check_entry(void* parameter)
 		  buf[index*13+7]=0x01;
 		  buf[index*13+8]=0x01;
 		  buf[index*13+9]=(~(buf[index*13+1]+buf[index*13+2]+buf[index*13+3]+buf[index*13+4]+buf[index*13+5]+buf[index*13+6]+buf[index*13+7]+buf[index*13+8])+1)%128;
+		  if(buf[index*13+9]>=128)
+		  	buf[index*13+9]=buf[index*13+9]%128;
 		  buf[index*13+11]=(g_sys_env.device_id&0xff00)>>8;
 		  buf[index*13+12]=g_sys_env.device_id&0xff;
 		  alarm_type[index++]=LOCAL_ALARM_HUM_LOST;
@@ -459,6 +483,9 @@ static void system_thread_check_entry(void* parameter)
 			  buf[index*13+7]=0x01;
 			  buf[index*13+8]=0x10;
 			  buf[index*13+9]=(~(buf[index*13+1]+buf[index*13+2]+buf[index*13+3]+buf[index*13+4]+buf[index*13+5]+buf[index*13+6]+buf[index*13+7]+buf[index*13+8])+1)%128;
+		  	  if(buf[index*13+9]>=128)
+		  	       buf[index*13+9]=buf[index*13+9]%128;
+
 			  buf[index*13+11]=(g_sys_env.device_id&0xff00)>>8;
 			  buf[index*13+12]=g_sys_env.device_id&0xff;
 			  alarm_type[index++]=LOCAL_ALARM_HUM_1;
@@ -475,6 +502,9 @@ static void system_thread_check_entry(void* parameter)
 				  buf[index*13+7]=0x02;
 				  buf[index*13+8]=0x13;
 				  buf[index*13+9]=(~(buf[index*13+1]+buf[index*13+2]+buf[index*13+3]+buf[index*13+4]+buf[index*13+5]+buf[index*13+6]+buf[index*13+7]+buf[index*13+8])+1)%128;
+		  if(buf[index*13+9]>=128)
+		  	buf[index*13+9]=buf[index*13+9]%128;
+
 				  buf[index*13+11]=(g_sys_env.device_id&0xff00)>>8;
 				  buf[index*13+12]=g_sys_env.device_id&0xff;
 				  alarm_type[index++]=LOCAL_ALARM_HUM_2;
@@ -493,6 +523,9 @@ static void system_thread_check_entry(void* parameter)
 			  buf[index*13+8]=0x12;
 			  buf[index*13+9]=(~(buf[index*13+1]+buf[index*13+2]+buf[index*13+3]+buf[index*13+4]+buf[index*13+5]+buf[index*13+6]+buf[index*13+7]+buf[index*13+8])+1)%128;
 			  buf[index*13+11]=(g_sys_env.device_id&0xff00)>>8;
+		  if(buf[index*13+9]>=128)
+		  	buf[index*13+9]=buf[index*13+9]%128;
+
 			  buf[index*13+12]=g_sys_env.device_id&0xff;
 			  alarm_type[index++]=LOCAL_ALARM_HUM_3;
 			  break;
@@ -509,6 +542,9 @@ static void system_thread_check_entry(void* parameter)
 			  buf[index*13+7]=0x04;
 			  buf[index*13+8]=0x15;
 			  buf[index*13+9]=(~(buf[index*13+1]+buf[index*13+2]+buf[index*13+3]+buf[index*13+4]+buf[index*13+5]+buf[index*13+6]+buf[index*13+7]+buf[index*13+8])+1)%128;
+		  if(buf[index*13+9]>=128)
+		  	buf[index*13+9]=buf[index*13+9]%128;
+
 			  buf[index*13+11]=(g_sys_env.device_id&0xff00)>>8;
 			  buf[index*13+12]=g_sys_env.device_id&0xff;
 			  alarm_type[index++]=LOCAL_ALARM_HUM_4;
@@ -536,22 +572,26 @@ static void system_thread_check_entry(void* parameter)
 					local_alarm(alarm_type[i]*100+500,alarm_type[i],g_sys_env.b_hum_buzzer_open,g_sys_env.b_led_alarm_open);
 
 			}
+			rt_thread_delay(300);
 		}
 	}
-	rt_thread_delay(10*RT_TICK_PER_SECOND);
+	rt_thread_delay(7*RT_TICK_PER_SECOND);
 #else
 	/**/
-	unsigned char buf2[30];
-	x=ds18b20_read();
-	rt_sprintf(buf2,"temp %d.%doC\r\nbattery %d\r\nshidu %d\r\nhum_connect %d\r\n",x>>8,x&0xff,read_adc(9),read_adc(5),!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0));
+	//rt_sprintf(buf2,"%d",g_sys_env.device_id);
+	//wifi_send(buf2,rt_strlen(buf2));
+	check_server_command();  
+	//wifi_rcv(buf2,13);
+	/*x=ds18b20_read();
+	rt_sprintf(buf2,"temp %d.0%doC\r\nbattery %d\r\nshidu %d\r\nhum_connect %d\r\n",x>>8,x&0xff,read_adc(9),read_adc(5),!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0));
 	wifi_send(buf2,rt_strlen(buf2));
-	//buzzer_ctl(1);
-	rt_hw_led2_on();
+	//buzzer_ctl(1);*/
+	//rt_hw_led2_on();
 	//rt_hw_led1_on();
-	rt_thread_delay(RT_TICK_PER_SECOND);
+	//rt_thread_delay(RT_TICK_PER_SECOND);
 	//buzzer_ctl(0);
-	rt_hw_led2_off();
-	rt_thread_delay(RT_TICK_PER_SECOND);
+	//rt_hw_led2_off();
+	//rt_thread_delay(RT_TICK_PER_SECOND);
 #endif
   }
 }
