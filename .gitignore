@@ -11,3 +11,4 @@
 *.ilk
 build
 xcode-rtthread
+bsp/stm32f0x/rtconfig.py
