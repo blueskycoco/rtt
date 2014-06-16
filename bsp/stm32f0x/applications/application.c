@@ -59,7 +59,29 @@ typedef struct _sys_env{
   unsigned short crc;
 }sys_env,*psys_env;
 sys_env g_sys_env;
+unsigned char hum_interface_state_new=0,hum_interface_state_old=0;/*uninsert */
 extern unsigned short ds18b20_read(void);
+void gpb1_isr(void)
+{
+	int i=0,j=0;
+	for(i=0;i<50;i++)
+		if(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)==Bit_RESET)
+		{
+			j++;
+			Delay_us(1000);
+		}
+	  hum_interface_state_old=hum_interface_state_new;
+	  if(j>30)
+	{
+		hum_interface_state_new=1;
+		rt_hw_led2_on();
+	  	}
+	  else{
+	  	hum_interface_state_new=0;
+		rt_hw_led2_off();
+	  	}
+	  
+}
 void save_env()
 {
   FLASH_Unlock();
@@ -71,7 +93,7 @@ void save_env()
   g_sys_env.crc=g_sys_env.b_hum_local_force_stop+g_sys_env.b_led_alarm_open+g_sys_env.b_temp_buzzer_open+g_sys_env.b_hum_buzzer_open+g_sys_env.hum_alarm_type+g_sys_env.device_id+g_sys_env.battery_low_val+g_sys_env.hum_judge_val+g_sys_env.temp_low_val+g_sys_env.temp_high_val+g_sys_env.hum_plus;
 
   FLASH_ProgramWord(ENV_FLASH_ADDR+12,(g_sys_env.temp_high_val|g_sys_env.hum_plus<<16));
-  FLASH_ProgramWord(ENV_FLASH_ADDR+16,(g_sys_env.crc|g_sys_env.b_hum_local_force_stop<<16));
+  FLASH_ProgramWord(ENV_FLASH_ADDR+16,(g_sys_env.crc<<16)|g_sys_env.b_hum_local_force_stop);
   FLASH_Lock();
 }
 int read_env()
@@ -422,7 +444,11 @@ static void system_thread_check_entry(void* parameter)
 	{0xF5,0x8A,0x00,0x08,0x11,0x55,0x55,0x05,0x17,0x26,0xfa,0x00,0x00},/*Battery low alarm*/
   };
 #endif
-
+hum_interface_state_old=hum_interface_state_new;
+	  if(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)==Bit_RESET)
+	  	hum_interface_state_new=1;
+	  else
+	  	hum_interface_state_new=0;
   while(1)
   {
   #if 1
@@ -462,7 +488,7 @@ static void system_thread_check_entry(void* parameter)
 	}
 	else
 	{		
-		if(x<g_sys_env.temp_low_val||x>g_sys_env.temp_high_val)
+		if((x>>8)<g_sys_env.temp_low_val||(x>>8)>g_sys_env.temp_high_val)
 		{/*Temp alarm*/
 		  buf[index*13+3]=0x07;			
 		  buf[index*13+4]=0x11;
@@ -478,7 +504,7 @@ static void system_thread_check_entry(void* parameter)
 		}
 	}
 	/*check hum*/
-	if(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)!=Bit_RESET)
+	if(hum_interface_state_new==0/*GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)!=Bit_RESET*/)
 	{
 		  /*Hum interface disconnect*/
 		  buf[index*13+3]=0x01;			
@@ -617,10 +643,10 @@ static void system_thread_check_entry(void* parameter)
 					{
 						/*check hum interface pull out in 10 mins*/
 						int count=0;
-						while(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)==Bit_RESET)
+						while(hum_interface_state_new==1/*GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)==Bit_RESET*/)
 						{
 							count++;
-							if(count>=600)
+							if(count>=/*600*/6)
 							{
 								/*local force alarm 3 mins , stop 5mins */
 								check_server_command();  	
@@ -633,13 +659,12 @@ static void system_thread_check_entry(void* parameter)
 						}
 						/*check hum interface push in in 10 mins*/
 						count=0;
-						while(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)==Bit_SET)
+						while(hum_interface_state_new==0/*GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)==Bit_SET*/)
 						{
 							count++;
-							if(count>=600)
+							if(count>=/*600*/6)
 							{
-								/*local force alarm 3 mins , stop 5mins */
-									local_alarm(alarm_type[i]*100+500,alarm_type[i],1,1);
+								
 								/*send out hum interface pull out to server*/								
 								/*Hum interface disconnect*/
 								index=0;
@@ -654,6 +679,8 @@ static void system_thread_check_entry(void* parameter)
 								buf[index*13+12]=g_sys_env.device_id&0xff;
 								alarm_type[index++]=LOCAL_ALARM_HUM_LOST;
 								wifi_send(buf,index*13);
+								/*local force alarm 3 mins , stop 5mins */
+									local_alarm(alarm_type[i]*100+500,alarm_type[i],1,1);
 							}
 							rt_thread_delay(100);
 						}
@@ -683,23 +710,24 @@ static void system_thread_check_entry(void* parameter)
 			
 		}*/
 	}
-	rt_thread_delay(sleep_time*RT_TICK_PER_SECOND);
+	rt_thread_delay(sleep_time*RT_TICK_PER_SECOND/100);
 #else
 	/**/
+	unsigned char buf2[30];
 	//rt_sprintf(buf2,"%d",g_sys_env.device_id);
 	//wifi_send(buf2,rt_strlen(buf2));
 	check_server_command();  
 	//wifi_rcv(buf2,13);
-	/*x=ds18b20_read();
-	rt_sprintf(buf2,"temp %d.0%doC\r\nbattery %d\r\nshidu %d\r\nhum_connect %d\r\n",x>>8,x&0xff,read_adc(9),read_adc(5),!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0));
+	x=ds18b20_read();
+	rt_sprintf(buf2,"Low %d ,High %d temp %d.0%doC\r\nbattery %d\r\nshidu %d\r\nhum_connect %d\r\n",g_sys_env.temp_low_val,g_sys_env.temp_high_val,x>>8,x&0xff,read_adc(9),read_adc(5),!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0));
 	wifi_send(buf2,rt_strlen(buf2));
 	//buzzer_ctl(1);*/
-	//rt_hw_led2_on();
+	rt_hw_led2_on();
 	//rt_hw_led1_on();
-	//rt_thread_delay(RT_TICK_PER_SECOND);
+	rt_thread_delay(RT_TICK_PER_SECOND);
 	//buzzer_ctl(0);
-	//rt_hw_led2_off();
-	//rt_thread_delay(RT_TICK_PER_SECOND);
+	rt_hw_led2_off();
+	rt_thread_delay(RT_TICK_PER_SECOND);
 #endif
   }
 }
@@ -729,7 +757,7 @@ static void rt_init_thread_entry(void* parameter)
 	g_sys_env.device_id=0x0000;
 	g_sys_env.temp_high_val=35;
 	g_sys_env.temp_low_val=5;
-	g_sys_env.battery_low_val=2000;
+	g_sys_env.battery_low_val=1500;
 	g_sys_env.hum_judge_val=3000;
 	g_sys_env.hum_plus=1000;
 	g_sys_env.b_hum_local_force_stop=0;

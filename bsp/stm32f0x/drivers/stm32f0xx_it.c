@@ -67,17 +67,17 @@ void NMI_Handler(void)
 void SVC_Handler(void)
 {
 }
-#if 0
+#if 1
 void EXTI0_1_IRQHandler(void)
 {
 	extern void gpb1_isr(void);
 	/* enter interrupt */
 	rt_interrupt_enter();
-	if(EXTI_GetITStatus(EXTI_Line1))
+	if(EXTI_GetITStatus(EXTI_Line0))
 	{	 
 		gpb1_isr();	    
 		/* Clear the DM9000A EXTI line pending bit */
-		EXTI_ClearITPendingBit(EXTI_Line1);
+		EXTI_ClearITPendingBit(EXTI_Line0);
 	}
 	/* leave interrupt */
 	rt_interrupt_leave();
