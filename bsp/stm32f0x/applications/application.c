@@ -287,6 +287,7 @@ void check_server_command()
 	{0xF5,0x8A,0x00,0x17,0x12,0x55,0x55,0x13,0x01,0x26,0xfa,0x00,0x00},/*close Temp buzzer alarm*/
 	{0xF5,0x8A,0x00,0x18,0x12,0x55,0x55,0x14,0x06,0x26,0xfa,0x00,0x00},/*open Temp buzzer alarm*/
 	{0xF5,0x8A,0x00,0x19,0x12,0x55,0x55,0x15,0x17,0x26,0xfa,0x00,0x00},/*set device id,last 0x00,0x00 is id*/
+	{0xF5,0x8A,0x00,0x20,0x15,0x55,0x55,0x15,0x06,0x26,0xfa,0x00,0x00},/*local force alarm */
 
   };
 #endif
@@ -379,7 +380,7 @@ void check_server_command()
 			wifi_send(buf2,13);
 			save_env();
 		  }
-		  if((buf2[3]==0x19)&&(buf2[7]==0x15)&&(buf2[8]==0x06)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
+		  if((buf2[3]==0x20)&&(buf2[7]==0x15)&&(buf2[8]==0x06)&&(buf2[9]==crc)&&(buf2[11]==((g_sys_env.device_id&0xff00)>>8))&&(buf2[12]==(g_sys_env.device_id&0xff)))
 		  {/*open Temp buzzer alarm*/
 			g_sys_env.b_hum_local_force_stop=1;
 			wifi_send(buf2,13);
@@ -599,7 +600,7 @@ static void system_thread_check_entry(void* parameter)
 		wifi_send(buf,index*13);
 		for(i=0;i<index;i++)
 		{
-			if(alarm_type[i]==LOCAL_ALARM_BATTERY_LOW||alarm_type[i]==LOCAL_ALARM_TEMP_LOST/*||alarm_type[i]==LOCAL_ALARM_HUM_LOST*/)
+			if(alarm_type[i]==LOCAL_ALARM_BATTERY_LOW||alarm_type[i]==LOCAL_ALARM_TEMP_LOST||alarm_type[i]==LOCAL_ALARM_HUM_LOST)
 			{
 				/*always local alarm in battery low,temp lost*/
 				local_alarm(alarm_type[i]*100+500,alarm_type[i],1,1);
@@ -657,6 +658,7 @@ static void system_thread_check_entry(void* parameter)
 							rt_thread_delay(100);
 						}
 						sleep_time=1;
+						hum_check_count=0;
 					}
 					else
 					{
