@@ -430,7 +430,7 @@ static void system_thread_check_entry(void* parameter)
   unsigned char alarm_type[3];
   long m=0;
   static unsigned short hum_val=0;
-  int sleep_time=0;
+  int sleep_time=600;
   //unsigned char buf2[30];
 #if 0
   unsigned char command_up[8][13]={
@@ -453,7 +453,9 @@ hum_interface_state_old=hum_interface_state_new;
   {
   #if 1
   	/*check server command*/
-  	check_server_command();  	
+  	check_server_command();  
+  	
+  	rt_thread_delay(sleep_time*RT_TICK_PER_SECOND/100);
   	index=0;
 	/*check battery low*/
 	x=read_adc(BATTERY_ADC_CHANNEL);
@@ -620,7 +622,7 @@ hum_interface_state_old=hum_interface_state_new;
 	  }
 	  #endif
 	}
-	
+	sleep_time=60*10;
 	if(index!=0)
 	{
 		wifi_send(buf,index*13);
@@ -630,7 +632,7 @@ hum_interface_state_old=hum_interface_state_new;
 			{
 				/*always local alarm in battery low,temp lost*/
 				local_alarm(alarm_type[i]*100+500,alarm_type[i],1,1);
-				sleep_time=60*10;
+				
 			}
 			else
 			{
@@ -710,7 +712,6 @@ hum_interface_state_old=hum_interface_state_new;
 			
 		}*/
 	}
-	rt_thread_delay(sleep_time*RT_TICK_PER_SECOND/100);
 #else
 	/**/
 	unsigned char buf2[30];
