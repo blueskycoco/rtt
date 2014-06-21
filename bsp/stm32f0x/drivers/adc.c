@@ -103,23 +103,29 @@ int rt_hw_adc_init(void)
 uint16_t read_adc(unsigned char channel)
 {
 	int i;
-	  __IO uint16_t  ADC1ConvertedValue = 0, ADC1ConvertedVoltage = 0;
+	  __IO uint16_t  ADC1ConvertedValue1 = 0, ADC1ConvertedValue2=0,ADC1ConvertedVoltage = 0;
 	  
-	  
+	for(i=0;i<20;i++)
+	{   
 	ADC_StartOfConversion(ADC1);
 	  /* Test EOC flag */
 	  while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);	
 	  /* Get ADC1 converted data */
-	  ADC1ConvertedValue =ADC_GetConversionValue(ADC1);
+	  ADC1ConvertedValue1 +=ADC_GetConversionValue(ADC1);
 	  if(channel==9)
 	  {
 	  	  //ADC_StartOfConversion(ADC1);
 		  while(ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC) == RESET);	
-		  ADC1ConvertedValue =ADC_GetConversionValue(ADC1);		  
+		  ADC1ConvertedValue2 +=ADC_GetConversionValue(ADC1);		  
 	  }	  
 	  ADC_StopOfConversion(ADC1);
+	  rt_thread_delay(10);
+	}
 	  /* Compute the voltage */
-	  ADC1ConvertedVoltage = (ADC1ConvertedValue *3300)/0xFFF;
+	  if(channel==9)
+	  ADC1ConvertedVoltage = ((ADC1ConvertedValue2 *3300)/0xFFF)/20;
+	  else
+	  ADC1ConvertedVoltage = ((ADC1ConvertedValue1 *3300)/0xFFF)/20;	
 	  return ADC1ConvertedVoltage;
 }
 INIT_DEVICE_EXPORT(rt_hw_adc_init);
