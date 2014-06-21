@@ -451,7 +451,7 @@ hum_interface_state_old=hum_interface_state_new;
 	  	hum_interface_state_new=0;
   while(1)
   {
-  #if 0
+  #if 1
   	/*check server command*/
   	check_server_command();  
   	

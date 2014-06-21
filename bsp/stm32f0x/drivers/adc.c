@@ -105,7 +105,7 @@ uint16_t read_adc(unsigned char channel)
 	int i;
 	  __IO uint16_t  ADC1ConvertedValue1 = 0, ADC1ConvertedValue2=0,ADC1ConvertedVoltage = 0;
 	  
-	for(i=0;i<20;i++)
+	for(i=0;i<10;i++)
 	{   
 	ADC_StartOfConversion(ADC1);
 	  /* Test EOC flag */
@@ -123,9 +123,9 @@ uint16_t read_adc(unsigned char channel)
 	}
 	  /* Compute the voltage */
 	  if(channel==9)
-	  ADC1ConvertedVoltage = ((ADC1ConvertedValue2 *3300)/0xFFF)/20;
+	  ADC1ConvertedVoltage = ((ADC1ConvertedValue2 *3300)/0xFFF)/10;
 	  else
-	  ADC1ConvertedVoltage = ((ADC1ConvertedValue1 *3300)/0xFFF)/20;	
+	  ADC1ConvertedVoltage = ((ADC1ConvertedValue1 *3300)/0xFFF)/10;	
 	  return ADC1ConvertedVoltage;
 }
 INIT_DEVICE_EXPORT(rt_hw_adc_init);
