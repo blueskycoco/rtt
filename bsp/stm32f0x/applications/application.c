@@ -688,6 +688,7 @@ hum_interface_state_old=hum_interface_state_new;
 						}
 						sleep_time=1;
 						hum_check_count=0;
+						hum_val=g_sys_env.hum_judge_val;
 					}
 					else
 					{
