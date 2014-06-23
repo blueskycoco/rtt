@@ -14,7 +14,6 @@ LM096.c
 cc1101.c
 cc1101_hw.c
 power.c
-sdio-stm32f103.c
 """)
 
 # add Ethernet drvers.

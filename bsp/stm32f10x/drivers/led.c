@@ -28,7 +28,7 @@
 
 #define led1_rcc                    RCC_APB2Periph_GPIOC
 #define led1_gpio                   GPIOC
-#define led1_pin                    (GPIO_Pin_13)//10
+#define led1_pin                    (GPIO_Pin_10)//13
 
 #define led2_rcc                    RCC_APB2Periph_GPIOC
 #define led2_gpio                   GPIOC

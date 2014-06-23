@@ -4,14 +4,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define BATS_SEL_C_PIN              (GPIO_Pin_2)
-#define BATS_SEL_C_PORT             (GPIOE)
+//#define BATS_SEL_C_PIN              (GPIO_Pin_2)
+//#define BATS_SEL_C_PORT             (GPIOE)
 #define BATS_SEL_B_PIN              (GPIO_Pin_3)
 #define BATS_SEL_B_PORT             (GPIOE)
 #define BATS_SEL_A_PIN              (GPIO_Pin_4)
 #define BATS_SEL_A_PORT             (GPIOE)
-#define BATS_SEL_STAC_PIN           (GPIO_Pin_5)
-#define BATS_SEL_STAC_PORT          (GPIOE)
+//#define BATS_SEL_STAC_PIN           (GPIO_Pin_5)
+//#define BATS_SEL_STAC_PORT          (GPIOE)
 #define BATS_SEL_STAB_PIN           (GPIO_Pin_6)
 #define BATS_SEL_STAB_PORT          (GPIOE)
 #define BATS_SEL_STAA_PIN           (GPIO_Pin_0)
@@ -32,16 +32,16 @@ extern "C" {
 #define BATS_B_CHARGE_STAT_PORT     (GPIOG)
 #define BATS_B_CHARGE_CTL_PIN       (GPIO_Pin_5)
 #define BATS_B_CHARGE_CTL_PORT      (GPIOG)
-#define BATS_C_CHARGE_STAT_PIN      (GPIO_Pin_6)
-#define BATS_C_CHARGE_STAT_PORT     (GPIOG)
-#define BATS_C_CHARGE_CTL_PIN       (GPIO_Pin_7)
-#define BATS_C_CHARGE_CTL_PORT      (GPIOG)
+//#define BATS_C_CHARGE_STAT_PIN      (GPIO_Pin_6)
+//#define BATS_C_CHARGE_STAT_PORT     (GPIOG)
+//#define BATS_C_CHARGE_CTL_PIN       (GPIO_Pin_7)
+//#define BATS_C_CHARGE_CTL_PORT      (GPIOG)
 #define BATS_I2C_SCL_PIN            (GPIO_Pin_10)
 #define BATS_I2C_SCL_PORT           (GPIOB)
 #define BATS_I2C_SDA_PIN            (GPIO_Pin_11)
 #define BATS_I2C_SDA_PORT           (GPIOB)
-#define BATS_I2C_SEL_PIN            (GPIO_Pin_15)
-#define BATS_I2C_SEL_PORT						(GPIOA)
+#define BATS_I2C_SEL_PIN            (GPIO_Pin_6)//15
+#define BATS_I2C_SEL_PORT	(GPIOB)//A
 #define BATS_AB_MON_I_PIN           (GPIO_Pin_6)
 #define BATS_AB_MON_I_PORT          (GPIOF)
 #define V3P3_MON_V_PIN              (GPIO_Pin_7)
@@ -50,8 +50,8 @@ extern "C" {
 #define BATS_A_V_MON_PORT           (GPIOF)
 #define BATS_B_V_MON_PIN            (GPIO_Pin_9)
 #define BATS_B_V_MON_PORT           (GPIOF)
-#define BATS_C_V_MON_PIN            (GPIO_Pin_10)
-#define BATS_C_V_MON_PORT           (GPIOF)
+//#define BATS_C_V_MON_PIN            (GPIO_Pin_10)
+//#define BATS_C_V_MON_PORT           (GPIOF)
 #define ARP_ADDRESS                 0x61
 #define ARP_PREPARE                 0x01
 #define ARP_RESET_DEV               0x02

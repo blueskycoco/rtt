@@ -36,9 +36,10 @@ static void led_thread_entry(void* parameter)
 	{
         rt_hw_led_on();
         rt_thread_delay(RT_TICK_PER_SECOND);
-
+rt_kprintf("led on\r\n");
         rt_hw_led_off();
         rt_thread_delay(RT_TICK_PER_SECOND);
+	  rt_kprintf("led off\r\n");
 	}
 }
 static void cc1101_thread_entry(void* parameter)
@@ -89,8 +90,8 @@ static void rt_init_thread_entry(void* parameter)
     led_thread = rt_thread_create("cc1101",
     		cc1101_thread_entry, RT_NULL,
     		512, 20, 20);
-    if(led_thread != RT_NULL)
-    	rt_thread_startup(led_thread);
+    //if(led_thread != RT_NULL)
+    	//rt_thread_startup(led_thread);
 }
 
 int rt_application_init()

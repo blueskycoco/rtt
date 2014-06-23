@@ -91,8 +91,8 @@ static struct rt_thread power_thread;
 static void power_thread_entry(void* parameter)
 {
     unsigned int count=0;
-SD_PowerON();
- return ;
+//SD_PowerON();
+ //return ;
     power_man_init(100,2000);
 
     while (1)

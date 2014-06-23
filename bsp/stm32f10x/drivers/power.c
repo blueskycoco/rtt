@@ -40,20 +40,20 @@ void pin_init1()
 	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	 GPIO_InitStructure.GPIO_Pin =  BATS_I2C_SEL_PIN;
 	 GPIO_Init(BATS_I2C_SEL_PORT, &GPIO_InitStructure);
-	 GPIO_InitStructure.GPIO_Pin =  BATS_SEL_C_PIN;
-	 GPIO_Init(BATS_SEL_C_PORT, &GPIO_InitStructure);
+	// GPIO_InitStructure.GPIO_Pin =  BATS_SEL_C_PIN;
+	// GPIO_Init(BATS_SEL_C_PORT, &GPIO_InitStructure);
 	 GPIO_InitStructure.GPIO_Pin =  BATS_SEL_B_PIN;
 	 GPIO_Init(BATS_SEL_B_PORT, &GPIO_InitStructure);
 	 GPIO_InitStructure.GPIO_Pin =  BATS_SEL_A_PIN;
 	 GPIO_Init(BATS_SEL_A_PORT, &GPIO_InitStructure);
-	 GPIO_InitStructure.GPIO_Pin =  BATS_SEL_STAC_PIN;
-	 GPIO_Init(BATS_SEL_STAC_PORT, &GPIO_InitStructure);
+	 //GPIO_InitStructure.GPIO_Pin =  BATS_SEL_STAC_PIN;
+	 //GPIO_Init(BATS_SEL_STAC_PORT, &GPIO_InitStructure);
 	 GPIO_InitStructure.GPIO_Pin =  BATS_SEL_STAB_PIN;
 	 GPIO_Init(BATS_SEL_STAB_PORT, &GPIO_InitStructure);
 	 GPIO_InitStructure.GPIO_Pin =  BATS_SEL_STAA_PIN;
 	 GPIO_Init(BATS_SEL_STAA_PORT, &GPIO_InitStructure);
-	 GPIO_InitStructure.GPIO_Pin =  BATS_C_CHARGE_CTL_PIN;
-	 GPIO_Init(BATS_C_CHARGE_CTL_PORT, &GPIO_InitStructure);
+	 //GPIO_InitStructure.GPIO_Pin =  BATS_C_CHARGE_CTL_PIN;
+	 //GPIO_Init(BATS_C_CHARGE_CTL_PORT, &GPIO_InitStructure);
 	 GPIO_InitStructure.GPIO_Pin =  BATS_ABC_CHARGE_FAULT_PIN;
 	 GPIO_Init(BATS_ABC_CHARGE_FAULT_PORT, &GPIO_InitStructure);
 	 GPIO_InitStructure.GPIO_Pin =  BATS_ABC_CHARGE_CHRG_PIN;
@@ -68,10 +68,10 @@ void pin_init1()
 	 GPIO_Init(BATS_B_CHARGE_STAT_PORT, &GPIO_InitStructure);
 	 GPIO_InitStructure.GPIO_Pin =  BATS_B_CHARGE_CTL_PIN;
 	 GPIO_Init(BATS_B_CHARGE_CTL_PORT, &GPIO_InitStructure);
-	 GPIO_InitStructure.GPIO_Pin =  BATS_C_CHARGE_STAT_PIN;
-	 GPIO_Init(BATS_C_CHARGE_STAT_PORT, &GPIO_InitStructure);
-	 GPIO_InitStructure.GPIO_Pin =  BATS_SEL_C_PIN;
-	 GPIO_Init(BATS_SEL_C_PORT, &GPIO_InitStructure);
+	 //GPIO_InitStructure.GPIO_Pin =  BATS_C_CHARGE_STAT_PIN;
+	 //GPIO_Init(BATS_C_CHARGE_STAT_PORT, &GPIO_InitStructure);
+	 //GPIO_InitStructure.GPIO_Pin =  BATS_SEL_C_PIN;
+	 //GPIO_Init(BATS_SEL_C_PORT, &GPIO_InitStructure);
 	 //ADC channel config
 	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
 	 GPIO_InitStructure.GPIO_Pin =  BATS_AB_MON_I_PIN;
@@ -82,8 +82,8 @@ void pin_init1()
 	 GPIO_Init(BATS_A_V_MON_PORT, &GPIO_InitStructure);
 	 GPIO_InitStructure.GPIO_Pin =  BATS_B_V_MON_PIN;
 	 GPIO_Init(BATS_B_V_MON_PORT, &GPIO_InitStructure);
-	 GPIO_InitStructure.GPIO_Pin =  BATS_C_V_MON_PIN;
-	 GPIO_Init(BATS_C_V_MON_PORT, &GPIO_InitStructure);
+	 //GPIO_InitStructure.GPIO_Pin =  BATS_C_V_MON_PIN;
+	 //GPIO_Init(BATS_C_V_MON_PORT, &GPIO_InitStructure);
 	 //I2C Config
 	 I2C_SoftwareResetCmd(I2C2,ENABLE);
 	 I2C_SoftwareResetCmd(I2C2,DISABLE);
@@ -361,17 +361,19 @@ void switch_power(uint8_t no)
 		  GPIO_SetBits(BATS_SEL_STAA_PORT, BATS_SEL_STAA_PIN);
 		  GPIO_SetBits(BATS_SEL_B_PORT, BATS_SEL_B_PIN);
 		  GPIO_SetBits(BATS_SEL_STAB_PORT, BATS_SEL_STAB_PIN);
-		  GPIO_SetBits(BATS_SEL_C_PORT, BATS_SEL_C_PIN);
-		  GPIO_ResetBits(BATS_SEL_STAC_PORT, BATS_SEL_STAC_PIN);
+		  //GPIO_SetBits(BATS_SEL_C_PORT, BATS_SEL_C_PIN);
+		  //GPIO_ResetBits(BATS_SEL_STAC_PORT, BATS_SEL_STAC_PIN);
 	 }else if(no==1)/*Ñ¡Ôñ²å²ÛB*/
 	 {
 		  GPIO_ResetBits(BATS_SEL_A_PORT, BATS_SEL_A_PIN);
 		  GPIO_ResetBits(BATS_SEL_STAA_PORT, BATS_SEL_STAA_PIN);
 		  GPIO_ResetBits(BATS_SEL_B_PORT, BATS_SEL_B_PIN);
 		  GPIO_ResetBits(BATS_SEL_STAB_PORT, BATS_SEL_STAB_PIN);
-		  GPIO_SetBits(BATS_SEL_C_PORT, BATS_SEL_C_PIN);
-		  GPIO_ResetBits(BATS_SEL_STAC_PORT, BATS_SEL_STAC_PIN);
-	 }else/*Ñ¡Ôñ²å²ÛC*/
+		  //GPIO_SetBits(BATS_SEL_C_PORT, BATS_SEL_C_PIN);
+		  //GPIO_ResetBits(BATS_SEL_STAC_PORT, BATS_SEL_STAC_PIN);
+	 }
+#if 0
+		  else/*Ñ¡Ôñ²å²ÛC*/
 	 {
 		  GPIO_ResetBits(BATS_SEL_A_PORT, BATS_SEL_A_PIN);
 		  GPIO_ResetBits(BATS_SEL_STAA_PORT, BATS_SEL_STAA_PIN);
@@ -380,6 +382,7 @@ void switch_power(uint8_t no)
 		  GPIO_ResetBits(BATS_SEL_C_PORT, BATS_SEL_C_PIN);
 		  GPIO_SetBits(BATS_SEL_STAC_PORT, BATS_SEL_STAC_PIN);
 	 }
+		  #endif
 }
 PowerMan_t power_man_timer_poll(int16_t min_vol,int16_t max_vol)
 {
