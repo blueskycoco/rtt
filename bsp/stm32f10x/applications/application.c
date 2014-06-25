@@ -61,6 +61,7 @@ static void led_thread_entry(void* parameter)
 #endif
         count++;
         rt_hw_led_on(0);
+	  rt_hw_led_on(1);
         rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
 
         /* led1 off */
@@ -68,6 +69,7 @@ static void led_thread_entry(void* parameter)
         rt_kprintf("led off\r\n");
 #endif
         rt_hw_led_off(0);
+rt_hw_led_off(1);
         rt_thread_delay( RT_TICK_PER_SECOND/2 );
     }
 }
@@ -145,7 +147,7 @@ void rt_init_thread_entry(void* parameter)
     else
         rt_kprintf("File System initialzation failed!\n");
 #endif  /* RT_USING_DFS */
-uart2_init();
+//uart2_init();
 
 #ifdef RT_USING_RTGUI
     {

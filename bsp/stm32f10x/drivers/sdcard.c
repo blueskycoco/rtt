@@ -145,7 +145,7 @@ SD_Error SD_Init(void)
     SD_Error errorstatus = SD_OK;
 
     /* Configure SDIO interface GPIO */
-    GPIO_Configuration();
+    //GPIO_Configuration();
 
     /* Enable the SDIO AHB Clock */
     RCC_AHBPeriphClockCmd(RCC_AHBPeriph_SDIO, ENABLE);
