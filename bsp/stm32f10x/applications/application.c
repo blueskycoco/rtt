@@ -41,6 +41,8 @@
 #endif
 
 #include "led.h"
+void uart2_tx(char *buf,int len);
+void uart2_init();
 rt_device_t uart2_dev = RT_NULL;
 char g_rx_buf[256];
 int g_rx_len=0;
@@ -59,6 +61,7 @@ static void led_thread_entry(void* parameter)
 #ifndef RT_USING_FINSH
         rt_kprintf("led on, count : %d\r\n",count);
 #endif
+uart2_tx("123456\r\n",rt_strlen("123456\r\n"));
         count++;
         rt_hw_led_on(0);
 	  rt_hw_led_on(1);
@@ -68,7 +71,8 @@ static void led_thread_entry(void* parameter)
 #ifndef RT_USING_FINSH
         rt_kprintf("led off\r\n");
 #endif
-        rt_hw_led_off(0);
+uart2_tx("654321\r\n",rt_strlen("654321\r\n"));
+       rt_hw_led_off(0);
 rt_hw_led_off(1);
         rt_thread_delay( RT_TICK_PER_SECOND/2 );
     }
@@ -83,6 +87,7 @@ static rt_err_t uart2_rx_ind(rt_device_t dev, rt_size_t size)
 		i++;
 	}
 	g_rx_len=i;
+	uart2_tx(g_rx_buf,g_rx_len);
 }
 void uart2_tx(char *buf,int len)
 {
@@ -96,7 +101,7 @@ void uart2_init()
 {
 	
 
-	uart2_dev = rt_device_find("uart2");
+	uart2_dev = rt_device_find("uart1");
 	if (uart2_dev == RT_NULL)
 	{
 		rt_kprintf("finsh: can not find device: uart2\n");
@@ -147,7 +152,7 @@ void rt_init_thread_entry(void* parameter)
     else
         rt_kprintf("File System initialzation failed!\n");
 #endif  /* RT_USING_DFS */
-//uart2_init();
+
 
 #ifdef RT_USING_RTGUI
     {
@@ -188,7 +193,7 @@ int rt_application_init(void)
     rt_thread_t init_thread;
 
     rt_err_t result;
-
+uart2_init();
     /* init led thread */
     result = rt_thread_init(&led_thread,
                             "led",
