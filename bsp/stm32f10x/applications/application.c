@@ -41,7 +41,9 @@
 #endif
 
 #include "led.h"
-
+rt_device_t uart2_dev = RT_NULL;
+char g_rx_buf[256];
+int g_rx_len=0;
 ALIGN(RT_ALIGN_SIZE)
 static rt_uint8_t led_stack[ 512 ];
 static struct rt_thread led_thread;
@@ -69,7 +71,42 @@ static void led_thread_entry(void* parameter)
         rt_thread_delay( RT_TICK_PER_SECOND/2 );
     }
 }
+static rt_err_t uart2_rx_ind(rt_device_t dev, rt_size_t size)
+{
+	char ch;
+	int i=0;	
+	while (rt_device_read(dev, 0, &ch, 1) == 1)
+	{
+		g_rx_buf[i]=ch;
+		i++;
+	}
+	g_rx_len=i;
+}
+void uart2_tx(char *buf,int len)
+{
+	rt_uint16_t old_flag = uart2_dev->flag;
 
+	uart2_dev->flag |= RT_DEVICE_FLAG_STREAM;
+	rt_device_write(uart2_dev, 0, buf, len);
+	uart2_dev->flag = old_flag;	  
+}
+void uart2_init()
+{
+	
+
+	uart2_dev = rt_device_find("uart2");
+	if (uart2_dev == RT_NULL)
+	{
+		rt_kprintf("finsh: can not find device: uart2\n");
+		return;
+	}
+
+	/* open this device and set the new device in finsh shell */
+	if (rt_device_open(uart2_dev, RT_DEVICE_OFLAG_RDWR) == RT_EOK)
+	{
+		rt_device_set_rx_indicate(uart2_dev, uart2_rx_ind);
+	}
+}
 #ifdef RT_USING_RTGUI
 rt_bool_t cali_setup(void)
 {
@@ -108,6 +145,7 @@ void rt_init_thread_entry(void* parameter)
     else
         rt_kprintf("File System initialzation failed!\n");
 #endif  /* RT_USING_DFS */
+uart2_init();
 
 #ifdef RT_USING_RTGUI
     {
