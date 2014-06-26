@@ -54,14 +54,17 @@ static void led_thread_entry(void* parameter)
     unsigned int count=0;
 
     rt_hw_led_init();
+LCD_Init();
 
+//LCD_ShowString(60,50,200,16,16,"Mini STM32");
     while (1)
     {
         /* led1 on */
 #ifndef RT_USING_FINSH
         rt_kprintf("led on, count : %d\r\n",count);
 #endif
-uart2_tx("123456\r\n",rt_strlen("123456\r\n"));
+LCD_ShowString(120,2400,240,24,24,"Led on");
+//uart2_tx("123456\r\n",rt_strlen("123456\r\n"));
         count++;
         rt_hw_led_on(0);
 	  rt_hw_led_on(1);
@@ -71,7 +74,8 @@ uart2_tx("123456\r\n",rt_strlen("123456\r\n"));
 #ifndef RT_USING_FINSH
         rt_kprintf("led off\r\n");
 #endif
-uart2_tx("654321\r\n",rt_strlen("654321\r\n"));
+LCD_ShowString(120,2400,240,24,24,"Led off");
+//uart2_tx("654321\r\n",rt_strlen("654321\r\n"));
        rt_hw_led_off(0);
 rt_hw_led_off(1);
         rt_thread_delay( RT_TICK_PER_SECOND/2 );
@@ -193,7 +197,8 @@ int rt_application_init(void)
     rt_thread_t init_thread;
 
     rt_err_t result;
-uart2_init();
+//uart2_init();
+
     /* init led thread */
     result = rt_thread_init(&led_thread,
                             "led",
