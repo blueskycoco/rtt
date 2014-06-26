@@ -35,7 +35,7 @@ rt_uint16_t LCD_RD_DATA(void)
 {										   
 	  rt_uint16_t t;	  
 	  GPIO_InitTypeDef GPIO_InitStructure;	  
-	  
+
 	  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU;
 	  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;	  
 	  GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_All;
@@ -109,7 +109,7 @@ rt_uint16_t LCD_ReadPoint(rt_uint16_t x,rt_uint16_t y)
 {
 	  rt_uint16_t r,g,b;	  
 	  GPIO_InitTypeDef GPIO_InitStructure;	  
-	  
+
 	  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU;
 	  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;	  
 	  GPIO_InitStructure.GPIO_Pin   = GPIO_Pin_All;
@@ -135,20 +135,20 @@ rt_uint16_t LCD_ReadPoint(rt_uint16_t x,rt_uint16_t y)
 	  rt_thread_delay(1);//延时1us					   
 	  r=DATAIN;  	//实际坐标颜色
 	  LCD_RD_SET;
-	 	 
-	LCD_RD_CLR;					   
-	b=DATAIN;//读取蓝色值  	  
-	LCD_RD_SET;
-	g=r&0XFF;//对于9341,第一次读取的是RG的值,R在前,G在后,各占8位
-	g<<=8;
-	   
-	  LCD_CS_SET;
-//	  GPIOB->CRL=0X33333333; 		//PB0-7  上拉输出
-//	  GPIOB->CRH=0X33333333; 		//PB8-15 上拉输出
-//	  GPIOB->ODR=0XFFFF;    		//全部输出高  
-	  	  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
 
-	  	  GPIO_Init(GPIOB, &GPIO_InitStructure);
+	  LCD_RD_CLR;					   
+	  b=DATAIN;//读取蓝色值  	  
+	  LCD_RD_SET;
+	  g=r&0XFF;//对于9341,第一次读取的是RG的值,R在前,G在后,各占8位
+	  g<<=8;
+
+	  LCD_CS_SET;
+	  //	  GPIOB->CRL=0X33333333; 		//PB0-7  上拉输出
+	  //	  GPIOB->CRH=0X33333333; 		//PB8-15 上拉输出
+	  //	  GPIOB->ODR=0XFFFF;    		//全部输出高  
+	  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
+
+	  GPIO_Init(GPIOB, &GPIO_InitStructure);
 	  GPIO_Write(GPIOB,0xffff);
 
 	  return (((r>>11)<<11)|((g>>10)<<5)|(b>>11));//ILI9341/NT35310/NT35510需要公式转换一下
@@ -169,14 +169,14 @@ void LCD_DisplayOff(void)
 void LCD_SetCursor(rt_uint16_t Xpos, rt_uint16_t Ypos)
 {
 
-			LCD_WR_REG(lcddev.setxcmd); 
-			LCD_WR_DATA(Xpos>>8); 
-			LCD_WR_REG(lcddev.setxcmd+1); 
-			LCD_WR_DATA(Xpos&0XFF);	 
-			LCD_WR_REG(lcddev.setycmd); 
-			LCD_WR_DATA(Ypos>>8); 
-			LCD_WR_REG(lcddev.setycmd+1); 
-			LCD_WR_DATA(Ypos&0XFF);		
+	  LCD_WR_REG(lcddev.setxcmd); 
+	  LCD_WR_DATA(Xpos>>8); 
+	  LCD_WR_REG(lcddev.setxcmd+1); 
+	  LCD_WR_DATA(Xpos&0XFF);	 
+	  LCD_WR_REG(lcddev.setycmd); 
+	  LCD_WR_DATA(Ypos>>8); 
+	  LCD_WR_REG(lcddev.setycmd+1); 
+	  LCD_WR_DATA(Ypos&0XFF);		
 }
 //设置LCD的自动扫描方向
 //注意:其他函数可能会受到此函数设置的影响(尤其是9341/6804这两个奇葩),
@@ -202,62 +202,62 @@ void LCD_Scan_Dir(u8 dir)
 				  case 7:dir=2;break;	     
 			}
 	  }
-			switch(dir)
+	  switch(dir)
+	  {
+			case L2R_U2D://从左到右,从上到下
+				  regval|=(0<<7)|(0<<6)|(0<<5); 
+				  break;
+			case L2R_D2U://从左到右,从下到上
+				  regval|=(1<<7)|(0<<6)|(0<<5); 
+				  break;
+			case R2L_U2D://从右到左,从上到下
+				  regval|=(0<<7)|(1<<6)|(0<<5); 
+				  break;
+			case R2L_D2U://从右到左,从下到上
+				  regval|=(1<<7)|(1<<6)|(0<<5); 
+				  break;	 
+			case U2D_L2R://从上到下,从左到右
+				  regval|=(0<<7)|(0<<6)|(1<<5); 
+				  break;
+			case U2D_R2L://从上到下,从右到左
+				  regval|=(0<<7)|(1<<6)|(1<<5); 
+				  break;
+			case D2U_L2R://从下到上,从左到右
+				  regval|=(1<<7)|(0<<6)|(1<<5); 
+				  break;
+			case D2U_R2L://从下到上,从右到左
+				  regval|=(1<<7)|(1<<6)|(1<<5); 
+				  break;	 
+	  }
+	  dirreg=0X3600;
+	  LCD_WriteReg(dirreg,regval);
+	  if((regval&0X20)||lcddev.dir==1)
+	  {
+			if(lcddev.width<lcddev.height)//交换X,Y
 			{
-				  case L2R_U2D://从左到右,从上到下
-						regval|=(0<<7)|(0<<6)|(0<<5); 
-						break;
-				  case L2R_D2U://从左到右,从下到上
-						regval|=(1<<7)|(0<<6)|(0<<5); 
-						break;
-				  case R2L_U2D://从右到左,从上到下
-						regval|=(0<<7)|(1<<6)|(0<<5); 
-						break;
-				  case R2L_D2U://从右到左,从下到上
-						regval|=(1<<7)|(1<<6)|(0<<5); 
-						break;	 
-				  case U2D_L2R://从上到下,从左到右
-						regval|=(0<<7)|(0<<6)|(1<<5); 
-						break;
-				  case U2D_R2L://从上到下,从右到左
-						regval|=(0<<7)|(1<<6)|(1<<5); 
-						break;
-				  case D2U_L2R://从下到上,从左到右
-						regval|=(1<<7)|(0<<6)|(1<<5); 
-						break;
-				  case D2U_R2L://从下到上,从右到左
-						regval|=(1<<7)|(1<<6)|(1<<5); 
-						break;	 
+				  temp=lcddev.width;
+				  lcddev.width=lcddev.height;
+				  lcddev.height=temp;
 			}
-			dirreg=0X3600;
-			LCD_WriteReg(dirreg,regval);
-			if((regval&0X20)||lcddev.dir==1)
+	  }else  
+	  {
+			if(lcddev.width>lcddev.height)//交换X,Y
 			{
-				  if(lcddev.width<lcddev.height)//交换X,Y
-				  {
-						temp=lcddev.width;
-						lcddev.width=lcddev.height;
-						lcddev.height=temp;
-				  }
-			}else  
-			{
-				  if(lcddev.width>lcddev.height)//交换X,Y
-				  {
-						temp=lcddev.width;
-						lcddev.width=lcddev.height;
-						lcddev.height=temp;
-				  }
-			}  
-				  LCD_WR_REG(lcddev.setxcmd);LCD_WR_DATA(0); 
-				  LCD_WR_REG(lcddev.setxcmd+1);LCD_WR_DATA(0); 
-				  LCD_WR_REG(lcddev.setxcmd+2);LCD_WR_DATA((lcddev.width-1)>>8); 
-				  LCD_WR_REG(lcddev.setxcmd+3);LCD_WR_DATA((lcddev.width-1)&0XFF); 
-				  LCD_WR_REG(lcddev.setycmd);LCD_WR_DATA(0); 
-				  LCD_WR_REG(lcddev.setycmd+1);LCD_WR_DATA(0); 
-				  LCD_WR_REG(lcddev.setycmd+2);LCD_WR_DATA((lcddev.height-1)>>8); 
-				  LCD_WR_REG(lcddev.setycmd+3);LCD_WR_DATA((lcddev.height-1)&0XFF);
-	  
-	  
+				  temp=lcddev.width;
+				  lcddev.width=lcddev.height;
+				  lcddev.height=temp;
+			}
+	  }  
+	  LCD_WR_REG(lcddev.setxcmd);LCD_WR_DATA(0); 
+	  LCD_WR_REG(lcddev.setxcmd+1);LCD_WR_DATA(0); 
+	  LCD_WR_REG(lcddev.setxcmd+2);LCD_WR_DATA((lcddev.width-1)>>8); 
+	  LCD_WR_REG(lcddev.setxcmd+3);LCD_WR_DATA((lcddev.width-1)&0XFF); 
+	  LCD_WR_REG(lcddev.setycmd);LCD_WR_DATA(0); 
+	  LCD_WR_REG(lcddev.setycmd+1);LCD_WR_DATA(0); 
+	  LCD_WR_REG(lcddev.setycmd+2);LCD_WR_DATA((lcddev.height-1)>>8); 
+	  LCD_WR_REG(lcddev.setycmd+3);LCD_WR_DATA((lcddev.height-1)&0XFF);
+
+
 } 
 //画点
 //x,y:坐标
@@ -273,12 +273,12 @@ void LCD_DrawPoint(rt_uint16_t x,rt_uint16_t y)
 //color:颜色
 void LCD_Fast_DrawPoint(rt_uint16_t x,rt_uint16_t y,rt_uint16_t color)
 {	   
-	 
-	LCD_WR_REG(lcddev.setxcmd);LCD_WR_DATA(x>>8);  
-	LCD_WR_REG(lcddev.setxcmd+1);LCD_WR_DATA(x&0XFF);	  
-	LCD_WR_REG(lcddev.setycmd);LCD_WR_DATA(y>>8);  
-	LCD_WR_REG(lcddev.setycmd+1);LCD_WR_DATA(y&0XFF); 
-	
+
+	  LCD_WR_REG(lcddev.setxcmd);LCD_WR_DATA(x>>8);  
+	  LCD_WR_REG(lcddev.setxcmd+1);LCD_WR_DATA(x&0XFF);	  
+	  LCD_WR_REG(lcddev.setycmd);LCD_WR_DATA(y>>8);  
+	  LCD_WR_REG(lcddev.setycmd+1);LCD_WR_DATA(y&0XFF); 
+
 	  LCD_RS_CLR;
 	  LCD_CS_CLR; 
 	  DATAOUT(lcddev.wramcmd);//写指令  
@@ -297,23 +297,23 @@ void LCD_Display_Dir(u8 dir)
 			lcddev.width=240;
 			lcddev.height=320;
 
-				  lcddev.wramcmd=0X2C00;
-				  lcddev.setxcmd=0X2A00;
-				  lcddev.setycmd=0X2B00; 
-				  lcddev.width=480;
-				  lcddev.height=800;
+			lcddev.wramcmd=0X2C00;
+			lcddev.setxcmd=0X2A00;
+			lcddev.setycmd=0X2B00; 
+			lcddev.width=480;
+			lcddev.height=800;
 	  }else 				//横屏
 	  {	  				
 			lcddev.dir=1;	//横屏
 			lcddev.width=320;
 			lcddev.height=240;
 
-				  lcddev.wramcmd=0X2C00;
-				  lcddev.setxcmd=0X2A00;
-				  lcddev.setycmd=0X2B00; 
-				  lcddev.width=800;
-				  lcddev.height=480;
-			
+			lcddev.wramcmd=0X2C00;
+			lcddev.setxcmd=0X2A00;
+			lcddev.setycmd=0X2B00; 
+			lcddev.width=800;
+			lcddev.height=480;
+
 	  } 
 	  LCD_Scan_Dir(DFT_SCAN_DIR);	//默认扫描方向
 }	 
@@ -329,24 +329,24 @@ void LCD_Set_Window(rt_uint16_t sx,rt_uint16_t sy,rt_uint16_t width,rt_uint16_t 
 	  width=sx+width-1;
 	  height=sy+height-1;
 
-			LCD_WR_REG(lcddev.setxcmd);LCD_WR_DATA(sx>>8);  
-			LCD_WR_REG(lcddev.setxcmd+1);LCD_WR_DATA(sx&0XFF);	  
-			LCD_WR_REG(lcddev.setxcmd+2);LCD_WR_DATA(width>>8);   
-			LCD_WR_REG(lcddev.setxcmd+3);LCD_WR_DATA(width&0XFF);   
-			LCD_WR_REG(lcddev.setycmd);LCD_WR_DATA(sy>>8);   
-			LCD_WR_REG(lcddev.setycmd+1);LCD_WR_DATA(sy&0XFF);  
-			LCD_WR_REG(lcddev.setycmd+2);LCD_WR_DATA(height>>8);   
-			LCD_WR_REG(lcddev.setycmd+3);LCD_WR_DATA(height&0XFF);  
-	 
-	  
+	  LCD_WR_REG(lcddev.setxcmd);LCD_WR_DATA(sx>>8);  
+	  LCD_WR_REG(lcddev.setxcmd+1);LCD_WR_DATA(sx&0XFF);	  
+	  LCD_WR_REG(lcddev.setxcmd+2);LCD_WR_DATA(width>>8);   
+	  LCD_WR_REG(lcddev.setxcmd+3);LCD_WR_DATA(width&0XFF);   
+	  LCD_WR_REG(lcddev.setycmd);LCD_WR_DATA(sy>>8);   
+	  LCD_WR_REG(lcddev.setycmd+1);LCD_WR_DATA(sy&0XFF);  
+	  LCD_WR_REG(lcddev.setycmd+2);LCD_WR_DATA(height>>8);   
+	  LCD_WR_REG(lcddev.setycmd+3);LCD_WR_DATA(height&0XFF);  
+
+
 } 
 //初始化lcd
 //该初始化函数可以初始化各种ALIENTEK出品的LCD液晶屏
 //本函数占用较大flash,用户可以根据自己的实际情况,删掉未用到的LCD初始化代码.以节省空间.
 void LCD_Init(void)
 { 	  
-	GPIO_InitTypeDef GPIO_InitStructure;	  
-	  
+	  GPIO_InitTypeDef GPIO_InitStructure;	  
+
 
 	  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB|RCC_APB2Periph_GPIOC,ENABLE);
 	  //RCC->APB2ENR|=1<<3;//先使能外设PORTB时钟
@@ -835,7 +835,7 @@ void LCD_Init(void)
 			rt_thread_delay(12);
 			LCD_WR_REG(0x2900);
 	  }
-	  	
+
 	  LCD_Display_Dir(0);		 	//默认为竖屏
 	  LCD_LED;//=1;					//点亮背光
 	  LCD_Clear(WHITE);
