@@ -83,19 +83,19 @@ unsigned char ResetDS18B20(void)
 //GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
 //GPIO_Init(GPIOA, &GPIO_InitStructure);	
 
- while(GetDQ())
- {
+ while(GetDQ()) x++;
+ /*{
  	 x++;
  	Delay_us(500);  //500us
- 	if(x>1000)
+ 	if(x>10000000)
 		break;
- 	}
+ 	}*/
  //		GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 //		GPIO_Init(GPIOA, &GPIO_InitStructure);	
-
+Delay_us(500);
  SetDQ();
 // rt_kprintf("ResetDS18B20 2\r\n");
-if(x>1000)
+if(x>100)
 	resport=0;
  return resport;
 }
