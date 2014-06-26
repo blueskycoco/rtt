@@ -21,7 +21,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "sdcard.h"
 #include "stm32f10x_dma.h"
-#include "stm32f10x_sdio.h"
+//#include "stm32f10x_sdio.h"
 #include "stdbool.h"
 #include <rtthread.h>
 
@@ -32,7 +32,7 @@
 /** @addtogroup SDIO_Example
   * @{
   */
-
+#if 0
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 #define NULL 0
@@ -2973,7 +2973,7 @@ static void DMA_RxConfiguration(uint32_t *BufferDST, uint32_t BufferSize)
     /* DMA2 Channel4 enable */
     DMA_Cmd(DMA2_Channel4, ENABLE);
 }
-
+#endif
 /**
   * @}
   */
@@ -3003,14 +3003,14 @@ static rt_uint8_t _sdcard_buffer[SECTOR_SIZE];
 /* RT-Thread Device Driver Interface */
 static rt_err_t rt_sdcard_init(rt_device_t dev)
 {
-    NVIC_InitTypeDef NVIC_InitStructure;
+    /*NVIC_InitTypeDef NVIC_InitStructure;
 
     NVIC_InitStructure.NVIC_IRQChannel = SDIO_IRQn;
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
-
+*/
     if (rt_sem_init(&sd_lock, "sdlock", 1, RT_IPC_FLAG_FIFO) != RT_EOK)
     {
         rt_kprintf("init sd lock semaphore failed\n");
@@ -3034,7 +3034,7 @@ static rt_size_t rt_sdcard_read(rt_device_t dev, rt_off_t pos, void* buffer, rt_
     SD_Error status;
     rt_uint32_t retry;
     rt_uint32_t factor;
-
+#if 0
     if (CardType == SDIO_HIGH_CAPACITY_SD_CARD) factor = 1;
     else factor = SECTOR_SIZE;
 
@@ -3082,7 +3082,7 @@ static rt_size_t rt_sdcard_read(rt_device_t dev, rt_off_t pos, void* buffer, rt_
     rt_sem_release(&sd_lock);
 
     if (status == SD_OK) return size;
-
+#endif
     rt_kprintf("read failed: %d, buffer 0x%08x\n", status, buffer);
     return 0;
 }
@@ -3091,7 +3091,7 @@ static rt_size_t rt_sdcard_write (rt_device_t dev, rt_off_t pos, const void* buf
 {
     SD_Error status;
     rt_uint32_t factor;
-
+#if 0
     if (CardType == SDIO_HIGH_CAPACITY_SD_CARD) factor = 1;
     else factor = SECTOR_SIZE;
 
@@ -3132,7 +3132,7 @@ static rt_size_t rt_sdcard_write (rt_device_t dev, rt_off_t pos, const void* buf
     rt_sem_release(&sd_lock);
 
     if (status == SD_OK) return size;
-
+#endif
     rt_kprintf("write failed: %d, buffer 0x%08x\n", status, buffer);
     return 0;
 }
@@ -3150,10 +3150,10 @@ static rt_err_t rt_sdcard_control(rt_device_t dev, rt_uint8_t cmd, void *args)
 
         geometry->bytes_per_sector = 512;
         geometry->block_size = SDCardInfo.CardBlockSize;
-        if (CardType == SDIO_HIGH_CAPACITY_SD_CARD)
+      /*  if (CardType == SDIO_HIGH_CAPACITY_SD_CARD)
             geometry->sector_count = (SDCardInfo.SD_csd.DeviceSize + 1)  * 1024;
         else
-            geometry->sector_count = SDCardInfo.CardCapacity/SDCardInfo.CardBlockSize;
+            geometry->sector_count = SDCardInfo.CardCapacity/SDCardInfo.CardBlockSize;*/
     }
 
     return RT_EOK;
@@ -3163,7 +3163,7 @@ int rt_hw_sdcard_init(void)
 {
     /* SDIO POWER */
     GPIO_InitTypeDef GPIO_InitStructure;
-
+#if 0
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC,ENABLE);
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
     GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
@@ -3213,7 +3213,7 @@ int rt_hw_sdcard_init(void)
 
         /* release sector buffer */
         rt_free(sector);
-
+#endif
         /* register sdcard device */
         sdcard_device.type  = RT_Device_Class_Block;
         sdcard_device.init 	= rt_sdcard_init;
@@ -3230,16 +3230,16 @@ int rt_hw_sdcard_init(void)
                            RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_REMOVABLE | RT_DEVICE_FLAG_STANDALONE);
 
         return 0;
-    }
+//    }
 
-__return:
+//__return:
     rt_kprintf("sdcard init failed\n");
     GPIO_SetBits(GPIOC,GPIO_Pin_6); /* SD card power down */
 
     return 0;
 }
 INIT_DEVICE_EXPORT(rt_hw_sdcard_init);
-
+#if 0
 void SDIO_IRQHandler(void)
 {
     /* enter interrupt */
@@ -3251,3 +3251,4 @@ void SDIO_IRQHandler(void)
     /* leave interrupt */
     rt_interrupt_leave();
 }
+#endif
