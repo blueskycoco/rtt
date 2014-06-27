@@ -2999,7 +2999,7 @@ static SD_CardInfo SDCardInfo;
 static struct dfs_partition part;
 static struct rt_semaphore sd_lock;
 static rt_uint8_t _sdcard_buffer[SECTOR_SIZE];
-
+extern rt_uint8_t  SD_Type;
 /* RT-Thread Device Driver Interface */
 static rt_err_t rt_sdcard_init(rt_device_t dev)
 {
@@ -3147,13 +3147,13 @@ static rt_err_t rt_sdcard_control(rt_device_t dev, rt_uint8_t cmd, void *args)
 
         geometry = (struct rt_device_blk_geometry *)args;
         if (geometry == RT_NULL) return -RT_ERROR;
-
+	  
         geometry->bytes_per_sector = 512;
-        geometry->block_size = SDCardInfo.CardBlockSize;
-      /*  if (CardType == SDIO_HIGH_CAPACITY_SD_CARD)
+        geometry->block_size = SD_GetSectorCount();//SDCardInfo.CardBlockSize;
+        if (SD_Type == SD_TYPE_V2HC/*SDIO_HIGH_CAPACITY_SD_CARD*/)
             geometry->sector_count = (SDCardInfo.SD_csd.DeviceSize + 1)  * 1024;
         else
-            geometry->sector_count = SDCardInfo.CardCapacity/SDCardInfo.CardBlockSize;*/
+            geometry->sector_count = SDCardInfo.CardCapacity/SDCardInfo.CardBlockSize;
     }
 
     return RT_EOK;
@@ -3210,6 +3210,40 @@ int rt_hw_sdcard_init(void)
             part.offset = 0;
             part.size   = 0;
         }
+
+        /* release sector buffer */
+        rt_free(sector);
+#else
+	if(SD_Initialize()!=0)
+	{
+		rt_kprintf("sd init error ,please check\r\n");
+		return 0;
+	}
+	rt_uint8_t *sector;
+	//u8 *buf;
+	rt_uint16_t i;
+	sector=(rt_uint8_t *)rt_malloc(512);				//申请内存
+	if(SD_ReadDisk(sector,0,1)==0)	//读取0扇区的内容
+	{	
+		/* get the first partition */
+            if (dfs_filesystem_get_partition(&part, sector, 0) != 0)
+            {
+                /* there is no partition */
+                part.offset = 0;
+                part.size   = 0;
+		    rt_kprintf("sd init failed 2\r\n");
+            }else
+            	{
+			rt_kprintf("part info %x_%x_%x\r\n",part.size,part.type,part.offset);
+            	}
+	}
+	else
+	{
+            /* there is no partition table */
+            part.offset = 0;
+            part.size   = 0;
+		rt_kprintf("sd init failed 1\r\n");
+        	}
 
         /* release sector buffer */
         rt_free(sector);

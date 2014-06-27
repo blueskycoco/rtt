@@ -1,7 +1,7 @@
-#include "sys.h"
+//#include "sys.h"
 #include "mmc_sd.h"			   
 #include "spi.h"
-#include "usart.h"	
+//#include "usart.h"	
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //ALIENTEK MiniSTM32开发板
@@ -15,12 +15,12 @@
 //All rights reserved									  
 //////////////////////////////////////////////////////////////////////////////////
 					   
-u8  SD_Type=0;//SD卡的类型 
+rt_uint8_t  SD_Type=0;//SD卡的类型 
 ////////////////////////////////////移植修改区///////////////////////////////////
 //移植时候的接口
 //data:要写入的数据
 //返回值:读到的数据
-u8 SD_SPI_ReadWriteByte(u8 data)
+rt_uint8_t SD_SPI_ReadWriteByte(rt_uint8_t data)
 {
 	return SPI1_ReadWriteByte(data);
 }	  
@@ -50,27 +50,27 @@ void SD_SPI_Init(void)
 	GPIO_SetBits(GPIOA,GPIO_Pin_2|GPIO_Pin_3|GPIO_Pin_4);//PA2.3.4上拉 
 
   SPI1_Init();
-	SD_CS=1;
+	SD_CS_H;//=1;
 }
 ///////////////////////////////////////////////////////////////////////////////////
 //取消选择,释放SPI总线
 void SD_DisSelect(void)
 {
-	SD_CS=1;
+	SD_CS_H;//=1;
  	SD_SPI_ReadWriteByte(0xff);//提供额外的8个时钟
 }
 //选择sd卡,并且等待卡准备OK
 //返回值:0,成功;1,失败;
-u8 SD_Select(void)
+rt_uint8_t SD_Select(void)
 {
-	SD_CS=0;
+	SD_CS_L;//=0;
 	if(SD_WaitReady()==0)return 0;//等待成功
 	SD_DisSelect();
 	return 1;//等待失败
 }
 //等待卡准备好
 //返回值:0,准备好了;其他,错误代码
-u8 SD_WaitReady(void)
+rt_uint8_t SD_WaitReady(void)
 {
 	u32 t=0;
 	do
@@ -84,7 +84,7 @@ u8 SD_WaitReady(void)
 //Response:要得到的回应值
 //返回值:0,成功得到了该回应值
 //    其他,得到回应值失败
-u8 SD_GetResponse(u8 Response)
+rt_uint8_t SD_GetResponse(rt_uint8_t Response)
 {
 	u16 Count=0xFFFF;//等待次数	   						  
 	while ((SD_SPI_ReadWriteByte(0XFF)!=Response)&&Count)Count--;//等待得到准确的回应  	  
@@ -95,7 +95,7 @@ u8 SD_GetResponse(u8 Response)
 //buf:数据缓存区
 //len:要读取的数据长度.
 //返回值:0,成功;其他,失败;	
-u8 SD_RecvData(u8*buf,u16 len)
+rt_uint8_t SD_RecvData(rt_uint8_t*buf,u16 len)
 {			  	  
 	if(SD_GetResponse(0xFE))return 1;//等待SD卡发回数据起始令牌0xFE
     while(len--)//开始接收数据
@@ -112,7 +112,7 @@ u8 SD_RecvData(u8*buf,u16 len)
 //buf:数据缓存区
 //cmd:指令
 //返回值:0,成功;其他,失败;	
-u8 SD_SendBlock(u8*buf,u8 cmd)
+rt_uint8_t SD_SendBlock(rt_uint8_t*buf,rt_uint8_t cmd)
 {	
 	u16 t;		  	  
 	if(SD_WaitReady())return 1;//等待准备失效
@@ -129,14 +129,14 @@ u8 SD_SendBlock(u8*buf,u8 cmd)
 }
 
 //向SD卡发送一个命令
-//输入: u8 cmd   命令 
+//输入: rt_uint8_t cmd   命令 
 //      u32 arg  命令参数
-//      u8 crc   crc校验值	   
+//      rt_uint8_t crc   crc校验值	   
 //返回值:SD卡返回的响应															  
-u8 SD_SendCmd(u8 cmd, u32 arg, u8 crc)
+rt_uint8_t SD_SendCmd(rt_uint8_t cmd, u32 arg, rt_uint8_t crc)
 {
-    u8 r1;	
-	u8 Retry=0; 
+    rt_uint8_t r1;	
+	rt_uint8_t Retry=0; 
 	SD_DisSelect();//取消上次片选
 	if(SD_Select())return 0XFF;//片选失效 
 	//发送
@@ -157,12 +157,12 @@ u8 SD_SendCmd(u8 cmd, u32 arg, u8 crc)
     return r1;
 }		    																			  
 //获取SD卡的CID信息，包括制造商信息
-//输入: u8 *cid_data(存放CID的内存，至少16Byte）	  
+//输入: rt_uint8_t *cid_data(存放CID的内存，至少16Byte）	  
 //返回值:0：NO_ERR
 //		 1：错误														   
-u8 SD_GetCID(u8 *cid_data)
+rt_uint8_t SD_GetCID(rt_uint8_t *cid_data)
 {
-    u8 r1;	   
+    rt_uint8_t r1;	   
     //发CMD10命令，读CID
     r1=SD_SendCmd(CMD10,0,0x01);
     if(r1==0x00)
@@ -174,12 +174,12 @@ u8 SD_GetCID(u8 *cid_data)
 	else return 0;
 }																				  
 //获取SD卡的CSD信息，包括容量和速度信息
-//输入:u8 *cid_data(存放CID的内存，至少16Byte）	    
+//输入:rt_uint8_t *cid_data(存放CID的内存，至少16Byte）	    
 //返回值:0：NO_ERR
 //		 1：错误														   
-u8 SD_GetCSD(u8 *csd_data)
+rt_uint8_t SD_GetCSD(rt_uint8_t *csd_data)
 {
-    u8 r1;	 
+    rt_uint8_t r1;	 
     r1=SD_SendCmd(CMD9,0,0x01);//发CMD9命令，读CSD
     if(r1==0)
 	{
@@ -195,9 +195,9 @@ u8 SD_GetCSD(u8 *csd_data)
 //每扇区的字节数必为512，因为如果不是512，则初始化不能通过.														  
 u32 SD_GetSectorCount(void)
 {
-    u8 csd[16];
+    rt_uint8_t csd[16];
     u32 Capacity;  
-    u8 n;
+    rt_uint8_t n;
 	u16 csize;  					    
 	//取CSD信息，如果期间出错，返回0
     if(SD_GetCSD(csd)!=0) return 0;	    
@@ -215,11 +215,11 @@ u32 SD_GetSectorCount(void)
     return Capacity;
 }
 //初始化SD卡
-u8 SD_Initialize(void)
+rt_uint8_t SD_Initialize(void)
 {
-    u8 r1;      // 存放SD卡的返回值
+    rt_uint8_t r1;      // 存放SD卡的返回值
     u16 retry;  // 用来进行超时计数
-    u8 buf[4];  
+    rt_uint8_t buf[4];  
 	u16 i;
 
 	SD_SPI_Init();		//初始化IO
@@ -287,9 +287,9 @@ u8 SD_Initialize(void)
 //sector:扇区
 //cnt:扇区数
 //返回值:0,ok;其他,失败.
-u8 SD_ReadDisk(u8*buf,u32 sector,u8 cnt)
+rt_uint8_t SD_ReadDisk(rt_uint8_t*buf,u32 sector,rt_uint8_t cnt)
 {
-	u8 r1;
+	rt_uint8_t r1;
 	if(SD_Type!=SD_TYPE_V2HC)sector <<= 9;//转换为字节地址
 	if(cnt==1)
 	{
@@ -316,9 +316,9 @@ u8 SD_ReadDisk(u8*buf,u32 sector,u8 cnt)
 //sector:起始扇区
 //cnt:扇区数
 //返回值:0,ok;其他,失败.
-u8 SD_WriteDisk(u8*buf,u32 sector,u8 cnt)
+rt_uint8_t SD_WriteDisk(rt_uint8_t*buf,u32 sector,rt_uint8_t cnt)
 {
-	u8 r1;
+	rt_uint8_t r1;
 	if(SD_Type!=SD_TYPE_V2HC)sector *= 512;//转换为字节地址
 	if(cnt==1)
 	{
@@ -348,24 +348,3 @@ u8 SD_WriteDisk(u8*buf,u32 sector,u8 cnt)
 	SD_DisSelect();//取消片选
 	return r1;//
 }	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

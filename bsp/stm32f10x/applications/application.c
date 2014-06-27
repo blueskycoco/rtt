@@ -63,7 +63,8 @@ LCD_Init();
 #ifndef RT_USING_FINSH
         rt_kprintf("led on, count : %d\r\n",count);
 #endif
-LCD_ShowString(120,2400,240,24,24,"Led on");
+//LCD_Clear(0XF81F);
+LCD_ShowString(120,2400,240,24,24,"Led onn");
 //uart2_tx("123456\r\n",rt_strlen("123456\r\n"));
         count++;
         rt_hw_led_on(0);
@@ -74,6 +75,7 @@ LCD_ShowString(120,2400,240,24,24,"Led on");
 #ifndef RT_USING_FINSH
         rt_kprintf("led off\r\n");
 #endif
+//LCD_Clear(0xF800);
 LCD_ShowString(120,2400,240,24,24,"Led off");
 //uart2_tx("654321\r\n",rt_strlen("654321\r\n"));
        rt_hw_led_off(0);

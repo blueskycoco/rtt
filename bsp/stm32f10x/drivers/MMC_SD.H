@@ -1,7 +1,7 @@
 #ifndef _MMC_SD_H_
 #define _MMC_SD_H_		 
-#include "sys.h"	 
-#include <stm32f10x.h>
+#include <rtthread.h>
+#include "stm32f10x.h"
 //////////////////////////////////////////////////////////////////////////////////	 
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途
 //ALIENTEK MiniSTM32开发板
@@ -56,8 +56,8 @@
  							   						 	 
 //这部分应根据具体的连线来修改!
 //MiniSTM32开发板使用的是PA3作为SD卡的CS脚.
-#define	SD_CS  PAout(3) 	//SD卡片选引脚					    	  
-
+#define	SD_CS_H  GPIO_SetBits(GPIOA, GPIO_Pin_3)//PAout(3) 	//SD卡片选引脚					    	  
+#define	SD_CS_L  GPIO_ResetBits(GPIOA, GPIO_Pin_3)//PAout(3) 	//SD卡片选引脚
 extern u8  SD_Type;			//SD卡的类型
 //函数申明区 
 u8 SD_SPI_ReadWriteByte(u8 data);
@@ -73,7 +73,3 @@ u8 SD_GetCID(u8 *cid_data);                     //读SD卡CID
 u8 SD_GetCSD(u8 *csd_data);                     //读SD卡CSD
  
 #endif
-
-
-
-
