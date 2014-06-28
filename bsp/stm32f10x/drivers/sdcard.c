@@ -3000,6 +3000,7 @@ static struct dfs_partition part;
 static struct rt_semaphore sd_lock;
 static rt_uint8_t _sdcard_buffer[SECTOR_SIZE];
 extern rt_uint8_t  SD_Type;
+extern rt_uint16_t SD_Size;
 /* RT-Thread Device Driver Interface */
 static rt_err_t rt_sdcard_init(rt_device_t dev)
 {
@@ -3034,10 +3035,10 @@ static rt_size_t rt_sdcard_read(rt_device_t dev, rt_off_t pos, void* buffer, rt_
     SD_Error status;
     rt_uint32_t retry;
     rt_uint32_t factor;
-#if 0
-    if (CardType == SDIO_HIGH_CAPACITY_SD_CARD) factor = 1;
-    else factor = SECTOR_SIZE;
-
+#if 1
+ //   if (SD_Type == SD_TYPE_V2HC) factor = 1;
+    factor = 1;
+//rt_kprintf("rt_sdcard_read ==>pos %x , size %d\r\n",pos,size);
     rt_sem_take(&sd_lock, RT_WAITING_FOREVER);
 
     retry = 3;
@@ -3052,10 +3053,10 @@ static rt_size_t rt_sdcard_read(rt_device_t dev, rt_off_t pos, void* buffer, rt_
             /* which is not alignment with 4 or chip SRAM */
             for (index = 0; index < size; index ++)
             {
-                status = SD_ReadBlock((part.offset + index + pos) * factor,
-                                      (uint32_t*)_sdcard_buffer, SECTOR_SIZE);
-
-                if (status != SD_OK) break;
+                //status = SD_ReadBlock((part.offset + index + pos) * factor,
+                //                      (uint32_t*)_sdcard_buffer, SECTOR_SIZE);
+		SD_ReadDisk((rt_uint8_t *)_sdcard_buffer,(part.offset + index + pos) * factor,1);
+                if (status != 0) break;
 
                 /* copy to the buffer */
                 rt_memcpy(((rt_uint8_t*)buffer + index * SECTOR_SIZE), _sdcard_buffer, SECTOR_SIZE);
@@ -3065,23 +3066,25 @@ static rt_size_t rt_sdcard_read(rt_device_t dev, rt_off_t pos, void* buffer, rt_
         {
             if (size == 1)
             {
-                status = SD_ReadBlock((part.offset + pos) * factor,
-                                      (uint32_t*)buffer, SECTOR_SIZE);
+                //status = SD_ReadBlock((part.offset + pos) * factor,
+                //                      (uint32_t*)buffer, SECTOR_SIZE);
+		status= SD_ReadDisk((rt_uint8_t *)buffer,(part.offset + pos) * factor,1);
             }
             else
             {
-                status = SD_ReadMultiBlocks((part.offset + pos) * factor,
-                                            (uint32_t*)buffer, SECTOR_SIZE, size);
+               // status = SD_ReadMultiBlocks((part.offset + pos) * factor,
+                //                            (uint32_t*)buffer, SECTOR_SIZE, size);
+		    status= SD_ReadDisk((rt_uint8_t *)buffer,(part.offset + pos) * factor,size);
             }
         }
 
-        if (status == SD_OK) break;
+        if (status == 0) break;
 
         retry --;
     }
     rt_sem_release(&sd_lock);
 
-    if (status == SD_OK) return size;
+    if (status == 0) return size;
 #endif
     rt_kprintf("read failed: %d, buffer 0x%08x\n", status, buffer);
     return 0;
@@ -3091,6 +3094,7 @@ static rt_size_t rt_sdcard_write (rt_device_t dev, rt_off_t pos, const void* buf
 {
     SD_Error status;
     rt_uint32_t factor;
+    rt_kprintf("rt_sdcard_write ==>pos %x , size %d\r\n",pos,size);
 #if 0
     if (CardType == SDIO_HIGH_CAPACITY_SD_CARD) factor = 1;
     else factor = SECTOR_SIZE;
@@ -3150,6 +3154,8 @@ static rt_err_t rt_sdcard_control(rt_device_t dev, rt_uint8_t cmd, void *args)
 	  
         geometry->bytes_per_sector = 512;
         geometry->block_size = SD_GetSectorCount();//SDCardInfo.CardBlockSize;
+        SDCardInfo.CardBlockSize=geometry->block_size;
+        SDCardInfo.SD_csd.DeviceSize=SD_Size;
         if (SD_Type == SD_TYPE_V2HC/*SDIO_HIGH_CAPACITY_SD_CARD*/)
             geometry->sector_count = (SDCardInfo.SD_csd.DeviceSize + 1)  * 1024;
         else
@@ -3261,7 +3267,7 @@ int rt_hw_sdcard_init(void)
         sdcard_device.user_data = &SDCardInfo;
 
         rt_device_register(&sdcard_device, "sd0",
-                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_REMOVABLE | RT_DEVICE_FLAG_STANDALONE);
+                           RT_DEVICE_FLAG_RDONLY | RT_DEVICE_FLAG_REMOVABLE | RT_DEVICE_FLAG_STANDALONE);
 
         return 0;
 //    }

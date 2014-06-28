@@ -17,3 +17,4 @@ xcode-rtthread
 *.dep
 *.lib
 *.a
+bsp/stm32f10x/make.sh

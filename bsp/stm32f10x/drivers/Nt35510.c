@@ -1091,7 +1091,7 @@ void LCD_Init(void)
 		LCD_WR_REG(0x2900);
 	}
 	
-	LCD_Display_Dir(0);		 	//默认为竖屏
+	LCD_Display_Dir(1);		 	//默认为竖屏
 	LCD_LED;					//点亮背光
 	LCD_Clear(WHITE);
 }  		  
