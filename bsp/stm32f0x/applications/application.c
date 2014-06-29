@@ -27,7 +27,7 @@
 #endif  /* RT_USING_COMPONENTS_INIT */
 
 #include "led.h"
-#define ENV_FLASH_ADDR 	((uint32_t)0x08003c00)
+#define ENV_FLASH_ADDR 	((uint32_t)0x08003fe0)
 #define FLASH_PAGE_SIZE 	((uint32_t)0x00000400)
 #define BATTERY_ADC_CHANNEL	9
 #define HUM_ADC_CHANNEL 		5
@@ -55,7 +55,7 @@ typedef struct _sys_env{
   unsigned short temp_low_val;
   unsigned short temp_high_val;
   unsigned short hum_plus;  
-  unsigned char b_hum_local_force_stop;
+  unsigned short b_hum_local_force_stop;
   unsigned short crc;
 }sys_env,*psys_env;
 sys_env g_sys_env;
@@ -69,6 +69,7 @@ void gpb1_isr(void)
 		{
 			j++;
 			Delay_us(1000);
+		
 		}
 	  hum_interface_state_old=hum_interface_state_new;
 	  if(j>30)
@@ -108,11 +109,13 @@ int read_env()
   //wifi_send(buf,20);
   if((g_sys_env.b_hum_local_force_stop+g_sys_env.b_led_alarm_open+g_sys_env.b_temp_buzzer_open+g_sys_env.b_hum_buzzer_open+g_sys_env.hum_alarm_type+g_sys_env.device_id+g_sys_env.battery_low_val+g_sys_env.hum_judge_val+g_sys_env.temp_low_val+g_sys_env.temp_high_val+g_sys_env.hum_plus)!=g_sys_env.crc)
  {
- 	for(i=0;i<30;i++){
+ 	for(i=0;i<10;i++)
+	{
 	rt_hw_led2_on();
-	rt_thread_delay(10);
+	rt_thread_delay(100);
 	rt_hw_led2_off();
- 		}
+	rt_thread_delay(100);
+ 	}
  	return 0;
   }
   else
@@ -430,8 +433,9 @@ static void system_thread_check_entry(void* parameter)
   unsigned char alarm_type[3];
   long m=0;
   static unsigned short hum_val=0;
-  int sleep_time=60;//600;
+  int sleep_time=2;//600;
   //unsigned char buf2[30];
+  unsigned char buf3[30];
 #if 0
   unsigned char command_up[8][13]={
 	{0xF5,0x8A,0x00,0x01,0x00,0x55,0x55,0x01,0x01,0x26,0xfa,0x00,0x00},/*Hum lost*/
@@ -525,6 +529,10 @@ hum_interface_state_old=hum_interface_state_new;
 	  x=read_adc(HUM_ADC_CHANNEL);
 	  if(hum_val==0)
 	  	hum_val=g_sys_env.hum_judge_val;
+	  
+	//rt_sprintf(buf3,"%x%x",x,hum_val);
+	//wifi_send(&hum_val,2);
+	//wifi_send(&x,2);
 	  if(x</*g_sys_env.hum_judge_val*/hum_val)
 	  {
 		if(hum_check_count <255)
@@ -622,7 +630,7 @@ hum_interface_state_old=hum_interface_state_new;
 	  }
 	  #endif
 	}
-	sleep_time=60;//60*10;
+	sleep_time=2;//60*10;
 	if(index!=0)
 	{
 		wifi_send(buf,index*13);
@@ -631,7 +639,10 @@ hum_interface_state_old=hum_interface_state_new;
 			if(alarm_type[i]==LOCAL_ALARM_BATTERY_LOW||alarm_type[i]==LOCAL_ALARM_TEMP_LOST||alarm_type[i]==LOCAL_ALARM_HUM_LOST)
 			{
 				/*always local alarm in battery low,temp lost*/
+				if(alarm_type[i]!=LOCAL_ALARM_HUM_LOST)
 				local_alarm(alarm_type[i]*100+500,alarm_type[i],1,1);
+				else
+					local_alarm(alarm_type[i]*100+500,2/*alarm_type[i]*/,1,1);
 				
 			}
 			else
@@ -648,16 +659,16 @@ hum_interface_state_old=hum_interface_state_new;
 						while(hum_interface_state_new==1/*GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)==Bit_RESET*/)
 						{
 							count++;
-							if(count>=/*600*/6)
+							if(count>=/*600*/2)
 							{
 								/*local force alarm 3 mins , stop 5mins */
 								check_server_command();  	
 								if(g_sys_env.b_hum_local_force_stop==1)
-									local_alarm(alarm_type[i]*100+500,alarm_type[i],g_sys_env.b_hum_buzzer_open,g_sys_env.b_led_alarm_open);
+									local_alarm(alarm_type[i]*100+500,/*alarm_type[i]*/1,g_sys_env.b_hum_buzzer_open,g_sys_env.b_led_alarm_open);
 								else
-									local_alarm(alarm_type[i]*100+500,alarm_type[i],1,1);
+									local_alarm(alarm_type[i]*100+500,/*alarm_type[i]*/1,1,1);
 							}
-							rt_thread_delay(100);
+							rt_thread_delay(10);
 						}
 						/*check hum interface push in in 10 mins*/
 						count=0;
@@ -682,9 +693,9 @@ hum_interface_state_old=hum_interface_state_new;
 								alarm_type[index++]=LOCAL_ALARM_HUM_LOST;
 								wifi_send(buf,index*13);
 								/*local force alarm 3 mins , stop 5mins */
-									local_alarm(alarm_type[i]*100+500,alarm_type[i],1,1);
+									local_alarm(alarm_type[i]*100+500,2/*alarm_type[i]*/,1,1);
 							}
-							rt_thread_delay(100);
+							rt_thread_delay(10);
 						}
 						sleep_time=1;
 						hum_check_count=0;
@@ -697,7 +708,7 @@ hum_interface_state_old=hum_interface_state_new;
 					}
 				}
 			}
-			rt_thread_delay(300);
+			rt_thread_delay(30);
 		}		
 		/*m=0;
 		while(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0)==Bit_RESET)
@@ -721,7 +732,7 @@ hum_interface_state_old=hum_interface_state_new;
 	check_server_command();  
 	//wifi_rcv(buf2,13);
 	x=ds18b20_read();
-	rt_sprintf(buf2,"Low %d ,High %d temp %d.0%doC\r\nbattery %d\r\nshidu %d\r\nhum_connect %d\r\n",g_sys_env.temp_low_val,g_sys_env.temp_high_val,x>>8,x&0xff,read_adc(9),read_adc(5),!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0));
+	rt_sprintf(buf2,"hum %d Low %d ,High %d temp %d.0%doC\r\nbattery %d\r\nshidu %d\r\nhum_connect %d\r\n",g_sys_env.hum_judge_val,g_sys_env.temp_low_val,g_sys_env.temp_high_val,x>>8,x&0xff,read_adc(9),read_adc(5),!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0));
 	wifi_send(buf2,rt_strlen(buf2));
 	//buzzer_ctl(1);*/
 	rt_hw_led2_on();
@@ -747,7 +758,7 @@ static void rt_init_thread_entry(void* parameter)
 #ifdef  RT_USING_FINSH
   finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif  /* RT_USING_FINSH */
-  //rt_hw_led1_off();
+  rt_hw_led1_off();
   /*init g_env */
   if(read_env()!=1)
   {
@@ -755,13 +766,13 @@ static void rt_init_thread_entry(void* parameter)
 	g_sys_env.b_led_alarm_open=1;
 	g_sys_env.b_temp_buzzer_open=1;
 	g_sys_env.b_hum_buzzer_open=1;
-	g_sys_env.hum_alarm_type=4;
+	g_sys_env.hum_alarm_type=1;
 	g_sys_env.device_id=0x0000;
-	g_sys_env.temp_high_val=35;
-	g_sys_env.temp_low_val=5;
+	g_sys_env.temp_high_val=38;
+	g_sys_env.temp_low_val=10;
 	g_sys_env.battery_low_val=1500;
-	g_sys_env.hum_judge_val=3000;
-	g_sys_env.hum_plus=1000;
+	g_sys_env.hum_judge_val=1800;
+	g_sys_env.hum_plus=100;
 	g_sys_env.b_hum_local_force_stop=0;
   }
 
