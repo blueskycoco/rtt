@@ -181,7 +181,7 @@ void rt_hw_board_init(void)
     EXT_SRAM_Configuration();
 #endif
     rt_hw_usart_init();
-    rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
+    //rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
 
 #ifdef RT_USING_COMPONENTS_INIT
     rt_components_board_init();

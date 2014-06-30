@@ -22,5 +22,7 @@
 #define UART_DISABLE_IRQ(n)           NVIC_DisableIRQ((n))
 
 void rt_hw_usart_init(void);
+void uart_init(int type);
+void uart_tx(int type,char *buf,int len);
 
 #endif

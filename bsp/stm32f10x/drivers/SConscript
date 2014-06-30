@@ -10,9 +10,9 @@ board.c
 stm32f10x_it.c
 led.c
 usart.c
-Nt35510.c
 spi.c
 mmc_sd.c
+diwen.c
 """)
 
 # add Ethernet drvers.

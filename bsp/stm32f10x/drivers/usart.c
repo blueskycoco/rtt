@@ -373,3 +373,63 @@ void rt_hw_usart_init(void)
                           uart);
 #endif /* RT_USING_UART3 */
 }
+rt_device_t uart_param_dev = RT_NULL;
+rt_device_t uart_lcd_dev = RT_NULL;
+extern rt_err_t uart_lcd_rx_ind(rt_device_t dev, rt_size_t size);
+extern rt_err_t uart_param_rx_ind(rt_device_t dev, rt_size_t size);
+
+void uart_tx(int type,char *buf,int len)
+{
+  rt_uint16_t old_flag;
+
+  if(type==1){
+	old_flag = uart_param_dev->flag;
+	uart_param_dev->flag |= RT_DEVICE_FLAG_STREAM;
+	rt_device_write(uart_param_dev, 0, buf, len);
+	uart_param_dev->flag = old_flag;	  
+  }
+  else
+  {
+	old_flag = uart_lcd_dev->flag;
+	uart_lcd_dev->flag |= RT_DEVICE_FLAG_STREAM;
+	rt_device_write(uart_lcd_dev, 0, buf, len);
+	uart_lcd_dev->flag = old_flag;	
+
+  }
+}
+void uart_init(int type)
+{
+
+  if(type==1)
+  {
+	uart_param_dev = rt_device_find("uart1");
+	if (uart_param_dev == RT_NULL)
+	{
+	  rt_kprintf("finsh: can not find device: uart2\n");
+	  return;
+	}
+
+	/* open this device and set the new device in finsh shell */
+	if (rt_device_open(uart_param_dev, RT_DEVICE_OFLAG_RDWR) == RT_EOK)
+	{
+	  rt_device_set_rx_indicate(uart_param_dev, uart_param_rx_ind);
+	}
+  }
+  else
+  {
+	uart_lcd_dev = rt_device_find("uart3");
+	if (uart_lcd_dev == RT_NULL)
+	{
+	  rt_kprintf("finsh: can not find device: uart2\n");
+	  return;
+	}
+
+	/* open this device and set the new device in finsh shell */
+	if (rt_device_open(uart_lcd_dev, RT_DEVICE_OFLAG_RDWR) == RT_EOK)
+	{
+	  rt_device_set_rx_indicate(uart_lcd_dev, uart_lcd_rx_ind);
+	}
+
+  }
+}
+
