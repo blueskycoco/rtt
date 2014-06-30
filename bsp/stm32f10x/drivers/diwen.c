@@ -218,7 +218,83 @@ unsigned char CheckKeyPressedArea(int type)
 		}
 	return 100;			
 }
-
+unsigned short input_handle()
+{
+	unsigned short key=0;
+	int i;
+	while(1)
+	{
+	while(g_rx_tp_buf[0]!=1)
+		rt_thread_delay(20);
+	if(CheckKeyPressedArea(0)==14)// enter
+		return key;
+	
+	if(i<=3){
+		i++;
+	switch(CheckKeyPressedArea(0))
+	{
+		case 0://6
+			key=key*10+6;
+		break;
+		case 1//7
+			key=key*10+7;
+		break;
+		case 2://8
+			key=key*10+8;
+		break;
+		case 3://9
+			key=key*10+9;
+		break;
+		case 4://back space
+			if(i>0){
+			key=key/10;
+			i=i-1;
+				}
+		break;
+		case 5:// 2
+			key=key*10+2;
+		break;
+		case 6:// 3
+			key=key*10+3;
+		break;
+		case 7:// 4
+			key=key*10+4;
+		break;
+		case 8:// 5
+			key=key*10+5;
+		break;
+		case 9://clear
+			key=0;
+			i=0;
+		break;
+		case 10://0
+			key=key*10+0;
+		break;
+		case 11:// 1   
+			key=key*10+1;
+		break;
+		
+		default:
+			if(i>0)
+			i--;
+			break;
+		}	
+		if(i==0)
+			DrawPic_Real();
+		else if(i==1)
+		{
+			DrawPic_Real();
+			DrawPic_Real();
+		}
+		else
+		{
+			DrawPic_Real();
+			DrawPic_Real();
+			DrawPic_Real();
+		}
+		}
+	}
+}
 void main_loop()
 {
 	int state=0;
@@ -241,22 +317,27 @@ void main_loop()
 					while(g_rx_tp_buf[0]!=1)
 						rt_thread_delay(20);
 					switch(CheckKeyPressedArea(1))
-						{
-							case 0://jie mianji
-							state=STATE_INPUT;
-							break;
-							case 1//pin jun liusu:
-							state=STATE_INPUT;
-							break;
-							case 2:
-							state=STATE_BEGIN_TEST;
-							break;
-							case 3:
-							state=STATE_SAFE_POWEROFF;
-							break;
-						}
+					{
+						case 0://jie mianji
+						state=STATE_INPUT;
+						break;
+						case 1//pin jun liusu:
+						state=STATE_INPUT;
+						break;
+						case 2:
+						state=STATE_BEGIN_TEST;
+						break;
+						case 3:
+						state=STATE_SAFE_POWEROFF;
+						break;
+					}	
+				
+					break;
+				}
+				case STATE_INPUT:
+				{
+					DrawPicFast_Real(4);
 					
-
 				}
 			}
 		
