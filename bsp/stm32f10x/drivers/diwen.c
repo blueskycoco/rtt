@@ -177,4 +177,88 @@ void DrawPic_Real(unsigned short x,unsigned short y,unsigned char Index,unsigned
 	uart_tx(UART_TYPE_LCD,0x3C);
 	
 }
+#define STATE_ORIGIN 0
+#define STATE_PIC1 1
+#define STATE_PIC2 2
+#define STATE_BEGIN_TEST 3
+#define STATE_M2 4
+#define STATE_M3 5
+#define STATE_INPUT 6
+#define STATE_RESULT 7
+#define STATE_SAFE_POWEROFF 8
 
+unsigned char CheckKeyPressedArea(int type)
+{
+	unsigned char i;
+	unsigned short x,y;
+	x=(g_rx_tp_buf[1]<<8)|g_rx_tp_buf[2];
+	y=(g_rx_tp_buf[3]<<8)|g_rx_tp_buf[4];
+	if(type==0)
+		{//input 
+	for(i=0;i<15;i++)
+	{
+		if( (x>(SBtnGroup_XY[i][0][0]))&&(x<(SBtnGroup_XY[i][1][0]))&&(y>(SBtnGroup_XY[i][0][1]))&&(y<(SBtnGroup_XY[i][1][1])) )
+		{
+			//KeyValue=i;
+			return i;
+		}	
+	}
+		}
+	else
+		{//pic2
+		for(i=0;i<4;i++)
+		{
+			if( (x>(SBmp2_XY[i][0][0]))&&(x<(SBmp2_XY[i][1][0]))&&(y>(SBmp2_XY[i][0][1]))&&(y<(SBmp2_XY[i][1][1])) )
+			{
+				//KeyValue=i;
+				return i;
+			}	
+		}
+
+		}
+	return 100;			
+}
+
+void main_loop()
+{
+	int state=0;
+	DrawPicFast_Real(0);
+	rt_thread_delay(2*100);
+	state=STATE_PIC1;
+	while(1)
+	{
+		switch(state)
+			{
+				case STATE_ORIGIN:
+				{
+					DrawPicFast_Real(0);
+					state=STATE_PIC1;
+					break;
+				}
+				case STATE_PIC1:
+				{
+					DrawPicFast_Real(1);
+					while(g_rx_tp_buf[0]!=1)
+						rt_thread_delay(20);
+					switch(CheckKeyPressedArea(1))
+						{
+							case 0://jie mianji
+							state=STATE_INPUT;
+							break;
+							case 1//pin jun liusu:
+							state=STATE_INPUT;
+							break;
+							case 2:
+							state=STATE_BEGIN_TEST;
+							break;
+							case 3:
+							state=STATE_SAFE_POWEROFF;
+							break;
+						}
+					
+
+				}
+			}
+		
+	}
+}
