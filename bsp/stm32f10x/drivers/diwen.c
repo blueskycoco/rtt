@@ -30,29 +30,29 @@ unsigned short const SBmp2_XY[4][2][2]=
 };
 unsigned short const SBnum_L_XY[10][2][2]=
 {//index=6or7
-	287,227,303,254,// 0
-	310,227,328,254,// 1
-	331,227,350,254,// 2
-	353,227,375,254,// 3
-	378,227,398,254,// 4
-	400,227,421,254,// 5
-	422,227,445,254,// 6
+	285,227,308,254,// 0
+	308,227,331,254,// 1
+	331,227,354,254,// 2
+	354,227,377,254,// 3
+	377,227,400,254,// 4
+	400,227,423,254,// 5
+	423,227,446,254,// 6
 	446,227,469,254,// 7
-	470,227,492,254,// 8
-	493,227,514,254// 9
+	469,227,492,254,// 8
+	492,227,515,254// 9
 };
 unsigned short const SBnum_B_XY[10][2][2]=
 {//index=8
-	130,209,172,271,// 0
-	189,209,227,271,// 1
-	232,209,277,271,// 2
-	284,209,331,271,// 3
-	334,209,382,271,// 4
-	387,209,434,271,// 5
-	438,209,489,271,// 6
-	493,209,543,271,// 7
-	545,209,593,271,// 8
-	595,209,645,271// 9
+	130,209,181,271,// 0
+	181,209,232,271,// 1
+	232,209,283,271,// 2
+	283,209,334,271,// 3
+	334,209,385,271,// 4
+	385,209,436,271,// 5
+	436,209,487,271,// 6
+	487,209,540,271,// 7
+	540,209,591,271,// 8
+	591,209,642,271// 9
 };
 static rt_err_t uart_lcd_rx_ind(rt_device_t dev, rt_size_t size)
 {
@@ -221,86 +221,142 @@ unsigned char CheckKeyPressedArea(int type)
 unsigned short input_handle()
 {
 	unsigned short key=0;
-	int i;
+	int i,area=16;
 	while(1)
 	{
-	while(g_rx_tp_buf[0]!=1)
-		rt_thread_delay(20);
-	if(CheckKeyPressedArea(0)==14)// enter
-		return key;
-	
-	if(i<=3){
-		i++;
-	switch(CheckKeyPressedArea(0))
-	{
-		case 0://6
-			key=key*10+6;
-		break;
-		case 1//7
-			key=key*10+7;
-		break;
-		case 2://8
-			key=key*10+8;
-		break;
-		case 3://9
-			key=key*10+9;
-		break;
-		case 4://back space
-			if(i>0){
-			key=key/10;
-			i=i-1;
-				}
-		break;
-		case 5:// 2
-			key=key*10+2;
-		break;
-		case 6:// 3
-			key=key*10+3;
-		break;
-		case 7:// 4
-			key=key*10+4;
-		break;
-		case 8:// 5
-			key=key*10+5;
-		break;
-		case 9://clear
-			key=0;
-			i=0;
-		break;
-		case 10://0
-			key=key*10+0;
-		break;
-		case 11:// 1   
-			key=key*10+1;
-		break;
-		
-		default:
+		while(g_rx_tp_buf[0]!=1)
+			rt_thread_delay(20);
+		area=CheckKeyPressedArea(0)
+		if(area!=100)
+		{
+			DrawPic_Real(SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],4,SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],SBtnGroup_XY[area][1][0],SBtnGroup_XY[area][1][1]);
+			rt_thread_sleep(100);
+			DrawPic_Real(SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],3,SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],SBtnGroup_XY[area][1][0],SBtnGroup_XY[area][1][1]);
+
+		}
+
+		if(area==14)// enter
+		{
+			return key;
+		}
+		else if(area==4)
+		{//back space
 			if(i>0)
-			i--;
+			{
+				key=key/10;
+				i=i-1;
+
+				if(i==0)
+				{
+					DrawPic_Real(442,52,3,208,52,259,133);
+					DrawPic_Real(493,52,3,208,52,259,133);
+					DrawPic_Real(544,52,7,SBnum_B_XY[0][0][0],SBnum_B_XY[0][0][1],SBnum_B_XY[0][1][0],SBnum_B_XY[0][1][1]);
+				}
+				else if(i==1)
+				{
+					DrawPic_Real(442,52,3,208,52,259,133);
+					DrawPic_Real(493,52,3,208,52,259,133);
+					DrawPic_Real(544,52,7,SBnum_B_XY[key][0][0],SBnum_B_XY[key][0][1],SBnum_B_XY[key][1][0],SBnum_B_XY[key][1][1]);
+
+				}
+				else if(i==2)
+				{
+					DrawPic_Real(442,52,3,208,52,259,133);
+					DrawPic_Real(493,52,7,SBnum_B_XY[key/10][0][0],SBnum_B_XY[key/10][0][1],SBnum_B_XY[key/10][1][0],SBnum_B_XY[key/10][1][1]);
+					DrawPic_Real(544,52,7,SBnum_B_XY[key%10][0][0],SBnum_B_XY[key%10][0][1],SBnum_B_XY[key%10][1][0],SBnum_B_XY[key%10][1][1]);
+
+				}
+				else if(i==3)
+				{
+					DrawPic_Real(442,52,7,SBnum_B_XY[key/100][0][0],SBnum_B_XY[key/100][0][1],SBnum_B_XY[key/100][1][0],SBnum_B_XY[key/100][1][1]);
+					DrawPic_Real(493,52,7,SBnum_B_XY[(key%100)/10][0][0],SBnum_B_XY[(key%100)/10][0][1],SBnum_B_XY[(key%100)/10][1][0],SBnum_B_XY[(key%100)/10][1][1]);
+					DrawPic_Real(544,52,7,SBnum_B_XY[(key%100)%10][0][0],SBnum_B_XY[(key%100)%10][0][1],SBnum_B_XY[(key%100)%10][1][0],SBnum_B_XY[(key%100)%10][1][1]);
+
+				}
+			}
+		}
+		else if(area==9)
+		{//clear
+
+			i=0;
+			key=0;
+
+			DrawPic_Real(442,52,3,208,52,259,133);
+			DrawPic_Real(493,52,3,208,52,259,133);
+			DrawPic_Real(544,52,7,SBnum_B_XY[0][0][0],SBnum_B_XY[0][0][1],SBnum_B_XY[0][1][0],SBnum_B_XY[0][1][1]);
+
+		}
+	if(i<=3)
+	{
+		i++;
+		switch(area)
+		{
+			case 0://6
+				key=key*10+6;
 			break;
+			case 1//7
+				key=key*10+7;
+			break;
+			case 2://8
+				key=key*10+8;
+			break;
+			case 3://9
+				key=key*10+9;
+			break;
+			case 5:// 2
+				key=key*10+2;
+			break;
+			case 6:// 3
+				key=key*10+3;
+			break;
+			case 7:// 4
+				key=key*10+4;
+			break;
+			case 8:// 5
+				key=key*10+5;
+			break;
+			case 10://0
+				key=key*10+0;
+			break;
+			case 11:// 1   
+				key=key*10+1;
+			break;
+			
+			default:
+				if(i>0)
+					i--;
+				break;
 		}	
-		if(i==0)
-			DrawPic_Real();
-		else if(i==1)
+		if(i==1)
 		{
-			DrawPic_Real();
-			DrawPic_Real();
+			DrawPic_Real(442,52,3,208,52,259,133);
+			DrawPic_Real(493,52,3,208,52,259,133);
+			DrawPic_Real(544,52,7,SBnum_B_XY[key][0][0],SBnum_B_XY[key][0][1],SBnum_B_XY[key][1][0],SBnum_B_XY[key][1][1]);
 		}
-		else
+		else if(i==2)
 		{
-			DrawPic_Real();
-			DrawPic_Real();
-			DrawPic_Real();
+			DrawPic_Real(442,52,3,208,52,259,133);
+			DrawPic_Real(493,52,7,SBnum_B_XY[key/10][0][0],SBnum_B_XY[key/10][0][1],SBnum_B_XY[key/10][1][0],SBnum_B_XY[key/10][1][1]);
+			DrawPic_Real(544,52,7,SBnum_B_XY[key%10][0][0],SBnum_B_XY[key%10][0][1],SBnum_B_XY[key%10][1][0],SBnum_B_XY[key%10][1][1]);
 		}
+		else if(i==3)
+		{
+			DrawPic_Real(442,52,7,SBnum_B_XY[key/100][0][0],SBnum_B_XY[key/100][0][1],SBnum_B_XY[key/100][1][0],SBnum_B_XY[key/100][1][1]);
+			DrawPic_Real(493,52,7,SBnum_B_XY[(key%100)/10][0][0],SBnum_B_XY[(key%100)/10][0][1],SBnum_B_XY[(key%100)/10][1][0],SBnum_B_XY[(key%100)/10][1][1]);
+			DrawPic_Real(544,52,7,SBnum_B_XY[(key%100)%10][0][0],SBnum_B_XY[(key%100)%10][0][1],SBnum_B_XY[(key%100)%10][1][0],SBnum_B_XY[(key%100)%10][1][1]);
 		}
+		
+		}
+		g_rx_tp_buf[0]=2;
 	}
 }
 void main_loop()
 {
-	int state=0;
+	int state=0,last_state=0,mianji_val_input=0,liushu_val_input=0,val_serial=0;
 	DrawPicFast_Real(0);
 	rt_thread_delay(2*100);
-	state=STATE_PIC1;
+	state=STATE_PIC1;	
+	last_state=STATE_ORIGIN;
 	while(1)
 	{
 		switch(state)
@@ -309,20 +365,87 @@ void main_loop()
 				{
 					DrawPicFast_Real(0);
 					state=STATE_PIC1;
+					last_state=STATE_ORIGIN;
 					break;
 				}
 				case STATE_PIC1:
 				{
 					DrawPicFast_Real(1);
+					if(last_state==STATE_M2||last_state==STATE_M3)
+					{
+						//if(mianji_val_input!=0)
+						{
+							if((mianji_val_input/100)!=0)
+							{
+								DrawPic_Real(218,222,5,SBnum_B_XY[mianji_val_input/100][0][0],SBnum_B_XY[mianji_val_input/100][0][1],SBnum_B_XY[mianji_val_input/100][1][0],SBnum_B_XY[mianji_val_input/100][1][1]);
+							}
+							
+							if(((mianji_val_input%100)/10)!=0||(mianji_val_input/100)!=0)
+							{
+								DrawPic_Real(241,222,5,SBnum_B_XY[(mianji_val_input%100)/10][0][0],SBnum_B_XY[(mianji_val_input%100)/10][0][1],SBnum_B_XY[(mianji_val_input%100)/10][1][0],SBnum_B_XY[(mianji_val_input%100)/10][1][1]);
+							}
+							
+							DrawPic_Real(264,222,5,SBnum_B_XY[(mianji_val_input%100)%10][0][0],SBnum_B_XY[(mianji_val_input%100)%10][0][1],SBnum_B_XY[(mianji_val_input%100)%10][1][0],SBnum_B_XY[(mianji_val_input%100)%10][1][1]);
+						}
+						//if(liushu_val_input!=0)
+						{
+							if((liushu_val_input/100)!=0)
+							{
+								DrawPic_Real(575,222,5,SBnum_B_XY[liushu_val_input/100][0][0],SBnum_B_XY[liushu_val_input/100][0][1],SBnum_B_XY[liushu_val_input/100][1][0],SBnum_B_XY[liushu_val_input/100][1][1]);
+							}
+							
+							if(((liushu_val_input%100)/10)!=0||(liushu_val_input/100)!=0)
+							{
+								DrawPic_Real(598,222,5,SBnum_B_XY[(liushu_val_input%100)/10][0][0],SBnum_B_XY[(liushu_val_input%100)/10][0][1],SBnum_B_XY[(liushu_val_input%100)/10][1][0],SBnum_B_XY[(liushu_val_input%100)/10][1][1]);
+							}
+							
+							DrawPic_Real(621,222,5,SBnum_B_XY[liushu_val_input%10][0][0],SBnum_B_XY[liushu_val_input%10][0][1],SBnum_B_XY[liushu_val_input%10][1][0],SBnum_B_XY[liushu_val_input%10][1][1]);
+						}
+					}
+					else if(last_state==STATE_BEGIN_TEST)
+					{
+							if((val_serial/100)!=0)
+							{
+								DrawPic_Real(422,122,6,SBnum_B_XY[val_serial/100][0][0],SBnum_B_XY[val_serial/100][0][1],SBnum_B_XY[val_serial/100][1][0],SBnum_B_XY[val_serial/100][1][1]);
+							}
+							
+							if(((val_serial%100)/10)!=0||(val_serial/100)!=0)
+							{
+								DrawPic_Real(445,122,6,SBnum_B_XY[(val_serial%100)/10][0][0],SBnum_B_XY[(val_serial%100)/10][0][1],SBnum_B_XY[(val_serial%100)/10][1][0],SBnum_B_XY[(val_serial%100)/10][1][1]);
+							}
+							
+							DrawPic_Real(468,122,6,SBnum_B_XY[val_serial%10][0][0],SBnum_B_XY[val_serial%10][0][1],SBnum_B_XY[val_serial%10][1][0],SBnum_B_XY[val_serial%10][1][1]);
+
+					}
+					if(val_serial!=0&&liushu_val_input!=0&&mianji_val_input!=0)
+					{
+						long result=val_serial*liushu_val_input*mianji_val_input;
+						if((val_serial/1000)!=0)
+						{
+							DrawPic_Real(422,313,6,SBnum_B_XY[val_serial/1000][0][0],SBnum_B_XY[val_serial/1000][0][1],SBnum_B_XY[val_serial/1000][1][0],SBnum_B_XY[val_serial/1000][1][1]);
+						}
+						
+						if(((val_serial%1000)/100)!=0||(val_serial/1000)!=0)
+						{
+							DrawPic_Real(445,313,6,SBnum_B_XY[(val_serial%1000)/100][0][0],SBnum_B_XY[(val_serial%1000)/100][0][1],SBnum_B_XY[(val_serial%1000)/100][1][0],SBnum_B_XY[(val_serial%1000)/100][1][1]);
+						}
+						if(((val_serial%100)/10)!=0||((val_serial%1000)/100)!=0)
+						{
+							DrawPic_Real(468,313,6,SBnum_B_XY[(val_serial%100)/10][0][0],SBnum_B_XY[(val_serial%100)/10][0][1],SBnum_B_XY[(val_serial%100)/10][1][0],SBnum_B_XY[(val_serial%100)/10][1][1]);
+						}
+
+						DrawPic_Real(491,313,6,SBnum_B_XY[val_serial%10][0][0],SBnum_B_XY[val_serial%10][0][1],SBnum_B_XY[val_serial%10][1][0],SBnum_B_XY[val_serial%10][1][1]);
+
+					}
 					while(g_rx_tp_buf[0]!=1)
 						rt_thread_delay(20);
 					switch(CheckKeyPressedArea(1))
 					{
 						case 0://jie mianji
-						state=STATE_INPUT;
+						state=STATE_M2;
 						break;
 						case 1//pin jun liusu:
-						state=STATE_INPUT;
+						state=STATE_M3;
 						break;
 						case 2:
 						state=STATE_BEGIN_TEST;
@@ -331,13 +454,24 @@ void main_loop()
 						state=STATE_SAFE_POWEROFF;
 						break;
 					}	
-				
+					last_state=STATE_PIC1;
 					break;
 				}
-				case STATE_INPUT:
+				case STATE_M2:
 				{
-					DrawPicFast_Real(4);
-					
+					DrawPicFast_Real(3);
+					mianji_val_input=input_handle();
+					state=STATE_PIC1;
+					last_state=STATE_M2;
+					break;
+				}
+				case STATE_M3:
+				{
+					DrawPicFast_Real(3);
+					liushu_val_input=input_handle();
+					state=STATE_PIC1;
+					last_state=STATE_M3;
+					break;
 				}
 			}
 		
