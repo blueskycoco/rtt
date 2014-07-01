@@ -120,6 +120,7 @@ void uart_lcd_rx_ind_ex(void* parameter)
 	if (rt_sem_take(&rx_tp_sem, RT_WAITING_FOREVER) != RT_EOK) continue;
 	while (rt_device_read(dev, 0, &ch, 1) == 1)
 	{
+		rt_kprintf("%x ",ch);
 		if(ch==0xaa)
 		{
 			if(rt_device_read(dev,0,&ch,1)==1)
@@ -424,34 +425,52 @@ void main_loop()
 	static struct rt_thread thread;
 	DrawPicFast_Real(0);
 	rt_thread_delay(2*100);
+	DrawPicFast_Real(1);
+	rt_thread_delay(2*100);
+	DrawPicFast_Real(2);
+	rt_thread_delay(2*100);
+	DrawPicFast_Real(3);
+	rt_thread_delay(2*100);
+	DrawPicFast_Real(4);
+	rt_thread_delay(2*100);
+	DrawPicFast_Real(5);
+	rt_thread_delay(2*100);
+	DrawPicFast_Real(6);
+	rt_thread_delay(2*100);
+	DrawPicFast_Real(7);
+	rt_thread_delay(2*100);
+	
 	state=STATE_PIC1;	
 	last_state=STATE_ORIGIN;
 	rt_sem_init(&rx_tp_sem, "shrx1", 0, 0);
 	rt_sem_init(&rx_param_sem, "shrx2", 0, 0);
-	
+	rt_kprintf("main_loop 1\r\n");
 	result = rt_thread_init(&thread,
 	    "ttp",
 	    uart_lcd_rx_ind_ex, RT_NULL,
 	    &lcd_stack[0], sizeof(lcd_stack),
 	    21, 10);
-	
+	rt_kprintf("main_loop 2\r\n");
 	if (result == RT_EOK)
 	    rt_thread_startup(&thread);
-	
+	rt_kprintf("main_loop 3\r\n");
 	result = rt_thread_init(&thread,
 	    "tserial",
 	    uart_param_rx_ind_ex, RT_NULL,
 	    &param_stack[0], sizeof(param_stack),
 	    22, 10);
-	
+	rt_kprintf("main_loop 4\r\n");
 	if (result == RT_EOK)
 	    rt_thread_startup(&thread);
+	rt_kprintf("main_loop 5\r\n");
 	while(1)
 	{
+		rt_kprintf("main_loop 6\r\n");
 		switch(state)
 			{
 				case STATE_ORIGIN:
 				{
+					rt_kprintf("main_loop 7\r\n");
 					DrawPicFast_Real(0);
 					state=STATE_PIC1;
 					last_state=STATE_ORIGIN;
@@ -460,6 +479,7 @@ void main_loop()
 				}
 				case STATE_PIC1:
 				{
+					rt_kprintf("main_loop 8\r\n");	
 					DrawPicFast_Real(1);
 					if(last_state==STATE_M2||last_state==STATE_M3)
 					{
