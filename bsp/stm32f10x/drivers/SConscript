@@ -10,8 +10,6 @@ board.c
 stm32f10x_it.c
 led.c
 usart.c
-spi.c
-mmc_sd.c
 diwen.c
 """)
 
@@ -21,7 +19,7 @@ if GetDepend('RT_USING_LWIP'):
 
 # add Ethernet drvers.
 if GetDepend('RT_USING_DFS'):
-    src += ['sdcard.c']
+    src += ['spi.c','mmc_sd.c','sdcard.c']
 
 # add Ethernet drvers.
 if GetDepend('RT_USING_RTC'):
