@@ -20,9 +20,11 @@
 
 #define UART_ENABLE_IRQ(n)            NVIC_EnableIRQ((n))
 #define UART_DISABLE_IRQ(n)           NVIC_DisableIRQ((n))
+rt_device_t uart_param_dev;
+rt_device_t uart_lcd_dev;
 
 void rt_hw_usart_init(void);
-void uart_init(int type);
-void uart_tx(int type,char *buf,int len);
+void uart_init();
+void uart_tx(int type,char buf);
 
 #endif

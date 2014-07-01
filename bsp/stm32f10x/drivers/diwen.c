@@ -1,10 +1,21 @@
 #include <rtthread.h>
 #include "stm32f10x.h"
+#include <math.h>
+#include "usart.h"
 #define UART_TYPE_LCD 0
+#define UART_TYPE_PARAM 1
+ALIGN(RT_ALIGN_SIZE)
+static char lcd_stack[2048];
+static char param_stack[2048];
+int val_serial=0;
+struct rt_semaphore rx_tp_sem;
+struct rt_semaphore rx_param_sem;
+char g_rx_param_buf[256];
+int g_rx_param_len=0;
 
 char g_rx_tp_buf[5];//first byte is pressd 1 or up 0 or invaled 2
 unsigned short const SBtnGroup_XY[15][2][2]=
-{
+{//index=4
 	118,176,210,244,//6
  	238,176,328,244,//7
  	354,176,444,244,//8
@@ -22,14 +33,14 @@ unsigned short const SBtnGroup_XY[15][2][2]=
  	588,380,678,450//enter
 };
 unsigned short const SBmp2_XY[4][2][2]=
-{//index=2
+{//index=1
 	69,209,379,253,//jie mianji
 	420,209,731,253,//pinjun liusu
 	69,389,379,433,// begin test
 	421,389,730,433//safe power off
 };
 unsigned short const SBnum_L_XY[10][2][2]=
-{//index=6or7
+{//index=5or6
 	285,227,308,254,// 0
 	308,227,331,254,// 1
 	331,227,354,254,// 2
@@ -42,7 +53,7 @@ unsigned short const SBnum_L_XY[10][2][2]=
 	492,227,515,254// 9
 };
 unsigned short const SBnum_B_XY[10][2][2]=
-{//index=8
+{//index=7
 	130,209,181,271,// 0
 	181,209,232,271,// 1
 	232,209,283,271,// 2
@@ -54,11 +65,59 @@ unsigned short const SBnum_B_XY[10][2][2]=
 	540,209,591,271,// 8
 	591,209,642,271// 9
 };
-static rt_err_t uart_lcd_rx_ind(rt_device_t dev, rt_size_t size)
+rt_err_t uart_param_rx_ind(rt_device_t dev, rt_size_t size)
+{
+	rt_sem_release(&rx_param_sem);
+	return RT_EOK;
+}
+
+rt_err_t uart_lcd_rx_ind(rt_device_t dev, rt_size_t size)
+{
+	rt_sem_release(&rx_tp_sem);
+	return RT_EOK;
+}
+void uart_param_rx_ind_ex(void* parameter)
+{
+	char ch;
+	int i=0;
+	unsigned short x=0,y=0;
+	
+	while(1)
+	{
+		i=0;
+		if (rt_sem_take(&rx_param_sem, RT_WAITING_FOREVER) != RT_EOK) continue;
+		while (rt_device_read(uart_param_dev, 0, &ch, 1) == 1)
+		{
+			i++;
+			if(i==546)
+				x=ch;
+			if(i==547)
+				x=(x<<8)|ch;				
+			if(i==2024)
+				y=ch;
+			if(i==2025)
+			{
+				y=(y<<8)|ch;
+				break;
+			}
+		}
+		double val=((double)y)/((double)x);
+		val_serial=(int)log(val);
+	}
+	return ;
+}
+
+void uart_lcd_rx_ind_ex(void* parameter)
 {
 	char ch;
 	int i=0;
 	int get=2;//0 for up , 1 press , 2 for invaled
+	rt_device_t dev=uart_lcd_dev;
+	while(1)
+	{
+		get=2;
+		i=0;
+	if (rt_sem_take(&rx_tp_sem, RT_WAITING_FOREVER) != RT_EOK) continue;
 	while (rt_device_read(dev, 0, &ch, 1) == 1)
 	{
 		if(ch==0xaa)
@@ -140,6 +199,8 @@ static rt_err_t uart_lcd_rx_ind(rt_device_t dev, rt_size_t size)
 			}
 		}
 	}
+		}
+	return ;
 }
 
 void DrawPicFast_Real(unsigned char Index)	//??????????
@@ -194,28 +255,30 @@ unsigned char CheckKeyPressedArea(int type)
 	x=(g_rx_tp_buf[1]<<8)|g_rx_tp_buf[2];
 	y=(g_rx_tp_buf[3]<<8)|g_rx_tp_buf[4];
 	if(type==0)
-		{//input 
-	for(i=0;i<15;i++)
-	{
-		if( (x>(SBtnGroup_XY[i][0][0]))&&(x<(SBtnGroup_XY[i][1][0]))&&(y>(SBtnGroup_XY[i][0][1]))&&(y<(SBtnGroup_XY[i][1][1])) )
+	{//input 
+		for(i=0;i<15;i++)
 		{
-			//KeyValue=i;
-			return i;
-		}	
-	}
+			if( (x>(SBtnGroup_XY[i][0][0]))&&(x<(SBtnGroup_XY[i][1][0]))&&(y>(SBtnGroup_XY[i][0][1]))&&(y<(SBtnGroup_XY[i][1][1])) )
+			{
+				//KeyValue=i;
+				rt_kprintf("%d is pressed in input panl\r\n",i);
+				return i;
+			}	
 		}
+	}
 	else
-		{//pic2
+	{//pic2
 		for(i=0;i<4;i++)
 		{
 			if( (x>(SBmp2_XY[i][0][0]))&&(x<(SBmp2_XY[i][1][0]))&&(y>(SBmp2_XY[i][0][1]))&&(y<(SBmp2_XY[i][1][1])) )
 			{
 				//KeyValue=i;
+				rt_kprintf("%d is pressed in bmp 2\r\n",i);
 				return i;
 			}	
 		}
 
-		}
+	}
 	return 100;			
 }
 unsigned short input_handle()
@@ -226,17 +289,18 @@ unsigned short input_handle()
 	{
 		while(g_rx_tp_buf[0]!=1)
 			rt_thread_delay(20);
-		area=CheckKeyPressedArea(0)
+		area=CheckKeyPressedArea(0);
 		if(area!=100)
 		{
 			DrawPic_Real(SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],4,SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],SBtnGroup_XY[area][1][0],SBtnGroup_XY[area][1][1]);
 			rt_thread_sleep(100);
 			DrawPic_Real(SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],3,SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],SBtnGroup_XY[area][1][0],SBtnGroup_XY[area][1][1]);
-
+			rt_kprintf("draw input panel side effect\r\n");
 		}
 
 		if(area==14)// enter
 		{
+			rt_kprintf("ENTER pressed , return key %d\r\n",key);
 			return key;
 		}
 		else if(area==4)
@@ -251,27 +315,31 @@ unsigned short input_handle()
 					DrawPic_Real(442,52,3,208,52,259,133);
 					DrawPic_Real(493,52,3,208,52,259,133);
 					DrawPic_Real(544,52,7,SBnum_B_XY[0][0][0],SBnum_B_XY[0][0][1],SBnum_B_XY[0][1][0],SBnum_B_XY[0][1][1]);
+					rt_kprintf("BackSpace pressed , draw 0\r\n");
 				}
 				else if(i==1)
 				{
 					DrawPic_Real(442,52,3,208,52,259,133);
 					DrawPic_Real(493,52,3,208,52,259,133);
 					DrawPic_Real(544,52,7,SBnum_B_XY[key][0][0],SBnum_B_XY[key][0][1],SBnum_B_XY[key][1][0],SBnum_B_XY[key][1][1]);
-
+					rt_kprintf("BackSpace pressed , draw %d\r\n",key);
 				}
 				else if(i==2)
 				{
 					DrawPic_Real(442,52,3,208,52,259,133);
 					DrawPic_Real(493,52,7,SBnum_B_XY[key/10][0][0],SBnum_B_XY[key/10][0][1],SBnum_B_XY[key/10][1][0],SBnum_B_XY[key/10][1][1]);
+					rt_kprintf("BackSpace pressed , draw %d\r\n",key/10);
 					DrawPic_Real(544,52,7,SBnum_B_XY[key%10][0][0],SBnum_B_XY[key%10][0][1],SBnum_B_XY[key%10][1][0],SBnum_B_XY[key%10][1][1]);
-
+					rt_kprintf("BackSpace pressed , draw %d\r\n",key%10);
 				}
 				else if(i==3)
 				{
 					DrawPic_Real(442,52,7,SBnum_B_XY[key/100][0][0],SBnum_B_XY[key/100][0][1],SBnum_B_XY[key/100][1][0],SBnum_B_XY[key/100][1][1]);
+					rt_kprintf("BackSpace pressed , draw %d\r\n",key/100);
 					DrawPic_Real(493,52,7,SBnum_B_XY[(key%100)/10][0][0],SBnum_B_XY[(key%100)/10][0][1],SBnum_B_XY[(key%100)/10][1][0],SBnum_B_XY[(key%100)/10][1][1]);
-					DrawPic_Real(544,52,7,SBnum_B_XY[(key%100)%10][0][0],SBnum_B_XY[(key%100)%10][0][1],SBnum_B_XY[(key%100)%10][1][0],SBnum_B_XY[(key%100)%10][1][1]);
-
+					rt_kprintf("BackSpace pressed , draw %d\r\n",key%100);
+					DrawPic_Real(544,52,7,SBnum_B_XY[key%10][0][0],SBnum_B_XY[key%10][0][1],SBnum_B_XY[key%10][1][0],SBnum_B_XY[key%10][1][1]);
+					rt_kprintf("BackSpace pressed , draw %d\r\n",key%10);
 				}
 			}
 		}
@@ -280,11 +348,10 @@ unsigned short input_handle()
 
 			i=0;
 			key=0;
-
 			DrawPic_Real(442,52,3,208,52,259,133);
 			DrawPic_Real(493,52,3,208,52,259,133);
 			DrawPic_Real(544,52,7,SBnum_B_XY[0][0][0],SBnum_B_XY[0][0][1],SBnum_B_XY[0][1][0],SBnum_B_XY[0][1][1]);
-
+			rt_kprintf("Clear pressed , draw 0\r\n");
 		}
 	if(i<=3)
 	{
@@ -294,7 +361,7 @@ unsigned short input_handle()
 			case 0://6
 				key=key*10+6;
 			break;
-			case 1//7
+			case 1://7
 				key=key*10+7;
 			break;
 			case 2://8
@@ -345,18 +412,40 @@ unsigned short input_handle()
 			DrawPic_Real(493,52,7,SBnum_B_XY[(key%100)/10][0][0],SBnum_B_XY[(key%100)/10][0][1],SBnum_B_XY[(key%100)/10][1][0],SBnum_B_XY[(key%100)/10][1][1]);
 			DrawPic_Real(544,52,7,SBnum_B_XY[(key%100)%10][0][0],SBnum_B_XY[(key%100)%10][0][1],SBnum_B_XY[(key%100)%10][1][0],SBnum_B_XY[(key%100)%10][1][1]);
 		}
-		
+		rt_kprintf("%d pressed , draw it\r\n",key);
 		}
 		g_rx_tp_buf[0]=2;
 	}
 }
 void main_loop()
 {
-	int state=0,last_state=0,mianji_val_input=0,liushu_val_input=0,val_serial=0;
+	int state=0,last_state=0,mianji_val_input=0,liushu_val_input=0;
+	rt_err_t result;
+	static struct rt_thread thread;
 	DrawPicFast_Real(0);
 	rt_thread_delay(2*100);
 	state=STATE_PIC1;	
 	last_state=STATE_ORIGIN;
+	rt_sem_init(&rx_tp_sem, "shrx1", 0, 0);
+	rt_sem_init(&rx_param_sem, "shrx2", 0, 0);
+	
+	result = rt_thread_init(&thread,
+	    "ttp",
+	    uart_lcd_rx_ind_ex, RT_NULL,
+	    &lcd_stack[0], sizeof(lcd_stack),
+	    21, 10);
+	
+	if (result == RT_EOK)
+	    rt_thread_startup(&thread);
+	
+	result = rt_thread_init(&thread,
+	    "tserial",
+	    uart_param_rx_ind_ex, RT_NULL,
+	    &param_stack[0], sizeof(param_stack),
+	    22, 10);
+	
+	if (result == RT_EOK)
+	    rt_thread_startup(&thread);
 	while(1)
 	{
 		switch(state)
@@ -366,6 +455,7 @@ void main_loop()
 					DrawPicFast_Real(0);
 					state=STATE_PIC1;
 					last_state=STATE_ORIGIN;
+					rt_kprintf("STATE_ORIGIN state , goto STATE_PIC1\r\n");
 					break;
 				}
 				case STATE_PIC1:
@@ -444,7 +534,7 @@ void main_loop()
 						case 0://jie mianji
 						state=STATE_M2;
 						break;
-						case 1//pin jun liusu:
+						case 1://pin jun liusu:
 						state=STATE_M3;
 						break;
 						case 2:
@@ -455,6 +545,9 @@ void main_loop()
 						break;
 					}	
 					last_state=STATE_PIC1;
+					DrawPicFast_Real(2);
+					rt_thread_delay(50);
+					rt_kprintf("STATE_PIC1 state , goto %d\r\n",state);
 					break;
 				}
 				case STATE_M2:
@@ -463,6 +556,7 @@ void main_loop()
 					mianji_val_input=input_handle();
 					state=STATE_PIC1;
 					last_state=STATE_M2;
+					rt_kprintf("STATE_M2 state , goto STATE_PIC1, mianji_val_input %d\r\n",mianji_val_input);
 					break;
 				}
 				case STATE_M3:
@@ -471,6 +565,30 @@ void main_loop()
 					liushu_val_input=input_handle();
 					state=STATE_PIC1;
 					last_state=STATE_M3;
+					rt_kprintf("STATE_M3 state , goto STATE_PIC1, liushu_val_input %d\r\n",liushu_val_input);
+					break;
+				}				
+				case STATE_BEGIN_TEST:
+				{
+					unsigned char ch='S';
+					uart_tx(UART_TYPE_PARAM,ch);
+					rt_thread_delay(100);
+					state=STATE_PIC1;
+					last_state=STATE_BEGIN_TEST;
+					rt_kprintf("STATE_BEGIN_TEST state , goto STATE_PIC1, val_serial %d\r\n",val_serial);
+					break;
+				}
+				case STATE_SAFE_POWEROFF:
+				{
+					DrawPicFast_Real(7);
+					rt_kprintf("STATE_SAFE_POWEROFF state , loop forever\r\n");
+					while(1);
+				}
+				default:					
+				{
+					state=STATE_ORIGIN;
+					last_state=STATE_ORIGIN;
+					rt_kprintf("UNKNOWN  state , got STATE_ORIGIN\r\n");
 					break;
 				}
 			}

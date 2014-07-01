@@ -43,15 +43,13 @@
 #endif
 
 #include "led.h"
-void uart_tx(int type,char *buf,int len);
-void uart_init(int type);
+#include "usart.h"
 
-char g_rx_param_buf[256];
-int g_rx_param_len=0;
 
 ALIGN(RT_ALIGN_SIZE)
   static rt_uint8_t led_stack[ 2048 ];
   static struct rt_thread led_thread;
+extern void main_loop();
 static void led_thread_entry(void* parameter)
 {
   unsigned int count=0;
@@ -59,6 +57,7 @@ static void led_thread_entry(void* parameter)
   int fd;
   int index, length;
   char ch;
+  main_loop();
 
   rt_hw_led_init();
   //dillon LCD_Init();
@@ -94,21 +93,6 @@ static void led_thread_entry(void* parameter)
 	rt_thread_delay( RT_TICK_PER_SECOND/2 );
   }
 }
-#define UART_TYPE_LCD 0
-#define UART_TYPE_PARAM 1
-
-static rt_err_t uart_param_rx_ind(rt_device_t dev, rt_size_t size)
-{
-  char ch;
-  int i=0;	
-  while (rt_device_read(dev, 0, &ch, 1) == 1)
-  {
-	g_rx_param_buf[i]=ch;
-	i++;
-  }
-  g_rx_param_len=i;
-  uart_tx(UART_TYPE_PARAM,g_rx_param_buf,g_rx_param_len);
-}
 
 
 void rt_init_thread_entry(void* parameter)
@@ -140,7 +124,7 @@ int rt_application_init(void)
   rt_thread_t init_thread;
 
   rt_err_t result;
-  //uart2_init();
+  uart_init();
 
   /* init led thread */
   result = rt_thread_init(&led_thread,

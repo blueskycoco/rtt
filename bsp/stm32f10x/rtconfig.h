@@ -92,7 +92,7 @@
 #define RT_DFS_ELM_MAX_LFN			255
 /* Maximum sector size to be handled. */
 #define RT_DFS_ELM_MAX_SECTOR_SIZE  512
-
+#define RT_USING_DFS_DEVFS
 /* the max number of mounted filesystem */
 #define DFS_FILESYSTEMS_MAX			2
 /* the max number of opened files 		*/
@@ -171,6 +171,7 @@
 /* #define RTGUI_USING_MOUSE_CURSOR */
 /* default font size in RTGUI */
 #define RTGUI_DEFAULT_FONT_SIZE	16
+#define RT_USING_NEWLIB
 
 /* image support */
 /* #define RTGUI_IMAGE_XPM */
