@@ -373,8 +373,8 @@ void rt_hw_usart_init(void)
                           uart);
 #endif /* RT_USING_UART3 */
 }
-rt_device_t uart_param_dev = RT_NULL;
-rt_device_t uart_lcd_dev = RT_NULL;
+//rt_device_t uart_param_dev = RT_NULL;
+//rt_device_t uart_lcd_dev = RT_NULL;
 #define UART_TYPE_LCD 0
 #define UART_TYPE_PARAM 1
 

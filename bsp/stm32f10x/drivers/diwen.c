@@ -68,12 +68,14 @@ unsigned short const SBnum_B_XY[10][2][2]=
 rt_err_t uart_param_rx_ind(rt_device_t dev, rt_size_t size)
 {
 	rt_sem_release(&rx_param_sem);
+	//rt_kprintf("param uart rx ind\r\n");
 	return RT_EOK;
 }
 
 rt_err_t uart_lcd_rx_ind(rt_device_t dev, rt_size_t size)
 {
 	rt_sem_release(&rx_tp_sem);
+	//rt_kprintf("param lcd rx ind\r\n");
 	return RT_EOK;
 }
 void uart_param_rx_ind_ex(void* parameter)
@@ -81,13 +83,14 @@ void uart_param_rx_ind_ex(void* parameter)
 	char ch;
 	int i=0;
 	unsigned short x=0,y=0;
-	
+	rt_kprintf("param param rx ind ex\r\n");
 	while(1)
 	{
 		i=0;
 		if (rt_sem_take(&rx_param_sem, RT_WAITING_FOREVER) != RT_EOK) continue;
 		while (rt_device_read(uart_param_dev, 0, &ch, 1) == 1)
 		{
+		//	rt_kprintf("=>%x \r\n",ch);
 			i++;
 			if(i==546)
 				x=ch;
@@ -109,96 +112,112 @@ void uart_param_rx_ind_ex(void* parameter)
 
 void uart_lcd_rx_ind_ex(void* parameter)
 {
+	rt_kprintf("lcd uart rx ind ex\r\n");
 	char ch;
-	int i=0;
-	int get=2;//0 for up , 1 press , 2 for invaled
+	int i=1;
+	int get=0,type=2;//0 for up , 1 press , 2 for invaled
 	rt_device_t dev=uart_lcd_dev;
+	
 	while(1)
 	{
-		get=2;
-		i=0;
+		//get=0;
+		//i=1;
+	//	g_rx_tp_buf[0]=2;
+	//	rt_kprintf("lcd rx ind restart\r\n");
 	if (rt_sem_take(&rx_tp_sem, RT_WAITING_FOREVER) != RT_EOK) continue;
+	g_rx_tp_buf[0]=2;
 	while (rt_device_read(dev, 0, &ch, 1) == 1)
 	{
-		rt_kprintf("%x ",ch);
-		if(ch==0xaa)
+		//rt_kprintf("<=%x \r\n",ch);
+		switch(get)
 		{
-			if(rt_device_read(dev,0,&ch,1)==1)
-			{
+			case 0:
+				if(ch==0xaa)
+				{
+					//rt_kprintf("0xaa get ,get =1\r\n");
+					get=1;
+				}
+				break;
+			case 1:
 				if(ch==0x73)
 				{
-					get=1;
-					if(rt_device_read(dev,0,&ch,1)==1)
-					{
-						g_rx_tp_buf[1]=ch;
+				//rt_kprintf("0x73 get ,get =2\r\n");
+					get=2;
 					}
-					else
-						get=2;
-					if((rt_device_read(dev,0,&ch,1)==1) && (get==1))
-					{
-						g_rx_tp_buf[2]=ch;
-					}
-					else
-						get=2;
-					if((rt_device_read(dev,0,&ch,1)==1) && (get==1))
-					{
-						g_rx_tp_buf[3]=ch;
-					}
-					else
-						get=2;
-					if((rt_device_read(dev,0,&ch,1)==1) && (get==1))
-					{
-						g_rx_tp_buf[4]=ch;
-					}
-					else
-						get=2;
-
-				}
 				else if(ch==0x72)
+					{
+					//rt_kprintf("0x72 get ,get =3\r\n");
+					get=3;
+					}
+				break;
+			case 2:
+				{
+					//rt_kprintf("==> %x\r\n",ch);
+					g_rx_tp_buf[i++]=ch;
+					if(i==5)
+					{
+						i=1;
+						get=4;
+						type=1;
+					//	rt_kprintf("press receive over,get =4\r\n");
+					}
+					else
+						get=2;
+				break;
+				}
+			case 3:
+				{
+					g_rx_tp_buf[i++]=ch;
+				//	rt_kprintf("<== %x\r\n",ch);
+					if(i==5)
+					{
+						i=1;
+						get=4;
+						type=0;
+				//		rt_kprintf("up receive over,get =4\r\n");
+					}
+					else
+						get=3;
+				break;
+				}
+			case 4:
+				if(ch==0xcc)
+					{
+				//	rt_kprintf("0xcc get ,get =5\r\n");
+					get=5;
+					}
+				break;
+			case 5:
+				if(ch==0x33)
+					{
+				//	rt_kprintf("0x33 get ,get =6\r\n");
+					get=6;
+					}
+				break;
+			case 6:
+				if(ch==0xc3)
+					{
+				//	rt_kprintf("0xc3 get ,get =7\r\n");
+					get=7;
+					}
+				break;
+			case 7:
+				if(ch==0x3c)
 				{
 					get=0;
-					g_rx_tp_buf[1]=0;
-					g_rx_tp_buf[2]=0;
-					g_rx_tp_buf[3]=0;
-					g_rx_tp_buf[4]=0;
-					rt_device_read(dev,0,&ch,1);
-					rt_device_read(dev,0,&ch,1);
-					rt_device_read(dev,0,&ch,1);
-					rt_device_read(dev,0,&ch,1);
+					g_rx_tp_buf[0]=1;
+					rt_kprintf("get %x %x %x %x %x\r\n",g_rx_tp_buf[0],g_rx_tp_buf[1],g_rx_tp_buf[2],g_rx_tp_buf[3],g_rx_tp_buf[4]);
+
+				
 				}
-				else
-				{
-					g_rx_tp_buf[0]=2;
-					continue;
-				}
-				g_rx_tp_buf[0]=2;
-				if(rt_device_read(dev,0,&ch,1)==1)
-				{
-					if(ch==0xcc)
-					{
-						if(rt_device_read(dev,0,&ch,1)==1)
-						{
-							if(ch==0x33)
-							{
-								if(rt_device_read(dev,0,&ch,1)==1)
-								{
-									if(ch==0xc3)
-									{
-										if(rt_device_read(dev,0,&ch,1)==1)
-										{
-											if(ch==0x3c)
-											{
-												g_rx_tp_buf[0]=get;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
+				break;
+			default:
+				rt_kprintf("unknown state\r\n");
+				break;
+
+					
 		}
+		
 	}
 		}
 	return ;
@@ -290,6 +309,7 @@ unsigned short input_handle()
 	{
 		while(g_rx_tp_buf[0]!=1)
 			rt_thread_delay(20);
+		g_rx_tp_buf[0]=2;
 		area=CheckKeyPressedArea(0);
 		if(area!=100)
 		{
@@ -415,17 +435,17 @@ unsigned short input_handle()
 		}
 		rt_kprintf("%d pressed , draw it\r\n",key);
 		}
-		g_rx_tp_buf[0]=2;
+		//g_rx_tp_buf[0]=2;
 	}
 }
 void main_loop()
 {
 	int state=0,last_state=0,mianji_val_input=0,liushu_val_input=0;
 	rt_err_t result;
-	static struct rt_thread thread;
+	static struct rt_thread thread,thread1;
 	DrawPicFast_Real(0);
-	rt_thread_delay(2*100);
-	DrawPicFast_Real(1);
+	rt_thread_delay(1*100);
+	/*DrawPicFast_Real(1);
 	rt_thread_delay(2*100);
 	DrawPicFast_Real(2);
 	rt_thread_delay(2*100);
@@ -439,33 +459,33 @@ void main_loop()
 	rt_thread_delay(2*100);
 	DrawPicFast_Real(7);
 	rt_thread_delay(2*100);
-	
+	*/
 	state=STATE_PIC1;	
 	last_state=STATE_ORIGIN;
 	rt_sem_init(&rx_tp_sem, "shrx1", 0, 0);
 	rt_sem_init(&rx_param_sem, "shrx2", 0, 0);
-	rt_kprintf("main_loop 1\r\n");
+
 	result = rt_thread_init(&thread,
-	    "ttp",
+	    "ttfp",
 	    uart_lcd_rx_ind_ex, RT_NULL,
 	    &lcd_stack[0], sizeof(lcd_stack),
 	    21, 10);
-	rt_kprintf("main_loop 2\r\n");
+
 	if (result == RT_EOK)
 	    rt_thread_startup(&thread);
-	rt_kprintf("main_loop 3\r\n");
-	result = rt_thread_init(&thread,
+
+	result = rt_thread_init(&thread1,
 	    "tserial",
 	    uart_param_rx_ind_ex, RT_NULL,
 	    &param_stack[0], sizeof(param_stack),
 	    22, 10);
-	rt_kprintf("main_loop 4\r\n");
+
 	if (result == RT_EOK)
-	    rt_thread_startup(&thread);
-	rt_kprintf("main_loop 5\r\n");
+	    rt_thread_startup(&thread1);
+
 	while(1)
 	{
-		rt_kprintf("main_loop 6\r\n");
+		//rt_kprintf("main_loop 6\r\n");
 		switch(state)
 			{
 				case STATE_ORIGIN:
@@ -479,7 +499,7 @@ void main_loop()
 				}
 				case STATE_PIC1:
 				{
-					rt_kprintf("main_loop 8\r\n");	
+					rt_kprintf("STATE_PIC1 , last state %d\r\n",last_state);	
 					DrawPicFast_Real(1);
 					if(last_state==STATE_M2||last_state==STATE_M3)
 					{
@@ -549,6 +569,7 @@ void main_loop()
 					}
 					while(g_rx_tp_buf[0]!=1)
 						rt_thread_delay(20);
+					g_rx_tp_buf[0]=2;
 					switch(CheckKeyPressedArea(1))
 					{
 						case 0://jie mianji
