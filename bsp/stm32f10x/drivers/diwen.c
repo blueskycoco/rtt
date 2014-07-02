@@ -7,7 +7,7 @@
 ALIGN(RT_ALIGN_SIZE)
 static char lcd_stack[2048];
 static char param_stack[2048];
-int val_serial=0;
+long val_serial=0;
 struct rt_semaphore rx_tp_sem;
 struct rt_semaphore rx_param_sem;
 char g_rx_param_buf[256];
@@ -16,54 +16,57 @@ int g_rx_param_len=0;
 char g_rx_tp_buf[5];//first byte is pressd 1 or up 0 or invaled 2
 unsigned short const SBtnGroup_XY[15][2][2]=
 {//index=4
-	118,176,210,244,//6
- 	238,176,328,244,//7
- 	354,176,444,244,//8
- 	468,176,562,244,//9
- 	588,176,678,244,//back space
- 	118,278,210,348,// 2
- 	238,278,328,348,// 3
- 	354,278,444,348,// 4
- 	468,278,562,348,// 5
- 	588,278,678,348,//cleaer
- 	118,380,210,450,//0
- 	238,380,328,450,// 1
- 	354,380,444,450,//+
- 	468,380,562,450,//-
- 	588,380,678,450//enter
+	86,183,164,242,//6
+ 	183,184,263,239,//7
+ 	279,184,360,240,//8
+ 	377,184,459,239,//9
+ 	477,183,557,239,//back space
+ 	85,281,165,336,// 2
+ 	183,280,263,335,// 3
+ 	281,282,360,337,// 4
+ 	378,280,459,337,// 5
+ 	476,280,557,336,//cleaer
+ 	85,377,167,435,//0
+ 	183,378,265,434,// 1
+ 	279,379,360,433,//+
+ 	379,378,458,434,//-
+ 	477,376,557,433//enter
 };
 unsigned short const SBmp2_XY[4][2][2]=
 {//index=1
-	69,209,379,253,//jie mianji
-	420,209,731,253,//pinjun liusu
-	69,389,379,433,// begin test
-	421,389,730,433//safe power off
+	54,206,304,253,//jie mianji
+	335,209,586,253,//pinjun liusu
+	54,389,304,433,// begin test
+	336,389,585,433//safe power off
 };
 unsigned short const SBnum_L_XY[10][2][2]=
 {//index=5or6
-	285,227,308,254,// 0
-	308,227,331,254,// 1
-	331,227,354,254,// 2
-	354,227,377,254,// 3
-	377,227,400,254,// 4
-	400,227,423,254,// 5
-	423,227,446,254,// 6
-	446,227,469,254,// 7
-	469,227,492,254,// 8
-	492,227,515,254// 9
+	229,227,247,254,// 0
+	247,227,265,254,// 1
+	265,227,283,254,// 2
+	283,227,301,254,// 3
+	301,227,319,254,// 4
+	319,227,337,254,// 5
+	337,227,355,254,// 6
+	355,227,373,254,// 7
+	373,227,391,254,// 8
+	391,227,412,254// 9
 };
 unsigned short const SBnum_B_XY[10][2][2]=
 {//index=7
-	130,209,181,271,// 0
-	181,209,232,271,// 1
-	232,209,283,271,// 2
-	283,209,334,271,// 3
-	334,209,385,271,// 4
-	385,209,436,271,// 5
-	436,209,487,271,// 6
-	487,209,540,271,// 7
-	540,209,591,271,// 8
-	591,209,642,271// 9
+	102,209,143,271,// 0
+	143,209,184,271,// 1
+	184,209,225,271,// 2
+	//225,209,266,271,// 3
+	//266,209,307,271,// 4
+	143,209,184,271,// 1
+	184,209,225,271,// 2
+	
+	307,209,348,271,// 5
+	348,209,389,271,// 6
+	389,209,430,271,// 7
+	430,209,471,271,// 8
+	471,209,517,271// 9
 };
 rt_err_t uart_param_rx_ind(rt_device_t dev, rt_size_t size)
 {
@@ -86,11 +89,11 @@ void uart_param_rx_ind_ex(void* parameter)
 	rt_kprintf("param param rx ind ex\r\n");
 	while(1)
 	{
-		i=0;
+		//i=0;
 		if (rt_sem_take(&rx_param_sem, RT_WAITING_FOREVER) != RT_EOK) continue;
 		while (rt_device_read(uart_param_dev, 0, &ch, 1) == 1)
 		{
-		//	rt_kprintf("=>%x \r\n",ch);
+			//rt_kprintf("=>%x \r\n",ch);
 			i++;
 			if(i==546)
 				x=ch;
@@ -101,11 +104,16 @@ void uart_param_rx_ind_ex(void* parameter)
 			if(i==2025)
 			{
 				y=(y<<8)|ch;
+				int val=y/x;
+				int val1=(int)log(val);
+				//if(val1>0)
+					val_serial=ch;
+				//rt_kprintf("val_serial %x %x %x got %x\r\n",y,x,val,val_serial);
+				i=0;
 				break;
 			}
 		}
-		double val=((double)y)/((double)x);
-		val_serial=(int)log(val);
+		
 	}
 	return ;
 }
@@ -205,7 +213,7 @@ void uart_lcd_rx_ind_ex(void* parameter)
 				if(ch==0x3c)
 				{
 					get=0;
-					g_rx_tp_buf[0]=1;
+					g_rx_tp_buf[0]=type;
 					rt_kprintf("get %x %x %x %x %x\r\n",g_rx_tp_buf[0],g_rx_tp_buf[1],g_rx_tp_buf[2],g_rx_tp_buf[3],g_rx_tp_buf[4]);
 
 				
@@ -219,6 +227,7 @@ void uart_lcd_rx_ind_ex(void* parameter)
 		}
 		
 	}
+		
 		}
 	return ;
 }
@@ -304,17 +313,18 @@ unsigned char CheckKeyPressedArea(int type)
 unsigned short input_handle()
 {
 	unsigned short key=0;
-	int i,area=16;
+	int i=0,area=16;
 	while(1)
 	{
 		while(g_rx_tp_buf[0]!=1)
 			rt_thread_delay(20);
+		rt_thread_delay(20);
 		g_rx_tp_buf[0]=2;
 		area=CheckKeyPressedArea(0);
 		if(area!=100)
 		{
 			DrawPic_Real(SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],4,SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],SBtnGroup_XY[area][1][0],SBtnGroup_XY[area][1][1]);
-			rt_thread_sleep(100);
+			rt_thread_sleep(10);
 			DrawPic_Real(SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],3,SBtnGroup_XY[area][0][0],SBtnGroup_XY[area][0][1],SBtnGroup_XY[area][1][0],SBtnGroup_XY[area][1][1]);
 			rt_kprintf("draw input panel side effect\r\n");
 		}
@@ -333,48 +343,50 @@ unsigned short input_handle()
 
 				if(i==0)
 				{
-					DrawPic_Real(442,52,3,208,52,259,133);
-					DrawPic_Real(493,52,3,208,52,259,133);
-					DrawPic_Real(544,52,7,SBnum_B_XY[0][0][0],SBnum_B_XY[0][0][1],SBnum_B_XY[0][1][0],SBnum_B_XY[0][1][1]);
+					DrawPic_Real(340,62,3,208,62,259,133);
+					DrawPic_Real(380,62,3,208,62,259,133);
+					DrawPic_Real(420,62,7,SBnum_B_XY[0][0][0],SBnum_B_XY[0][0][1],SBnum_B_XY[0][1][0],SBnum_B_XY[0][1][1]);
 					rt_kprintf("BackSpace pressed , draw 0\r\n");
 				}
 				else if(i==1)
 				{
-					DrawPic_Real(442,52,3,208,52,259,133);
-					DrawPic_Real(493,52,3,208,52,259,133);
-					DrawPic_Real(544,52,7,SBnum_B_XY[key][0][0],SBnum_B_XY[key][0][1],SBnum_B_XY[key][1][0],SBnum_B_XY[key][1][1]);
+					DrawPic_Real(340,62,3,208,62,259,133);
+					DrawPic_Real(380,62,3,208,62,259,133);
+					DrawPic_Real(420,62,7,SBnum_B_XY[key][0][0],SBnum_B_XY[key][0][1],SBnum_B_XY[key][1][0],SBnum_B_XY[key][1][1]);
 					rt_kprintf("BackSpace pressed , draw %d\r\n",key);
 				}
 				else if(i==2)
 				{
-					DrawPic_Real(442,52,3,208,52,259,133);
-					DrawPic_Real(493,52,7,SBnum_B_XY[key/10][0][0],SBnum_B_XY[key/10][0][1],SBnum_B_XY[key/10][1][0],SBnum_B_XY[key/10][1][1]);
+					DrawPic_Real(340,62,3,208,62,259,133);
+					DrawPic_Real(380,62,7,SBnum_B_XY[key/10][0][0],SBnum_B_XY[key/10][0][1],SBnum_B_XY[key/10][1][0],SBnum_B_XY[key/10][1][1]);
 					rt_kprintf("BackSpace pressed , draw %d\r\n",key/10);
-					DrawPic_Real(544,52,7,SBnum_B_XY[key%10][0][0],SBnum_B_XY[key%10][0][1],SBnum_B_XY[key%10][1][0],SBnum_B_XY[key%10][1][1]);
+					DrawPic_Real(420,62,7,SBnum_B_XY[key%10][0][0],SBnum_B_XY[key%10][0][1],SBnum_B_XY[key%10][1][0],SBnum_B_XY[key%10][1][1]);
 					rt_kprintf("BackSpace pressed , draw %d\r\n",key%10);
 				}
 				else if(i==3)
 				{
-					DrawPic_Real(442,52,7,SBnum_B_XY[key/100][0][0],SBnum_B_XY[key/100][0][1],SBnum_B_XY[key/100][1][0],SBnum_B_XY[key/100][1][1]);
+					DrawPic_Real(340,62,7,SBnum_B_XY[key/100][0][0],SBnum_B_XY[key/100][0][1],SBnum_B_XY[key/100][1][0],SBnum_B_XY[key/100][1][1]);
 					rt_kprintf("BackSpace pressed , draw %d\r\n",key/100);
-					DrawPic_Real(493,52,7,SBnum_B_XY[(key%100)/10][0][0],SBnum_B_XY[(key%100)/10][0][1],SBnum_B_XY[(key%100)/10][1][0],SBnum_B_XY[(key%100)/10][1][1]);
+					DrawPic_Real(380,62,7,SBnum_B_XY[(key%100)/10][0][0],SBnum_B_XY[(key%100)/10][0][1],SBnum_B_XY[(key%100)/10][1][0],SBnum_B_XY[(key%100)/10][1][1]);
 					rt_kprintf("BackSpace pressed , draw %d\r\n",key%100);
-					DrawPic_Real(544,52,7,SBnum_B_XY[key%10][0][0],SBnum_B_XY[key%10][0][1],SBnum_B_XY[key%10][1][0],SBnum_B_XY[key%10][1][1]);
+					DrawPic_Real(420,62,7,SBnum_B_XY[key%10][0][0],SBnum_B_XY[key%10][0][1],SBnum_B_XY[key%10][1][0],SBnum_B_XY[key%10][1][1]);
 					rt_kprintf("BackSpace pressed , draw %d\r\n",key%10);
 				}
 			}
+			continue;
 		}
 		else if(area==9)
 		{//clear
 
 			i=0;
 			key=0;
-			DrawPic_Real(442,52,3,208,52,259,133);
-			DrawPic_Real(493,52,3,208,52,259,133);
-			DrawPic_Real(544,52,7,SBnum_B_XY[0][0][0],SBnum_B_XY[0][0][1],SBnum_B_XY[0][1][0],SBnum_B_XY[0][1][1]);
+			DrawPic_Real(340,62,3,208,62,259,133);
+			DrawPic_Real(380,62,3,208,62,259,133);
+			DrawPic_Real(420,62,7,SBnum_B_XY[0][0][0],SBnum_B_XY[0][0][1],SBnum_B_XY[0][1][0],SBnum_B_XY[0][1][1]);
 			rt_kprintf("Clear pressed , draw 0\r\n");
+			continue;
 		}
-	if(i<=3)
+	if(i<3)
 	{
 		i++;
 		switch(area)
@@ -417,23 +429,26 @@ unsigned short input_handle()
 		}	
 		if(i==1)
 		{
-			DrawPic_Real(442,52,3,208,52,259,133);
-			DrawPic_Real(493,52,3,208,52,259,133);
-			DrawPic_Real(544,52,7,SBnum_B_XY[key][0][0],SBnum_B_XY[key][0][1],SBnum_B_XY[key][1][0],SBnum_B_XY[key][1][1]);
+			DrawPic_Real(340,62,3,208,62,259,133);
+			DrawPic_Real(380,62,3,208,62,259,133);
+			DrawPic_Real(420,62,7,SBnum_B_XY[key][0][0],SBnum_B_XY[key][0][1],SBnum_B_XY[key][1][0],SBnum_B_XY[key][1][1]);
+			rt_kprintf("o%d=>%d pressed , draw it\r\n",i,key);
 		}
 		else if(i==2)
 		{
-			DrawPic_Real(442,52,3,208,52,259,133);
-			DrawPic_Real(493,52,7,SBnum_B_XY[key/10][0][0],SBnum_B_XY[key/10][0][1],SBnum_B_XY[key/10][1][0],SBnum_B_XY[key/10][1][1]);
-			DrawPic_Real(544,52,7,SBnum_B_XY[key%10][0][0],SBnum_B_XY[key%10][0][1],SBnum_B_XY[key%10][1][0],SBnum_B_XY[key%10][1][1]);
+			DrawPic_Real(340,62,3,208,62,259,133);
+			DrawPic_Real(380,62,7,SBnum_B_XY[key/10][0][0],SBnum_B_XY[key/10][0][1],SBnum_B_XY[key/10][1][0],SBnum_B_XY[key/10][1][1]);
+			DrawPic_Real(420,62,7,SBnum_B_XY[(key%100)%10][0][0],SBnum_B_XY[(key%100)%10][0][1],SBnum_B_XY[(key%100)%10][1][0],SBnum_B_XY[(key%100)%10][1][1]);
+			rt_kprintf("oo%d=>%d%d pressed , draw it\r\n",i,key/10,(key%100)%10);
 		}
 		else if(i==3)
 		{
-			DrawPic_Real(442,52,7,SBnum_B_XY[key/100][0][0],SBnum_B_XY[key/100][0][1],SBnum_B_XY[key/100][1][0],SBnum_B_XY[key/100][1][1]);
-			DrawPic_Real(493,52,7,SBnum_B_XY[(key%100)/10][0][0],SBnum_B_XY[(key%100)/10][0][1],SBnum_B_XY[(key%100)/10][1][0],SBnum_B_XY[(key%100)/10][1][1]);
-			DrawPic_Real(544,52,7,SBnum_B_XY[(key%100)%10][0][0],SBnum_B_XY[(key%100)%10][0][1],SBnum_B_XY[(key%100)%10][1][0],SBnum_B_XY[(key%100)%10][1][1]);
+			DrawPic_Real(340,62,7,SBnum_B_XY[key/100][0][0],SBnum_B_XY[key/100][0][1],SBnum_B_XY[key/100][1][0],SBnum_B_XY[key/100][1][1]);
+			DrawPic_Real(380,62,7,SBnum_B_XY[(key%100)/10][0][0],SBnum_B_XY[(key%100)/10][0][1],SBnum_B_XY[(key%100)/10][1][0],SBnum_B_XY[(key%100)/10][1][1]);
+			DrawPic_Real(420,62,7,SBnum_B_XY[(key%100)%10][0][0],SBnum_B_XY[(key%100)%10][0][1],SBnum_B_XY[(key%100)%10][1][0],SBnum_B_XY[(key%100)%10][1][1]);
+			rt_kprintf("ooo%d=>%d%d%d pressed , draw it\r\n",i,key/100,(key%100)/10,(key%100)%10);
 		}
-		rt_kprintf("%d pressed , draw it\r\n",key);
+		
 		}
 		//g_rx_tp_buf[0]=2;
 	}
@@ -501,72 +516,92 @@ void main_loop()
 				{
 					rt_kprintf("STATE_PIC1 , last state %d\r\n",last_state);	
 					DrawPicFast_Real(1);
-					if(last_state==STATE_M2||last_state==STATE_M3)
+					//if(last_state==STATE_M2||last_state==STATE_M3||last_state==STATE_BEGIN_TEST)
 					{
 						//if(mianji_val_input!=0)
 						{
 							if((mianji_val_input/100)!=0)
 							{
-								DrawPic_Real(218,222,5,SBnum_B_XY[mianji_val_input/100][0][0],SBnum_B_XY[mianji_val_input/100][0][1],SBnum_B_XY[mianji_val_input/100][1][0],SBnum_B_XY[mianji_val_input/100][1][1]);
+								DrawPic_Real(200,218,5,SBnum_L_XY[mianji_val_input/100][0][0],SBnum_L_XY[mianji_val_input/100][0][1],SBnum_L_XY[mianji_val_input/100][1][0],SBnum_L_XY[mianji_val_input/100][1][1]);
 							}
 							
 							if(((mianji_val_input%100)/10)!=0||(mianji_val_input/100)!=0)
 							{
-								DrawPic_Real(241,222,5,SBnum_B_XY[(mianji_val_input%100)/10][0][0],SBnum_B_XY[(mianji_val_input%100)/10][0][1],SBnum_B_XY[(mianji_val_input%100)/10][1][0],SBnum_B_XY[(mianji_val_input%100)/10][1][1]);
+								DrawPic_Real(221,218,5,SBnum_L_XY[(mianji_val_input%100)/10][0][0],SBnum_L_XY[(mianji_val_input%100)/10][0][1],SBnum_L_XY[(mianji_val_input%100)/10][1][0],SBnum_L_XY[(mianji_val_input%100)/10][1][1]);
 							}
 							
-							DrawPic_Real(264,222,5,SBnum_B_XY[(mianji_val_input%100)%10][0][0],SBnum_B_XY[(mianji_val_input%100)%10][0][1],SBnum_B_XY[(mianji_val_input%100)%10][1][0],SBnum_B_XY[(mianji_val_input%100)%10][1][1]);
+							DrawPic_Real(240,218,5,SBnum_L_XY[(mianji_val_input%100)%10][0][0],SBnum_L_XY[(mianji_val_input%100)%10][0][1],SBnum_L_XY[(mianji_val_input%100)%10][1][0],SBnum_L_XY[(mianji_val_input%100)%10][1][1]);
 						}
 						//if(liushu_val_input!=0)
 						{
 							if((liushu_val_input/100)!=0)
 							{
-								DrawPic_Real(575,222,5,SBnum_B_XY[liushu_val_input/100][0][0],SBnum_B_XY[liushu_val_input/100][0][1],SBnum_B_XY[liushu_val_input/100][1][0],SBnum_B_XY[liushu_val_input/100][1][1]);
+								DrawPic_Real(470,218,5,SBnum_L_XY[liushu_val_input/100][0][0],SBnum_L_XY[liushu_val_input/100][0][1],SBnum_L_XY[liushu_val_input/100][1][0],SBnum_L_XY[liushu_val_input/100][1][1]);
 							}
 							
 							if(((liushu_val_input%100)/10)!=0||(liushu_val_input/100)!=0)
 							{
-								DrawPic_Real(598,222,5,SBnum_B_XY[(liushu_val_input%100)/10][0][0],SBnum_B_XY[(liushu_val_input%100)/10][0][1],SBnum_B_XY[(liushu_val_input%100)/10][1][0],SBnum_B_XY[(liushu_val_input%100)/10][1][1]);
+								DrawPic_Real(490,218,5,SBnum_L_XY[(liushu_val_input%100)/10][0][0],SBnum_L_XY[(liushu_val_input%100)/10][0][1],SBnum_L_XY[(liushu_val_input%100)/10][1][0],SBnum_L_XY[(liushu_val_input%100)/10][1][1]);
 							}
 							
-							DrawPic_Real(621,222,5,SBnum_B_XY[liushu_val_input%10][0][0],SBnum_B_XY[liushu_val_input%10][0][1],SBnum_B_XY[liushu_val_input%10][1][0],SBnum_B_XY[liushu_val_input%10][1][1]);
+							DrawPic_Real(511,218,5,SBnum_L_XY[liushu_val_input%10][0][0],SBnum_L_XY[liushu_val_input%10][0][1],SBnum_L_XY[liushu_val_input%10][1][0],SBnum_L_XY[liushu_val_input%10][1][1]);
 						}
 					}
-					else if(last_state==STATE_BEGIN_TEST)
+					long val_serial_bak=val_serial;
+					long val_serial_bak1=val_serial;
+					if(last_state==STATE_BEGIN_TEST)
 					{
-							if((val_serial/100)!=0)
+						int i=0;
+							/*if((val_serial_bak/100)!=0)
 							{
-								DrawPic_Real(422,122,6,SBnum_B_XY[val_serial/100][0][0],SBnum_B_XY[val_serial/100][0][1],SBnum_B_XY[val_serial/100][1][0],SBnum_B_XY[val_serial/100][1][1]);
+								DrawPic_Real(422,124,6,SBnum_L_XY[val_serial_bak/100][0][0],SBnum_L_XY[val_serial_bak/100][0][1],SBnum_L_XY[val_serial_bak/100][1][0],SBnum_L_XY[val_serial_bak/100][1][1]);
 							}
 							
-							if(((val_serial%100)/10)!=0||(val_serial/100)!=0)
+							if(((val_serial_bak%100)/10)!=0||(val_serial_bak/100)!=0)
 							{
-								DrawPic_Real(445,122,6,SBnum_B_XY[(val_serial%100)/10][0][0],SBnum_B_XY[(val_serial%100)/10][0][1],SBnum_B_XY[(val_serial%100)/10][1][0],SBnum_B_XY[(val_serial%100)/10][1][1]);
+								DrawPic_Real(445,124,6,SBnum_L_XY[(val_serial_bak%100)/10][0][0],SBnum_L_XY[(val_serial_bak%100)/10][0][1],SBnum_L_XY[(val_serial_bak%100)/10][1][0],SBnum_L_XY[(val_serial_bak%100)/10][1][1]);
 							}
 							
-							DrawPic_Real(468,122,6,SBnum_B_XY[val_serial%10][0][0],SBnum_B_XY[val_serial%10][0][1],SBnum_B_XY[val_serial%10][1][0],SBnum_B_XY[val_serial%10][1][1]);
-
-					}
-					if(val_serial!=0&&liushu_val_input!=0&&mianji_val_input!=0)
-					{
-						long result=val_serial*liushu_val_input*mianji_val_input;
-						if((val_serial/1000)!=0)
+							DrawPic_Real(468,124,6,SBnum_L_XY[val_serial_bak%10][0][0],SBnum_L_XY[val_serial_bak%10][0][1],SBnum_L_XY[val_serial_bak%10][1][0],SBnum_L_XY[val_serial_bak%10][1][1]);
+							*/
+						while(val_serial_bak1!=0)
 						{
-							DrawPic_Real(422,313,6,SBnum_B_XY[val_serial/1000][0][0],SBnum_B_XY[val_serial/1000][0][1],SBnum_B_XY[val_serial/1000][1][0],SBnum_B_XY[val_serial/1000][1][1]);
+							
+							DrawPic_Real(468-i*23,124,6,SBnum_L_XY[val_serial_bak1%10][0][0],SBnum_L_XY[val_serial_bak1%10][0][1],SBnum_L_XY[val_serial_bak1%10][1][0],SBnum_L_XY[val_serial_bak1%10][1][1]);
+							i++;
+							val_serial_bak1=val_serial_bak1/10;
+						}
+
+					
+					if(val_serial_bak!=0&&liushu_val_input!=0&&mianji_val_input!=0)
+					{
+						int result=(int)(val_serial_bak*liushu_val_input*mianji_val_input);
+						i=0;
+						rt_kprintf("result is %d,val_serial_bak is %d , liusu is %d, mianji is %d\r\n",result,val_serial_bak,liushu_val_input,mianji_val_input);
+						while(result!=0)
+						{
+							
+							DrawPic_Real(474-i*32,313,6,SBnum_L_XY[result%10][0][0],SBnum_L_XY[result%10][0][1],SBnum_L_XY[result%10][1][0],SBnum_L_XY[result%10][1][1]);
+							i++;
+							result=result/10;
+						}/*
+						if((result/1000)!=0)
+						{
+							DrawPic_Real(414,313,6,SBnum_L_XY[result/1000][0][0],SBnum_L_XY[result/1000][0][1],SBnum_L_XY[result/1000][1][0],SBnum_L_XY[result/1000][1][1]);
 						}
 						
-						if(((val_serial%1000)/100)!=0||(val_serial/1000)!=0)
+						if(((result%1000)/100)!=0||(result/1000)!=0)
 						{
-							DrawPic_Real(445,313,6,SBnum_B_XY[(val_serial%1000)/100][0][0],SBnum_B_XY[(val_serial%1000)/100][0][1],SBnum_B_XY[(val_serial%1000)/100][1][0],SBnum_B_XY[(val_serial%1000)/100][1][1]);
+							DrawPic_Real(434,313,6,SBnum_L_XY[(result%1000)/100][0][0],SBnum_L_XY[(result%1000)/100][0][1],SBnum_L_XY[(result%1000)/100][1][0],SBnum_L_XY[(result%1000)/100][1][1]);
 						}
-						if(((val_serial%100)/10)!=0||((val_serial%1000)/100)!=0)
+						if(((result%100)/10)!=0||((result%1000)/100)!=0)
 						{
-							DrawPic_Real(468,313,6,SBnum_B_XY[(val_serial%100)/10][0][0],SBnum_B_XY[(val_serial%100)/10][0][1],SBnum_B_XY[(val_serial%100)/10][1][0],SBnum_B_XY[(val_serial%100)/10][1][1]);
+							DrawPic_Real(454,313,6,SBnum_L_XY[(result%100)/10][0][0],SBnum_L_XY[(result%100)/10][0][1],SBnum_L_XY[(result%100)/10][1][0],SBnum_L_XY[(result%100)/10][1][1]);
 						}
 
-						DrawPic_Real(491,313,6,SBnum_B_XY[val_serial%10][0][0],SBnum_B_XY[val_serial%10][0][1],SBnum_B_XY[val_serial%10][1][0],SBnum_B_XY[val_serial%10][1][1]);
-
-					}
+						DrawPic_Real(474,313,6,SBnum_L_XY[result%10][0][0],SBnum_L_XY[result%10][0][1],SBnum_L_XY[result%10][1][0],SBnum_L_XY[result%10][1][1]);
+						*/
+					}}
 					while(g_rx_tp_buf[0]!=1)
 						rt_thread_delay(20);
 					g_rx_tp_buf[0]=2;
@@ -586,6 +621,7 @@ void main_loop()
 						break;
 					}	
 					last_state=STATE_PIC1;
+					if(state==STATE_M2||state==STATE_M3||state==STATE_BEGIN_TEST||state==STATE_SAFE_POWEROFF)
 					DrawPicFast_Real(2);
 					rt_thread_delay(50);
 					rt_kprintf("STATE_PIC1 state , goto %d\r\n",state);
@@ -621,7 +657,7 @@ void main_loop()
 				}
 				case STATE_SAFE_POWEROFF:
 				{
-					DrawPicFast_Real(7);
+					DrawPicFast_Real(8);
 					rt_kprintf("STATE_SAFE_POWEROFF state , loop forever\r\n");
 					while(1);
 				}
