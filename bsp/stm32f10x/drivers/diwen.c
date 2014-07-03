@@ -608,22 +608,34 @@ void main_loop()
 					switch(CheckKeyPressedArea(1))
 					{
 						case 0://jie mianji
-						state=STATE_M2;
-						break;
+						{
+							state=STATE_M2;
+							DrawPic_Real(SBmp2_XY[0][0][0],SBmp2_XY[0][0][1],2,SBmp2_XY[0][0][0],SBmp2_XY[0][0][1],SBmp2_XY[0][1][0],SBmp2_XY[0][1][1]);
+							break;
+						}
 						case 1://pin jun liusu:
-						state=STATE_M3;
-						break;
+						{
+							state=STATE_M3;
+							DrawPic_Real(SBmp2_XY[1][0][0],SBmp2_XY[1][0][1],2,SBmp2_XY[1][0][0],SBmp2_XY[1][0][1],SBmp2_XY[1][1][0],SBmp2_XY[1][1][1]);
+							break;
+						}
 						case 2:
-						state=STATE_BEGIN_TEST;
-						break;
+						{
+							state=STATE_BEGIN_TEST;
+							DrawPic_Real(SBmp2_XY[2][0][0],SBmp2_XY[2][0][1],2,SBmp2_XY[2][0][0],SBmp2_XY[2][0][1],SBmp2_XY[2][1][0],SBmp2_XY[2][1][1]);
+							break;
+						}
 						case 3:
-						state=STATE_SAFE_POWEROFF;
-						break;
+						{
+							state=STATE_SAFE_POWEROFF;
+							DrawPic_Real(SBmp2_XY[3][0][0],SBmp2_XY[3][0][1],2,SBmp2_XY[3][0][0],SBmp2_XY[3][0][1],SBmp2_XY[3][1][0],SBmp2_XY[3][1][1]);
+							break;
+						}
 					}	
 					last_state=STATE_PIC1;
-					if(state==STATE_M2||state==STATE_M3||state==STATE_BEGIN_TEST||state==STATE_SAFE_POWEROFF)
-					DrawPicFast_Real(2);
-					rt_thread_delay(50);
+					//if(state==STATE_M2||state==STATE_M3||state==STATE_BEGIN_TEST||state==STATE_SAFE_POWEROFF)
+					//	DrawPicFast_Real(2);
+					rt_thread_delay(20);
 					rt_kprintf("STATE_PIC1 state , goto %d\r\n",state);
 					break;
 				}
