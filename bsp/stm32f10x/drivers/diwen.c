@@ -267,6 +267,30 @@ void DrawPic_Real(unsigned short x,unsigned short y,unsigned char Index,unsigned
 	uart_tx(UART_TYPE_LCD,0x3C);
 	
 }
+void DrawIcon_Real(unsigned short x,unsigned short y,unsigned short Index)
+{											  
+	uart_tx(UART_TYPE_LCD,0xAA);
+	uart_tx(UART_TYPE_LCD,0x99);//draw pic
+	uart_tx(UART_TYPE_LCD,(x>>8)&0xff);
+	uart_tx(UART_TYPE_LCD,x&0xff);	
+	uart_tx(UART_TYPE_LCD,(y>>8)&0xff);
+	uart_tx(UART_TYPE_LCD,y&0xff);	
+	uart_tx(UART_TYPE_LCD,(Index>>8)&0xff);
+	uart_tx(UART_TYPE_LCD,Index&0xff);
+	uart_tx(UART_TYPE_LCD,0xCC);
+	uart_tx(UART_TYPE_LCD,0x33);
+	uart_tx(UART_TYPE_LCD,0xC3);
+	uart_tx(UART_TYPE_LCD,0x3C);
+/*
+	SendPacketHead();
+	SendPacketCmd(0x99);  //show Icon
+	SendPacketDatS(x);
+	SendPacketDatS(y);
+	SendPacketDatS(Index);  //this should defined in 0x1D function
+	SendPacketTail();
+*/
+}
+
 #define STATE_ORIGIN 0
 #define STATE_PIC1 1
 #define STATE_PIC2 2
@@ -431,21 +455,68 @@ unsigned short input_handle()
 		{
 			DrawPic_Real(340,62,3,208,62,259,133);
 			DrawPic_Real(380,62,3,208,62,259,133);
-			DrawPic_Real(420,62,7,SBnum_B_XY[key][0][0],SBnum_B_XY[key][0][1],SBnum_B_XY[key][1][0],SBnum_B_XY[key][1][1]);
+			if(key==3||key==4)
+			{
+				DrawIcon_Real(420,62,key-3);
+			}
+			else
+			{
+				DrawPic_Real(420,62,7,SBnum_B_XY[key][0][0],SBnum_B_XY[key][0][1],SBnum_B_XY[key][1][0],SBnum_B_XY[key][1][1]);
+			}
 			rt_kprintf("o%d=>%d pressed , draw it\r\n",i,key);
 		}
 		else if(i==2)
 		{
 			DrawPic_Real(340,62,3,208,62,259,133);
-			DrawPic_Real(380,62,7,SBnum_B_XY[key/10][0][0],SBnum_B_XY[key/10][0][1],SBnum_B_XY[key/10][1][0],SBnum_B_XY[key/10][1][1]);
-			DrawPic_Real(420,62,7,SBnum_B_XY[(key%100)%10][0][0],SBnum_B_XY[(key%100)%10][0][1],SBnum_B_XY[(key%100)%10][1][0],SBnum_B_XY[(key%100)%10][1][1]);
+			
+			if((key/10)==3||(key/10)==4)
+			{
+				DrawIcon_Real(380,62,(key/10)-3);
+			}
+			else
+			{
+				DrawPic_Real(380,62,7,SBnum_B_XY[key/10][0][0],SBnum_B_XY[key/10][0][1],SBnum_B_XY[key/10][1][0],SBnum_B_XY[key/10][1][1]);
+			}
+			
+			if(((key%100)%10)==3||((key%100)%10)==4)
+			{
+				DrawIcon_Real(420,62,((key%100)%10)-3);
+			}
+			else
+			{
+				DrawPic_Real(420,62,7,SBnum_B_XY[(key%100)%10][0][0],SBnum_B_XY[(key%100)%10][0][1],SBnum_B_XY[(key%100)%10][1][0],SBnum_B_XY[(key%100)%10][1][1]);
+			}
 			rt_kprintf("oo%d=>%d%d pressed , draw it\r\n",i,key/10,(key%100)%10);
 		}
 		else if(i==3)
 		{
-			DrawPic_Real(340,62,7,SBnum_B_XY[key/100][0][0],SBnum_B_XY[key/100][0][1],SBnum_B_XY[key/100][1][0],SBnum_B_XY[key/100][1][1]);
-			DrawPic_Real(380,62,7,SBnum_B_XY[(key%100)/10][0][0],SBnum_B_XY[(key%100)/10][0][1],SBnum_B_XY[(key%100)/10][1][0],SBnum_B_XY[(key%100)/10][1][1]);
-			DrawPic_Real(420,62,7,SBnum_B_XY[(key%100)%10][0][0],SBnum_B_XY[(key%100)%10][0][1],SBnum_B_XY[(key%100)%10][1][0],SBnum_B_XY[(key%100)%10][1][1]);
+		
+			if((key/100)==3||(key/100)==4)
+			{
+				DrawIcon_Real(340,62,(key/100)-3);
+			}
+			else
+			{
+				DrawPic_Real(340,62,7,SBnum_B_XY[key/100][0][0],SBnum_B_XY[key/100][0][1],SBnum_B_XY[key/100][1][0],SBnum_B_XY[key/100][1][1]);
+			}
+			
+			if(((key%100)/10)==3||((key%100)/10)==4)
+			{
+				DrawIcon_Real(380,62,((key%100)/10)-3);
+			}
+			else
+			{
+				DrawPic_Real(380,62,7,SBnum_B_XY[(key%100)/10][0][0],SBnum_B_XY[(key%100)/10][0][1],SBnum_B_XY[(key%100)/10][1][0],SBnum_B_XY[(key%100)/10][1][1]);
+			}
+			
+			if(((key%100)%10)==3||((key%100)%10)==4)
+			{
+				DrawIcon_Real(420,62,((key%100)%10)-3);
+			}
+			else
+			{
+				DrawPic_Real(420,62,7,SBnum_B_XY[(key%100)%10][0][0],SBnum_B_XY[(key%100)%10][0][1],SBnum_B_XY[(key%100)%10][1][0],SBnum_B_XY[(key%100)%10][1][1]);
+			}
 			rt_kprintf("ooo%d=>%d%d%d pressed , draw it\r\n",i,key/100,(key%100)/10,(key%100)%10);
 		}
 		
