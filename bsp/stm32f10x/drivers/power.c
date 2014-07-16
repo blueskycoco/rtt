@@ -1,6 +1,6 @@
 #include "stm32f10x.h"
 #include "power.h"
-#define INVALID_ADC_VALUE 100
+#define INVALID_ADC_VALUE 2000
 PowerMan_t pm = {0};
 I2C_InitTypeDef  I2C_InitStructure;
 #define DEBUG rt_kprintf
@@ -15,7 +15,7 @@ void pin_init1()
 	 GPIO_InitTypeDef GPIO_InitStructure;
 	 ADC_InitTypeDef ADC_InitStructure;
 	 /* Enable GPIOB,E,F,G clock */
-	 DEBUG("power pin init 2\r\n");
+	 //DEBUG("power pin init 2\r\n");
 	 RCC_ADCCLKConfig(RCC_PCLK2_Div4); 
 	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
@@ -95,7 +95,7 @@ void pin_init1()
 	 I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
 	 I2C_InitStructure.I2C_ClockSpeed = 50000;
 	 I2C_Init(I2C2, &I2C_InitStructure);
-	 DEBUG("power pin init 1\r\n");
+	 //DEBUG("power pin init 1\r\n");
 	 I2C_CalculatePEC(I2C2, ENABLE);
 
 	 ADC_InitStructure.ADC_Mode = ADC_Mode_Independent;
@@ -111,7 +111,7 @@ void pin_init1()
 
 	 ADC_StartCalibration(ADC3);
 	 while(ADC_GetCalibrationStatus(ADC3));
-	 DEBUG("power pin init over\r\n");
+	 //DEBUG("power pin init over\r\n");
 }
 
 uint16_t read_adc(uint8_t channel)
@@ -123,8 +123,21 @@ uint16_t read_adc(uint8_t channel)
 
 	 while(ADC_GetFlagStatus(ADC3,ADC_FLAG_EOC)==RESET);
 
-	 value=ADC_GetConversionValue(ADC3);
-	 DEBUG("adc %d, val %d\r\n",channel,value);
+	 value=ADC_GetConversionValue(ADC3);//*3300/0xfff;
+	 switch(channel)
+ 	{
+	 	case 4:
+	 		DEBUG("BATS_AB_MON_I val %d\r\n",value);
+			break;
+		case 6:
+	 		DEBUG("BATS_A_V_MON val %d\r\n",value);
+			break;
+		case 7:
+	 		DEBUG("BATS_B_V_MON val %d\r\n",value);
+			break;
+		default:
+			break;
+ 	}
 	 return value;
 }
 int check_timeout(int flag)
@@ -202,8 +215,8 @@ int read_batt_info(uint8_t channel)
 	 i2c_smbus_read_block_data(0x0B,0x0f,2,(uint8_t *)&(pm.ps[channel].energyNow));
 	 i2c_smbus_read_block_data(0x0B,0x17,2,(uint8_t *)&(pm.ps[channel].cycleNum));
 	 i2c_smbus_read_block_data(0x0B,0x12,2,(uint8_t *)&(pm.ps[channel].thisWorkTime));
-	 DEBUG("ID %x , volatge %x, current %x, energyAll %x , energyNow %x , cycleNum %x ,thisWorkTime %x\r\n",\
-			   pm.ps[channel].ID,pm.ps[channel].voltage,pm.ps[channel].current,pm.ps[channel].energyAll,pm.ps[channel].energyNow\
+	 DEBUG("ID %x , volatge %d.%d, current %x, energyAll %d , energyNow %d , cycleNum %d ,thisWorkTime %d\r\n",\
+			   pm.ps[channel].ID,pm.ps[channel].voltage/1000,pm.ps[channel].voltage%1000,pm.ps[channel].current,pm.ps[channel].energyAll,pm.ps[channel].energyNow\
 			   ,pm.ps[channel].cycleNum,pm.ps[channel].thisWorkTime);
 	 return 0;
 }
@@ -227,7 +240,6 @@ uint8_t check_power(uint8_t channel)
 			   GPIO_ResetBits(BATS_I2C_SEL_PORT, BATS_I2C_SEL_PIN);
 		  }
 		  power_type=check_battery_li();
-		  DEBUG("channel %d , power_type is %d\r\n",channel,power_type);
 		  if(channel==0)
 		  {
 			   if(power_type==1)
@@ -268,6 +280,7 @@ uint8_t check_power(uint8_t channel)
 		  {
 
 			   pm.ps[channel].available=0;
+			   pm.ps[channel].type=POWER_UNKNOWN;
 		  }
 
 		  if(power_type)
@@ -281,12 +294,18 @@ uint8_t check_power(uint8_t channel)
 			   else
 			   {
 					pm.ps[channel].type=POWER_UNKNOWN;
+					pm.ps[channel].available=0;
 			   }
 		  }
 		  pm.ps[channel].voltage=vol;
 		  if(pm.ps[channel].type==POWER_BATTERY_LI)
 			   read_batt_info(channel);
-
+		  if(pm.ps[channel].type==POWER_BATTERY_LI)
+		  DEBUG("channel %s , power_type is Smart Battery\r\n",(channel==0)?"BATS_A":"BATS_B");
+		   if(pm.ps[channel].type==POWER_ADAPTER)
+		  DEBUG("channel %s , power_type is Charger\r\n",(channel==0)?"BATS_A":"BATS_B");
+		    if(pm.ps[channel].type==POWER_UNKNOWN)
+		  DEBUG("channel %s , power_type is Not Connect\r\n",(channel==0)?"BATS_A":"BATS_B");
 	 }
 	 else
 	 {
@@ -355,6 +374,7 @@ uint8_t select_power()
 }
 void switch_power(uint8_t no)
 {
+	//DEBUG("To select power index %s\r\n",(no==0)?"BATS_A":"BATS_B");
 	 if(no==0)/*Ñ¡Ôñ²å²ÛA*/
 	 {
 		  GPIO_SetBits(BATS_SEL_A_PORT, BATS_SEL_A_PIN);
@@ -363,6 +383,7 @@ void switch_power(uint8_t no)
 		  GPIO_SetBits(BATS_SEL_STAB_PORT, BATS_SEL_STAB_PIN);
 		  //GPIO_SetBits(BATS_SEL_C_PORT, BATS_SEL_C_PIN);
 		  //GPIO_ResetBits(BATS_SEL_STAC_PORT, BATS_SEL_STAC_PIN);
+		  DEBUG("To select power index BATS_A\r\n");
 	 }else if(no==1)/*Ñ¡Ôñ²å²ÛB*/
 	 {
 		  GPIO_ResetBits(BATS_SEL_A_PORT, BATS_SEL_A_PIN);
@@ -371,8 +392,10 @@ void switch_power(uint8_t no)
 		  GPIO_ResetBits(BATS_SEL_STAB_PORT, BATS_SEL_STAB_PIN);
 		  //GPIO_SetBits(BATS_SEL_C_PORT, BATS_SEL_C_PIN);
 		  //GPIO_ResetBits(BATS_SEL_STAC_PORT, BATS_SEL_STAC_PIN);
-	 }
-#if 0
+		  DEBUG("To select power index BATS_B\r\n");
+	 }else
+	 	DEBUG("To select power index UnKnown\r\n");
+	#if 0
 		  else/*Ñ¡Ôñ²å²ÛC*/
 	 {
 		  GPIO_ResetBits(BATS_SEL_A_PORT, BATS_SEL_A_PIN);
@@ -382,7 +405,7 @@ void switch_power(uint8_t no)
 		  GPIO_ResetBits(BATS_SEL_C_PORT, BATS_SEL_C_PIN);
 		  GPIO_SetBits(BATS_SEL_STAC_PORT, BATS_SEL_STAC_PIN);
 	 }
-		  #endif
+	#endif
 }
 PowerMan_t power_man_timer_poll(int16_t min_vol,int16_t max_vol)
 {
@@ -390,7 +413,7 @@ PowerMan_t power_man_timer_poll(int16_t min_vol,int16_t max_vol)
 	 pm.minVoltage=min_vol;
 	 pm.maxVoltage=max_vol;
 
-	 for(i=0;i<3;i++)
+	 for(i=0;i<2;i++)
 		  check_power(i);
 	 pm.currentPs=select_power();
 	 pm.power=read_adc(ADC_Channel_4)*pm.ps[pm.currentPs].voltage;
@@ -400,9 +423,9 @@ void power_man_timer_interrupt()
 {
 	 int16_t vol;
 	 int channel;
-	 for(channel=0;channel<3;channel++)
+	 for(channel=0;channel<2;channel++)
 	 {
-		  vol=read_adc(ADC_Channel_6);
+		  vol=read_adc(ADC_Channel_6+channel);
 		  if(vol<pm.minVoltage || vol>pm.maxVoltage)
 			   pm.ps[channel].available=0;
 	 }
@@ -423,7 +446,7 @@ uint8_t power_man_init(int16_t min_vol,int16_t max_vol)
 	 pm.ps[1].available=0;
 	 pm.ps[2].type=POWER_UNKNOWN;
 	 pm.ps[2].available=0;
-	 for(i=0;i<3;i++)
+	 for(i=0;i<2;i++)
 		  check_power(i);
 	 pm.currentPs=select_power();
 	 pm.power=read_adc(ADC_Channel_4)*pm.ps[pm.currentPs].voltage;

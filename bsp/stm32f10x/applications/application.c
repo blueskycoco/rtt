@@ -99,7 +99,7 @@ static void power_thread_entry(void* parameter)
     {
         	   rt_thread_delay(100);
 	   power_man_timer_poll(100,2000);
-	   //power_man_timer_interrupt();
+	   power_man_timer_interrupt();
     }
 }
 static void cc1101_thread_entry(void* parameter)
