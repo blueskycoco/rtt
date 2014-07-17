@@ -1,6 +1,6 @@
 #include "stm32f10x.h"
 #include "power.h"
-#define INVALID_ADC_VALUE 2000
+#define INVALID_ADC_VALUE 700
 PowerMan_t pm = {0};
 I2C_InitTypeDef  I2C_InitStructure;
 #define DEBUG rt_kprintf
