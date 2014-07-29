@@ -43,7 +43,7 @@
 #define FINSH_CMD_SIZE		80
 
 #define FINSH_OPTION_ECHO	0x01
-#if defined(RT_USING_DFS) && defined(DFS_USING_WORKDIR)
+#if defined(FINSH_USING_MSH) || (defined(RT_USING_DFS) && defined(DFS_USING_WORKDIR))
 #define FINSH_PROMPT		finsh_get_prompt()
 const char* finsh_get_prompt(void);
 #else
@@ -77,7 +77,9 @@ struct finsh_shell
 	char cmd_history[FINSH_HISTORY_LINES][FINSH_CMD_SIZE];
 #endif
 
+#ifndef FINSH_USING_MSH_ONLY
 	struct finsh_parser parser;
+#endif
 
 	char line[FINSH_CMD_SIZE];
 	rt_uint8_t line_position;

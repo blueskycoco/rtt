@@ -56,7 +56,6 @@ int uart_config()
 	/* Enable USART clock */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 
-
 	/* Connect PXx to USARTx_Tx */
 	GPIO_PinAFConfig(UART1_GPIO, UART1_GPIO_TX_SOURCE, UART1_GPIO_AF);
 
