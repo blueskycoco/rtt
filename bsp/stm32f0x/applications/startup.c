@@ -75,16 +75,12 @@ void rtthread_startup(void)
 
 	/* init kernel object */
 	rt_system_object_init();
-
 	/* init timer system */
 	rt_system_timer_init();
-
 #ifdef RT_USING_HEAP
     rt_system_heap_init((void*)STM32_SRAM_BEGIN, (void*)STM32_SRAM_END);
 #endif
 
-	rt_hw_led_init();
-	rt_hw_led2_off();
 	//while(1);
 	/* init scheduler system */
 	rt_system_scheduler_init();

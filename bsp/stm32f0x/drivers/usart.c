@@ -46,11 +46,11 @@ int uart_config()
 {
 	USART_InitTypeDef USART_InitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure;
-	rbuffer=rt_malloc(sizeof(struct serial_ringbuffer));
+	/*rbuffer=rt_malloc(sizeof(struct serial_ringbuffer));
 	rt_memset(rbuffer->buffer, 0, sizeof(rbuffer->buffer));
 	rbuffer->put_index = 0;
 	rbuffer->get_index = 0;
-
+*/
 	/* Enable GPIO clock */
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 	/* Enable USART clock */
@@ -329,5 +329,5 @@ void wifi_wakeup()
 	wifi_send("a",1);
 
 }
-INIT_DEVICE_EXPORT(uart_config);
+//INIT_DEVICE_EXPORT(uart_config);
 

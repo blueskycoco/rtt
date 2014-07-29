@@ -27,6 +27,7 @@
 #endif  /* RT_USING_COMPONENTS_INIT */
 
 #include "led.h"
+#if 0
 #define ENV_FLASH_ADDR 	((uint32_t)0x08003fe0)
 #define FLASH_PAGE_SIZE 	((uint32_t)0x00000400)
 #define BATTERY_ADC_CHANNEL	9
@@ -744,7 +745,20 @@ hum_interface_state_old=hum_interface_state_new;
 #endif
   }
 }
-
+#else
+static void system_thread_check_entry(void* parameter)
+{
+	while(1)
+	{
+		rt_kprintf("led off\r\n");
+		rt_hw_led2_off();
+		rt_thread_delay(100);
+		rt_kprintf("led on\r\n");
+		rt_hw_led2_on();
+		rt_thread_delay(100);
+	}
+}
+#endif
 static void rt_init_thread_entry(void* parameter)
 {
   rt_thread_t system_thread;
@@ -759,6 +773,7 @@ static void rt_init_thread_entry(void* parameter)
   finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif  /* RT_USING_FINSH */
   rt_hw_led1_off();
+#if 0
   /*init g_env */
   if(read_env()!=1)
   {
@@ -775,7 +790,7 @@ static void rt_init_thread_entry(void* parameter)
 	g_sys_env.hum_plus=100;
 	g_sys_env.b_hum_local_force_stop=0;
   }
-
+#endif
 
   /* Create led thread */    
   //system_thread = rt_thread_create("param_get",

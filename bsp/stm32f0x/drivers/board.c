@@ -141,13 +141,14 @@ void rt_hw_board_init()
 	/* Configure the SysTick */
 	RCC_Configuration();
 	SysTick_Config(SystemCoreClock / RT_TICK_PER_SECOND);
-
 	/* Initial usart deriver, and set console device */
-	//uart_config();
+	uart_config();
     	//rt_hw_batt_init();
 #ifdef RT_USING_CONSOLE
 	//rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif
+	rt_hw_led_init();
+	rt_hw_led2_on();
 	/* Print RCC freq info */
 #ifdef PRINT_RCC_FREQ_INFO
 	print_rcc_freq_info();
@@ -162,7 +163,7 @@ void rt_hw_board_init()
 void rt_hw_console_output(const char* string)
 {
 //rt_hw_led1_on();
-#if 0
+#if 1
 	while (*string)
 	{
 		if (*string=='\n')
