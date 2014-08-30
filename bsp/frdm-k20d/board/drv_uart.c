@@ -117,18 +117,18 @@ static rt_err_t _configure(struct rt_serial_device *serial, struct serial_config
         reg_BRFA = ((SystemCoreClock * 32) / (cfg->baud_rate * 16)) - (cal_SBR * 32);
 
         reg_C4 = (unsigned char)(reg_BRFA & 0x001F);
-/*
-        SIM_SOPT5 &= ~ SIM_SOPT5_UART0RXSRC(0);
-        SIM_SOPT5 |= SIM_SOPT5_UART0RXSRC(0);
-        SIM_SOPT5 &= ~ SIM_SOPT5_UART0TXSRC(0);
-        SIM_SOPT5 |= SIM_SOPT5_UART0TXSRC(0);
+
+        SIM->SOPT5 &= ~ SIM_SOPT5_UART0RXSRC(0);
+        SIM->SOPT5 |= SIM_SOPT5_UART0RXSRC(0);
+        SIM->SOPT5 &= ~ SIM_SOPT5_UART0TXSRC(0);
+        SIM->SOPT5 |= SIM_SOPT5_UART0TXSRC(0);
 
         // set UART0 clock
         // Enable UART gate clocking
         // Enable PORTE gate clocking
-        SIM_SCGC4 |= SIM_SCGC4_UART0_MASK;
-        SIM_SCGC5 |= SIM_SCGC5_PORTB_MASK;
-*/
+        SIM->SCGC4 |= SIM_SCGC4_UART0_MASK;
+        SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
+
         // set UART0 pin
         PORTB->PCR[16] &= ~(3UL <<  8);
         PORTB->PCR[16] |= (3UL <<  8);      // Pin mux configured as ALT3
