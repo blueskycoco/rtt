@@ -32,21 +32,21 @@
 
 // <o> Console on USART: <0=> no console <1=>USART 1 <2=>USART 2 <3=> USART 3
 // <i>Default: 1
-#define K64_CONSOLE_USART        0
+#define K20_CONSOLE_USART        0
 
 void rt_hw_board_init(void);
 
-#if K64_CONSOLE_USART == 0
+#if K20_CONSOLE_USART == 0
 #define CONSOLE_DEVICE "uart0"
-#elif K64_CONSOLE_USART == 1
+#elif K20_CONSOLE_USART == 1
 #define CONSOLE_DEVICE "uart1"
-#elif K64_CONSOLE_USART == 2
+#elif K20_CONSOLE_USART == 2
 #define CONSOLE_DEVICE "uart2"
-#elif K64_CONSOLE_USART == 3
+#elif K20_CONSOLE_USART == 3
 #define CONSOLE_DEVICE "uart3"
-#elif K64_CONSOLE_USART == 4
+#elif K20_CONSOLE_USART == 4
 #define CONSOLE_DEVICE "uart4"
-#elif K64_CONSOLE_USART == 5
+#elif K20_CONSOLE_USART == 5
 #define CONSOLE_DEVICE "uart5"
 #endif
 
