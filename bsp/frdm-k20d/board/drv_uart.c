@@ -15,9 +15,9 @@
 
 #include "drv_uart.h"
 
-static struct rt_serial_device _k64_serial;  //abstracted serial for RTT
+static struct rt_serial_device _k20_serial;  //abstracted serial for RTT
 
-struct k64_serial_device
+struct k20_serial_device
 {
     /* UART base address */
     UART_Type *baseAddress;
@@ -30,7 +30,7 @@ struct k64_serial_device
 };
 
 //hardware abstract device
-static struct k64_serial_device _k64_node =
+static struct k20_serial_device _k20_node =
 {
     (UART_Type *)UART0,
     UART0_RX_TX_IRQn,
@@ -45,7 +45,7 @@ static rt_err_t _configure(struct rt_serial_device *serial, struct serial_config
     /* ref : drivers\system_MK60F12.c Line 64 ,BusClock = 60MHz
      * calculate baud_rate
      */
-    uart_reg = ((struct k64_serial_device *)serial->parent.user_data)->baseAddress;
+    uart_reg = ((struct k20_serial_device *)serial->parent.user_data)->baseAddress;
 
     /*
      * set bit order
@@ -164,8 +164,8 @@ static rt_err_t _control(struct rt_serial_device *serial, int cmd, void *arg)
     UART_Type *uart_reg;
     int uart_irq_num = 0;
 
-    uart_reg = ((struct k64_serial_device *)serial->parent.user_data)->baseAddress;
-    uart_irq_num = ((struct k64_serial_device *)serial->parent.user_data)->irq_num;
+    uart_reg = ((struct k20_serial_device *)serial->parent.user_data)->baseAddress;
+    uart_irq_num = ((struct k20_serial_device *)serial->parent.user_data)->irq_num;
 
     switch (cmd)
     {
@@ -200,7 +200,7 @@ static rt_err_t _control(struct rt_serial_device *serial, int cmd, void *arg)
 static int _putc(struct rt_serial_device *serial, char c)
 {
     UART_Type *uart_reg;
-    uart_reg = ((struct k64_serial_device *)serial->parent.user_data)->baseAddress;
+    uart_reg = ((struct k20_serial_device *)serial->parent.user_data)->baseAddress;
 
     while (!(uart_reg->S1 & UART_S1_TDRE_MASK));
     uart_reg->D = (c & 0xFF);
@@ -210,7 +210,7 @@ static int _putc(struct rt_serial_device *serial, char c)
 static int _getc(struct rt_serial_device *serial)
 {
     UART_Type *uart_reg;
-    uart_reg = ((struct k64_serial_device *)serial->parent.user_data)->baseAddress;
+    uart_reg = ((struct k20_serial_device *)serial->parent.user_data)->baseAddress;
 
     if (uart_reg->S1 & UART_S1_RDRF_MASK)
         return (uart_reg->D);
@@ -218,7 +218,7 @@ static int _getc(struct rt_serial_device *serial)
         return -1;
 }
 
-static const struct rt_uart_ops _k64_ops =
+static const struct rt_uart_ops _k20_ops =
 {
     _configure,
     _control,
@@ -230,7 +230,7 @@ static const struct rt_uart_ops _k64_ops =
 void UART0_RX_TX_IRQHandler(void)
 {
     rt_interrupt_enter();
-    rt_hw_serial_isr((struct rt_serial_device*)&_k64_serial, RT_SERIAL_EVENT_RX_IND);
+    rt_hw_serial_isr((struct rt_serial_device*)&_k20_serial, RT_SERIAL_EVENT_RX_IND);
     rt_interrupt_leave();
 }
 
@@ -248,12 +248,12 @@ void rt_hw_uart_init(void)
     config.invert    = NRZ_NORMAL;
 	config.bufsz	 = RT_SERIAL_RB_BUFSZ;
 
-    _k64_serial.ops    = &_k64_ops;
-    _k64_serial.config = config;
+    _k20_serial.ops    = &_k20_ops;
+    _k20_serial.config = config;
 
-    rt_hw_serial_register(&_k64_serial, "uart0",
+    rt_hw_serial_register(&_k20_serial, "uart0",
                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
-                          (void*)&_k64_node);
+                          (void*)&_k20_node);
 }
 
 void rt_hw_console_output(const char *str)
@@ -261,8 +261,8 @@ void rt_hw_console_output(const char *str)
     while(*str != '\0')
     {
         if (*str == '\n')
-            _putc(&_k64_serial,'\r');
-        _putc(&_k64_serial,*str);
+            _putc(&_k20_serial,'\r');
+        _putc(&_k20_serial,*str);
         str++;
     }
 }

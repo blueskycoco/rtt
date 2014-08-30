@@ -81,7 +81,7 @@ static void rt_thread_entry_led1(void* parameter)
 
         n++;
 
-        if (n == LED_MAX)
+        if (n == LED_MAX+1)
             n = 0;
     }
 }
