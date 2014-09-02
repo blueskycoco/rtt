@@ -6,16 +6,16 @@ from building import *
 cwd = GetCurrentDir()
 
 path = [cwd, cwd + '/MK20DX256VLL/inc']
-#src = Glob('MK20DX256VLL/drivers/*.c')
+src = Glob('system_MK20D7.c')
 
 #add for startup script 
 if rtconfig.CROSS_TOOL == 'gcc':
-     src = ['TOOLCHAIN_GCC_ARM/startup_MK20DX256VLL.S']
+     src = src + ['TOOLCHAIN_GCC_ARM/startup_MK20DX256VLL.S']
      src = src + ['TOOLCHAIN_GCC_ARM/startup.c']
-     src = src + ['TOOLCHAIN_GCC_ARM/system_MK20D7.c']
+     
      path += [cwd + 'TOOLCHAIN_GCC_ARM']
 elif rtconfig.CROSS_TOOL == 'keil':
-     src = src + ['TOOLCHAIN_ARM_STD/startup_MK64F12.s']
+     src = src + ['TOOLCHAIN_ARM_STD/startup_MK20D7.s']
 # elif rtconfig.CROSS_TOOL == 'iar':
 
 #CPPDEFINES = ['']

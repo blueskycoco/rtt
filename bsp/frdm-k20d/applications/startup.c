@@ -31,10 +31,10 @@ extern void finsh_set_device(const char* device);
 
 #ifdef __CC_ARM
 extern int Image$$RW_IRAM1$$ZI$$Limit;
-#define K64_SRAM_BEGIN    (&Image$$RW_IRAM1$$ZI$$Limit)
+#define K20_SRAM_BEGIN    (&Image$$RW_IRAM1$$ZI$$Limit)
 #elif __ICCARM__
 #pragma section="HEAP"
-#define K64_SRAM_BEGIN    (__segment_end("HEAP"))
+#define K20_SRAM_BEGIN    (__segment_end("HEAP"))
 #else
 extern int __bss_end;
 #define K20_SRAM_BEGIN    (&__bss_end)

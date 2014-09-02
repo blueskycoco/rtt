@@ -9,14 +9,14 @@
       <ToolsetName>ARM-ADS</ToolsetName>
       <TargetOption>
         <TargetCommonOption>
-          <Device>MK64FN1M0xxx12</Device>
+          <Device>MK20DX256xxx7</Device>
           <Vendor>Freescale Semiconductor</Vendor>
-          <Cpu>IRAM(0x1FFF0000-0x1FFFFFFF) IRAM2(0x20000000-0x2002FFFF) IROM(0x0-0xFFFFF) CLOCK(12000000) CPUTYPE("Cortex-M4")  FPU2 ELITTLE</Cpu>
+          <Cpu>IRAM(0x1FFF8000-0x1FFFFFFF) IRAM2(0x20000000-0x20007FFF) IROM(0x0-0x3FFFF) IROM2(0x10000000-0x10007FFF) CLOCK(12000000) CPUTYPE("Cortex-M4") ELITTLE</Cpu>
           <FlashUtilSpec />
-          <StartupFile>"STARTUP\Freescale\Kinetis\startup_MK64F12.s" ("Freescale MK64Xxxxxxx12 Startup Code")</StartupFile>
-          <FlashDriverDll>UL2CM3(-O2511 -S0 -C0 -FO15 -FD20000000 -FC4000 -FN1 -FF0MK_P1M0 -FS00 -FL0100000)</FlashDriverDll>
-          <DeviceId>7425</DeviceId>
-          <RegisterFile>MK64F12.H</RegisterFile>
+          <StartupFile>"STARTUP\Freescale\Kinetis\startup_MK20D7.s" ("Freescale MK20Xxxxxxx7 Startup Code")</StartupFile>
+          <FlashDriverDll>ULP2CM3(-O2510 -S0 -C0 -FO15 -FD20000000 -FC800 -FN2 -FF0MK_P256 -FS00 -FL040000 -FF1MK_D32_72MHZ -FS110000000 -FL108000)</FlashDriverDll>
+          <DeviceId>6298</DeviceId>
+          <RegisterFile>MK20D7.H</RegisterFile>
           <MemoryEnv />
           <Cmp />
           <Asm />
@@ -26,8 +26,7 @@
           <SLE66CMisc />
           <SLE66AMisc />
           <SLE66LinkerMisc />
-          <SFDFile>SFD\Freescale\Kinetis\MK64F12.sfr</SFDFile>
-          <bCustSvd>0</bCustSvd>
+          <SFDFile>SFD\Freescale\Kinetis\MK20D7.sfr</SFDFile>
           <UseEnv>0</UseEnv>
           <BinPath />
           <IncludePath />
@@ -42,10 +41,10 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\build\</OutputDirectory>
-          <OutputName>rt-thread-k64f</OutputName>
+          <OutputName>rt-thread-k20d</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
-          <CreateHexFile>0</CreateHexFile>
+          <CreateHexFile>1</CreateHexFile>
           <DebugInformation>1</DebugInformation>
           <BrowseInformation>1</BrowseInformation>
           <ListingPath>.\build\</ListingPath>
@@ -72,9 +71,9 @@
           </BeforeMake>
           <AfterMake>
             <RunUserProg1>0</RunUserProg1>
-            <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name />
-            <UserProg2Name />
+            <RunUserProg2>1</RunUserProg2>
+            <UserProg1Name>D:\Keil\ARM\ARMCC\BIN\fromelf.exe --bin rtthread-k20d.axf -o rtthread.bin</UserProg1Name>
+            <UserProg2Name>fromelf.exe --bin -o .\build\rtthread.bin .\build\rt-thread-k20d.axf</UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
           </AfterMake>
@@ -95,7 +94,6 @@
           <StopOnExitCode>3</StopOnExitCode>
           <CustomArgument />
           <IncludeLibraryModules />
-          <ComprImg>1</ComprImg>
         </CommonProperty>
         <DllOption>
           <SimDllName>SARMCM3.DLL</SimDllName>
@@ -138,7 +136,7 @@
             <RestoreTracepoints>1</RestoreTracepoints>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>13</TargetSelection>
+          <TargetSelection>14</TargetSelection>
           <SimDlls>
             <CpuDll />
             <CpuDllArguments />
@@ -162,16 +160,12 @@
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
             <Capability>1</Capability>
-            <DriverSelection>4096</DriverSelection>
+            <DriverSelection>4100</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
-          <Flash2>BIN\UL2CM3.DLL</Flash2>
+          <Flash2>BIN\ULP2CM3.DLL</Flash2>
           <Flash3>"" ()</Flash3>
           <Flash4 />
-          <pFcarmOut />
-          <pFcarmGrp />
-          <pFcArmRoot />
-          <FcArmLst>0</FcArmLst>
         </Utilities>
         <TargetArmAds>
           <ArmAdsMisc>
@@ -211,9 +205,9 @@
             <hadIRAM>1</hadIRAM>
             <hadXRAM>0</hadXRAM>
             <uocXRam>0</uocXRam>
-            <RvdsVP>2</RvdsVP>
+            <RvdsVP>0</RvdsVP>
             <hadIRAM2>1</hadIRAM2>
-            <hadIROM2>0</hadIROM2>
+            <hadIROM2>1</hadIROM2>
             <StupSel>8</StupSel>
             <useUlib>0</useUlib>
             <EndSel>0</EndSel>
@@ -236,7 +230,7 @@
             <Ra2Chk>0</Ra2Chk>
             <Ra3Chk>0</Ra3Chk>
             <Im1Chk>1</Im1Chk>
-            <Im2Chk>0</Im2Chk>
+            <Im2Chk>1</Im2Chk>
             <OnChipMemories>
               <Ocm1>
                 <Type>0</Type>
@@ -270,13 +264,13 @@
               </Ocm6>
               <IRAM>
                 <Type>0</Type>
-                <StartAddress>0x1fff0000</StartAddress>
-                <Size>0x10000</Size>
+                <StartAddress>0x1fff8000</StartAddress>
+                <Size>0x8000</Size>
               </IRAM>
               <IROM>
                 <Type>1</Type>
                 <StartAddress>0x0</StartAddress>
-                <Size>0x100000</Size>
+                <Size>0x40000</Size>
               </IROM>
               <XRAM>
                 <Type>0</Type>
@@ -301,12 +295,12 @@
               <OCR_RVCT4>
                 <Type>1</Type>
                 <StartAddress>0x0</StartAddress>
-                <Size>0x100000</Size>
+                <Size>0x40000</Size>
               </OCR_RVCT4>
               <OCR_RVCT5>
                 <Type>1</Type>
-                <StartAddress>0x0</StartAddress>
-                <Size>0x0</Size>
+                <StartAddress>0x10000000</StartAddress>
+                <Size>0x8000</Size>
               </OCR_RVCT5>
               <OCR_RVCT6>
                 <Type>0</Type>
@@ -325,20 +319,20 @@
               </OCR_RVCT8>
               <OCR_RVCT9>
                 <Type>0</Type>
-                <StartAddress>0x1fff0000</StartAddress>
-                <Size>0x10000</Size>
+                <StartAddress>0x1fff8000</StartAddress>
+                <Size>0x8000</Size>
               </OCR_RVCT9>
               <OCR_RVCT10>
                 <Type>0</Type>
                 <StartAddress>0x20000000</StartAddress>
-                <Size>0x30000</Size>
+                <Size>0x8000</Size>
               </OCR_RVCT10>
             </OnChipMemories>
             <RvctStartVector />
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>1</Optim>
+            <Optim>2</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>0</OneElfS>
@@ -354,7 +348,7 @@
               <MiscControls />
               <Define />
               <Undefine />
-              <IncludePath>.;..\..\components\drivers\include;..\..\components\finsh;..\..\include;..\..\libcpu\arm\common;..\..\libcpu\arm\cortex-m4;applications;board;device;device\MK64F12</IncludePath>
+              <IncludePath>applications;.;board;device;device\MK20DX256VLL\inc;..\..\include;..\..\libcpu\arm\cortex-m4;..\..\libcpu\arm\common;..\..\components\drivers\include;..\..\components\drivers\include;..\..\components\finsh</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -437,16 +431,16 @@
           <GroupName>Device</GroupName>
           <Files>
             <File>
-              <FileName>system_MK64F12.c</FileName>
+              <FileName>system_MK20D7.c</FileName>
               <FileType>1</FileType>
-              <FilePath>device\MK64F12\system_MK64F12.c</FilePath>
+              <FilePath>device\system_MK20D7.c</FilePath>
             </File>
           </Files>
           <Files>
             <File>
-              <FileName>startup_MK64F12.s</FileName>
+              <FileName>startup_MK20D7.s</FileName>
               <FileType>2</FileType>
-              <FilePath>device\TOOLCHAIN_ARM_STD\startup_MK64F12.s</FilePath>
+              <FilePath>device\TOOLCHAIN_ARM_STD\startup_MK20D7.s</FilePath>
             </File>
           </Files>
         </Group>
@@ -617,6 +611,13 @@
               <FileName>ringbuffer.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\components\drivers\src\ringbuffer.c</FilePath>
+            </File>
+          </Files>
+          <Files>
+            <File>
+              <FileName>workqueue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\components\drivers\src\workqueue.c</FilePath>
             </File>
           </Files>
         </Group>
