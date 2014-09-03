@@ -32,7 +32,7 @@ struct k20_serial_device
 //hardware abstract device
 static struct k20_serial_device _k20_node =
 {
-    (UART_Type *)UART0,
+    (UART_Type *)UART0_BASE,
     UART0_RX_TX_IRQn,
 };
 
@@ -100,7 +100,7 @@ static rt_err_t _configure(struct rt_serial_device *serial, struct serial_config
      */
     case UART0_BASE:
             /* calc SBR */
-        cal_SBR = SystemCoreClock / (16 * cfg->baud_rate);
+        cal_SBR = /*SystemCoreClock*/(SystemCoreClock/(((SIM->CLKDIV1&SIM_CLKDIV1_OUTDIV2_MASK)>>SIM_CLKDIV1_OUTDIV2_SHIFT)+1)) / (16 * cfg->baud_rate);
 
         /* check to see if sbr is out of range of register bits */
         if ((cal_SBR > 0x1FFF) || (cal_SBR < 1))
@@ -114,15 +114,15 @@ static rt_err_t _configure(struct rt_serial_device *serial, struct serial_config
         reg_BDL = cal_SBR & 0x00FF;
 
         /* fractional divider */
-        reg_BRFA = ((SystemCoreClock * 32) / (cfg->baud_rate * 16)) - (cal_SBR * 32);
+        reg_BRFA = (((SystemCoreClock/(((SIM->CLKDIV1&SIM_CLKDIV1_OUTDIV2_MASK)>>SIM_CLKDIV1_OUTDIV2_SHIFT)+1)) * 32) / (cfg->baud_rate * 16)) - (cal_SBR * 32);
 
         reg_C4 = (unsigned char)(reg_BRFA & 0x001F);
 
-        SIM->SOPT5 &= ~ SIM_SOPT5_UART0RXSRC(0);
+   /*     SIM->SOPT5 &= ~ SIM_SOPT5_UART0RXSRC(0);
         SIM->SOPT5 |= SIM_SOPT5_UART0RXSRC(0);
         SIM->SOPT5 &= ~ SIM_SOPT5_UART0TXSRC(0);
         SIM->SOPT5 |= SIM_SOPT5_UART0TXSRC(0);
-
+*/
         // set UART0 clock
         // Enable UART gate clocking
         // Enable PORTE gate clocking
