@@ -17,9 +17,13 @@
 #define __BOARD_H__
 
 #include <MK20D7.h>
-
+#include "port.h"
+#include "flexbus.h"
 
 /* board configuration */
+#define K20D_EXT_SRAM          1
+#define K20D_EXT_SRAM_BEGIN    0x80000000 /* the begining address of external SRAM */
+#define K20D_EXT_SRAM_END      0x80010000 /* the end address of external SRAM */
 
 // <o> Internal SRAM memory size[Kbytes] <8-64>
 // <i>Default: 64
@@ -32,7 +36,7 @@
 
 // <o> Console on USART: <0=> no console <1=>USART 1 <2=>USART 2 <3=> USART 3
 // <i>Default: 1
-#define K20_CONSOLE_USART        0
+#define K20_CONSOLE_USART        4
 
 void rt_hw_board_init(void);
 

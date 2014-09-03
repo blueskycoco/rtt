@@ -77,9 +77,11 @@ void rtthread_startup(void)
 
     /* init timer system */
     rt_system_timer_init();
-
+#if K20D_EXT_SRAM
+    rt_system_heap_init((void*)K20D_EXT_SRAM_BEGIN, (void*)K20D_EXT_SRAM_END);
+#else
     rt_system_heap_init((void*)K20_SRAM_BEGIN, (void*)K20_SRAM_END);
-
+#endif
     /* init scheduler system */
     rt_system_scheduler_init();
 

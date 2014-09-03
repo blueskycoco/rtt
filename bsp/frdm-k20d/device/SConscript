@@ -6,7 +6,11 @@ from building import *
 cwd = GetCurrentDir()
 
 path = [cwd, cwd + '/MK20DX256VLL/inc']
-src = Glob('system_MK20D7.c')
+src = Split("""
+system_MK20D7.c
+MK20DX256VLL/drivers/flexbus.c
+MK20DX256VLL/drivers/port.c
+""")
 
 #add for startup script 
 if rtconfig.CROSS_TOOL == 'gcc':

@@ -15,7 +15,8 @@
 
 #include "drv_uart.h"
 
-static struct rt_serial_device _k20_serial;  //abstracted serial for RTT
+static struct rt_serial_device _k20_serial3;  //abstracted serial for RTT
+static struct rt_serial_device _k20_serial4;  //abstracted serial for RTT
 
 struct k20_serial_device
 {
@@ -30,10 +31,15 @@ struct k20_serial_device
 };
 
 //hardware abstract device
-static struct k20_serial_device _k20_node =
+/*static struct k20_serial_device _k20_node_3 =
 {
-    (UART_Type *)UART0_BASE,
-    UART0_RX_TX_IRQn,
+    (UART_Type *)UART3_BASE,
+    UART3_RX_TX_IRQn,
+};*/
+static struct k20_serial_device _k20_node_4 =
+{
+    (UART_Type *)UART4_BASE,
+    UART4_RX_TX_IRQn,
 };
 
 static rt_err_t _configure(struct rt_serial_device *serial, struct serial_configure *cfg)
@@ -98,7 +104,7 @@ static rt_err_t _configure(struct rt_serial_device *serial, struct serial_config
      * if you're using other board
      * set clock and pin map for UARTx
      */
-    case UART0_BASE:
+    case UART3_BASE:
             /* calc SBR */
         cal_SBR = /*SystemCoreClock*/(SystemCoreClock/(((SIM->CLKDIV1&SIM_CLKDIV1_OUTDIV2_MASK)>>SIM_CLKDIV1_OUTDIV2_SHIFT)+1)) / (16 * cfg->baud_rate);
 
@@ -118,24 +124,62 @@ static rt_err_t _configure(struct rt_serial_device *serial, struct serial_config
 
         reg_C4 = (unsigned char)(reg_BRFA & 0x001F);
 
-   /*     SIM->SOPT5 &= ~ SIM_SOPT5_UART0RXSRC(0);
-        SIM->SOPT5 |= SIM_SOPT5_UART0RXSRC(0);
-        SIM->SOPT5 &= ~ SIM_SOPT5_UART0TXSRC(0);
-        SIM->SOPT5 |= SIM_SOPT5_UART0TXSRC(0);
-*/
-        // set UART0 clock
+        /*SIM->SOPT5 &= ~ SIM_SOPT5_UART3RXSRC(0);
+        		SIM->SOPT5 |= SIM_SOPT5_UART0RXSRC(0);
+        		SIM->SOPT5 &= ~ SIM_SOPT5_UART0TXSRC(0);
+        		SIM->SOPT5 |= SIM_SOPT5_UART0TXSRC(0);
+	  */
+        // set UART3 clock
         // Enable UART gate clocking
         // Enable PORTE gate clocking
-        SIM->SCGC4 |= SIM_SCGC4_UART0_MASK;
-        SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
+        SIM->SCGC4 |= SIM_SCGC4_UART3_MASK;
+        SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;
 
-        // set UART0 pin
-        PORTB->PCR[16] &= ~(3UL <<  8);
-        PORTB->PCR[16] |= (3UL <<  8);      // Pin mux configured as ALT3
+        // set UART3 pin
+        PORTE->PCR[4] &= ~(3UL <<  8);
+        PORTE->PCR[4] |= (1UL <<  8);      // Pin mux configured as ALT3
 
-        PORTB->PCR[17] &= ~(3UL <<  8);
-        PORTB->PCR[17] |= (3UL <<  8);      // Pin mux configured as ALT3
+        PORTE->PCR[5] &= ~(3UL <<  8);
+        PORTE->PCR[5] |= (1UL <<  8);      // Pin mux configured as ALT3
         break;
+    case UART4_BASE:
+		    /* calc SBR */
+		cal_SBR = /*SystemCoreClock*/(SystemCoreClock/(((SIM->CLKDIV1&SIM_CLKDIV1_OUTDIV2_MASK)>>SIM_CLKDIV1_OUTDIV2_SHIFT)+1)) / (16 * cfg->baud_rate);
+	  
+		/* check to see if sbr is out of range of register bits */
+		if ((cal_SBR > 0x1FFF) || (cal_SBR < 1))
+		{
+		    /* unsupported baud rate for given source clock input*/
+		    return -RT_ERROR;
+		}
+	  
+		/* calc baud_rate */
+		reg_BDH = (cal_SBR & 0x1FFF) >> 8 & 0x00FF;
+		reg_BDL = cal_SBR & 0x00FF;
+	  
+		/* fractional divider */
+		reg_BRFA = (((SystemCoreClock/(((SIM->CLKDIV1&SIM_CLKDIV1_OUTDIV2_MASK)>>SIM_CLKDIV1_OUTDIV2_SHIFT)+1)) * 32) / (cfg->baud_rate * 16)) - (cal_SBR * 32);
+	  
+		reg_C4 = (unsigned char)(reg_BRFA & 0x001F);
+	  
+		/*SIM->SOPT5 &= ~ SIM_SOPT5_UART0RXSRC(0);
+		SIM->SOPT5 |= SIM_SOPT5_UART0RXSRC(0);
+		SIM->SOPT5 &= ~ SIM_SOPT5_UART0TXSRC(0);
+		SIM->SOPT5 |= SIM_SOPT5_UART0TXSRC(0);*/
+	  
+		// set UART4 clock
+		// Enable UART gate clocking
+		// Enable PORTE gate clocking
+		SIM->SCGC1 |= SIM_SCGC1_UART4_MASK;
+		SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
+	  
+		// set UART4 pin
+		PORTC->PCR[14] &= ~(3UL <<  8);
+		PORTC->PCR[14] |= (0UL <<  8);      // Pin mux configured as ALT3
+	  
+		PORTC->PCR[15] &= ~(3UL <<  8);
+		PORTC->PCR[15] |= (0UL <<  8);      // Pin mux configured as ALT3
+		break;
 
     default:
         return -RT_ERROR;
@@ -227,13 +271,19 @@ static const struct rt_uart_ops _k20_ops =
 };
 
 
-void UART0_RX_TX_IRQHandler(void)
+void UART3_RX_TX_IRQHandler(void)
 {
     rt_interrupt_enter();
-    rt_hw_serial_isr((struct rt_serial_device*)&_k20_serial, RT_SERIAL_EVENT_RX_IND);
+    rt_hw_serial_isr((struct rt_serial_device*)&_k20_serial3, RT_SERIAL_EVENT_RX_IND);
     rt_interrupt_leave();
 }
 
+void UART4_RX_TX_IRQHandler(void)
+{
+    rt_interrupt_enter();
+    rt_hw_serial_isr((struct rt_serial_device*)&_k20_serial4, RT_SERIAL_EVENT_RX_IND);
+    rt_interrupt_leave();
+}
 
 void rt_hw_uart_init(void)
 {
@@ -248,12 +298,18 @@ void rt_hw_uart_init(void)
     config.invert    = NRZ_NORMAL;
 	config.bufsz	 = RT_SERIAL_RB_BUFSZ;
 
-    _k20_serial.ops    = &_k20_ops;
-    _k20_serial.config = config;
-
-    rt_hw_serial_register(&_k20_serial, "uart0",
+    _k20_serial3.ops    = &_k20_ops;
+    _k20_serial3.config = config;
+    _k20_serial4.ops    = &_k20_ops;
+    _k20_serial4.config = config;
+	//uart3 conflict with sdhc pin*/
+    /*rt_hw_serial_register(&_k20_serial3, "uart3",
                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
-                          (void*)&_k20_node);
+                          (void*)&_k20_node_3);*/
+    
+    rt_hw_serial_register(&_k20_serial4, "uart4",
+                          RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
+                          (void*)&_k20_node_4);
 }
 
 void rt_hw_console_output(const char *str)
@@ -261,8 +317,8 @@ void rt_hw_console_output(const char *str)
     while(*str != '\0')
     {
         if (*str == '\n')
-            _putc(&_k20_serial,'\r');
-        _putc(&_k20_serial,*str);
+            _putc(&_k20_serial4,'\r');
+        _putc(&_k20_serial4,*str);
         str++;
     }
 }
