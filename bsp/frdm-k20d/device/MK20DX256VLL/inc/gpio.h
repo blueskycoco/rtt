@@ -45,45 +45,45 @@
 #define	IO_30 	((INT32U)0x40000000)
 #define	IO_31 	((INT32U)0x80000000)
 
-__inline void GPIO_BitDir ( GPIO_Type *PTx, INT32U bit_n, INT32U bit_dir)
+static __inline void GPIO_BitDir ( GPIO_Type *PTx, INT32U bit_n, INT32U bit_dir)
 {
 	(bit_dir == 0) ? (PTx->PDDR &= ~bit_n) : (PTx->PDDR |= bit_n);
 }
-__inline void GPIO_PortDir ( GPIO_Type *PTx, INT32U port_dir)
+static __inline void GPIO_PortDir ( GPIO_Type *PTx, INT32U port_dir)
 {
 	PTx->PDDR = port_dir;
 }
-__inline void GPIO_SetBit ( GPIO_Type *PTx, INT32U bit_n)
+static __inline void GPIO_SetBit ( GPIO_Type *PTx, INT32U bit_n)
 {
 	PTx->PSOR = bit_n;
 }
-__inline void GPIO_ClrBit ( GPIO_Type *PTx, INT32U bit_n)
+static __inline void GPIO_ClrBit ( GPIO_Type *PTx, INT32U bit_n)
 {
 	PTx->PCOR = bit_n;
 }
-__inline INT32U GPIO_RdPort ( GPIO_Type *PTx)
+static __inline INT32U GPIO_RdPort ( GPIO_Type *PTx)
 {
 	return (PTx->PDIR);
 }
-__inline INT32U GPIO_RdBit ( GPIO_Type *PTx, INT32U bit_n)
+static __inline INT32U GPIO_RdBit ( GPIO_Type *PTx, INT32U bit_n)
 {
 	INT32U ret;	
 	ret = ((PTx->PDIR & bit_n) == 0) ? (INT32U)0x0 : (INT32U)0x1;
 	return (ret);
 }
-__inline void GPIO_WrPort ( GPIO_Type *PTx, INT32U val)
+static __inline void GPIO_WrPort ( GPIO_Type *PTx, INT32U val)
 {
 	PTx->PDOR = val;
 }
-__inline void GPIO_WrBit ( GPIO_Type *PTx, INT32U bit_n, INT32U val)
+static __inline void GPIO_WrBit ( GPIO_Type *PTx, INT32U bit_n, INT32U val)
 {
 	(val == 0) ? (PTx->PDOR &= bit_n) : (PTx->PDOR |= bit_n);
 }
-__inline void GPIO_TogglePort ( GPIO_Type *PTx)
+static __inline void GPIO_TogglePort ( GPIO_Type *PTx)
 {
 	PTx->PTOR = (INT32U)0xFFFFFF;
 }
-__inline void GPIO_ToggleBit ( GPIO_Type *PTx, INT32U bit_n)
+static __inline void GPIO_ToggleBit ( GPIO_Type *PTx, INT32U bit_n)
 {
 	PTx->PTOR |= bit_n;
 }

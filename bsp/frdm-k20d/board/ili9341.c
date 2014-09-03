@@ -1,5 +1,6 @@
 #include "ili9341.h"
 
+
 // Compatible list:
 // ili9320 ili9325 ili9328
 // LG4531
@@ -28,8 +29,8 @@
 
 /* LCD is connected to the FSMC_Bank1_NOR/SRAM2 and NE2 is used as ship select signal */
 /* RS <==> A2 */
-#define LCD_REG              (*((volatile unsigned short *) 0x64000000)) /* RS = 0 */
-#define LCD_RAM              (*((volatile unsigned short *) 0x64000008)) /* RS = 1 */
+#define LCD_REG              (*((volatile unsigned short *) 0x60000000)) /* RS = 0 */
+#define LCD_RAM              (*((volatile unsigned short *) 0x60000002)) /* RS = 1 */
 
 static void LCD_FSMCConfig(void)
 {
@@ -143,6 +144,7 @@ static void LCD_FSMCConfig(void)
     FSMC_NORSRAMInit(&FSMC_NORSRAMInitStructure);
     FSMC_NORSRAMCmd(FSMC_Bank1_NORSRAM2, ENABLE);
     #endif
+
 }
 
 static void delay(int cnt)
@@ -158,20 +160,49 @@ static void lcd_port_init(void)
 {
     LCD_FSMCConfig();
 }
+lcd_inline void wr_cmd(unsigned char cmd)
+{
+	GLCD_CS_L();
+	GLCD_RS_L();
+	LCD_REG  = cmd;
+	GLCD_CS_H();
+}
+
+lcd_inline void wr_data(unsigned char dat)
+{
+	unsigned short _dat = 0x100;
+	_dat |= dat;
+	GLCD_CS_L();
+	GLCD_RS_H();
+	LCD_RAM  = dat;
+	GLCD_CS_H();
+}
 
 lcd_inline void write_cmd(unsigned short cmd)
 {
-    LCD_REG = cmd;
+	GLCD_CS_L();
+	GLCD_RS_L();
+      LCD_REG = cmd;
+      GLCD_CS_H();
 }
 
 lcd_inline unsigned short read_data(void)
 {
-    return LCD_RAM;
+	volatile unsigned short data;
+
+	GLCD_CS_L();
+	GLCD_RS_H();
+      data= LCD_RAM;
+      GLCD_CS_H();
+	return data;
 }
 
 lcd_inline void write_data(unsigned short data_code )
 {
-    LCD_RAM = data_code;
+	GLCD_CS_L();
+	GLCD_RS_H();
+      LCD_RAM = data_code;
+      GLCD_CS_H();
 }
 
 lcd_inline void write_reg(unsigned char reg_addr,unsigned short reg_val)
@@ -285,277 +316,122 @@ void lcd_Initializtion(void)
     lcd_port_init();
     deviceid = read_reg(0x00);
 
-    /* deviceid check */
-    if(
-        (deviceid != 0x4531)
-        && (deviceid != 0x7783)
-        && (deviceid != 0x9320)
-        && (deviceid != 0x9325)
-        && (deviceid != 0x9328)
-        && (deviceid != 0x9300)
-    )
-    {
-        printf("Invalid LCD ID:%08X\r\n",deviceid);
-        printf("Please check you hardware and configure.");
-        //while(1);
-        return ;
-    }
-    else
-    {
-        printf("\r\nLCD Device ID : %04X ",deviceid);
-    }
-
-    if (deviceid==0x9325|| deviceid==0x9328)
-    {
-        write_reg(0x00e7,0x0010);
-        write_reg(0x0000,0x0001);  			        //start internal osc
-#if defined(_ILI_REVERSE_DIRECTION_)
-        write_reg(0x0001,0x0000);                    //Reverse Display
-#else
-        write_reg(0x0001,0x0100);                    //
-#endif
-        write_reg(0x0002,0x0700); 				    //power on sequence
-        /* [5:4]-ID1~ID0 [3]-AM-1垂直-0水平 */
-        write_reg(0x0003,(1<<12)|(1<<5)|(0<<4) | (1<<3) );
-        write_reg(0x0004,0x0000);
-        write_reg(0x0008,0x0207);
-        write_reg(0x0009,0x0000);
-        write_reg(0x000a,0x0000); 				//display setting
-        write_reg(0x000c,0x0001);				//display setting
-        write_reg(0x000d,0x0000); 				//0f3c
-        write_reg(0x000f,0x0000);
-        //Power On sequence //
-        write_reg(0x0010,0x0000);
-        write_reg(0x0011,0x0007);
-        write_reg(0x0012,0x0000);
-        write_reg(0x0013,0x0000);
-        delay(15);
-        write_reg(0x0010,0x1590);
-        write_reg(0x0011,0x0227);
-        delay(15);
-        write_reg(0x0012,0x009c);
-        delay(15);
-        write_reg(0x0013,0x1900);
-        write_reg(0x0029,0x0023);
-        write_reg(0x002b,0x000e);
-        delay(15);
-        write_reg(0x0020,0x0000);
-        write_reg(0x0021,0x0000);
-        delay(15);
-        write_reg(0x0030,0x0007);
-        write_reg(0x0031,0x0707);
-        write_reg(0x0032,0x0006);
-        write_reg(0x0035,0x0704);
-        write_reg(0x0036,0x1f04);
-        write_reg(0x0037,0x0004);
-        write_reg(0x0038,0x0000);
-        write_reg(0x0039,0x0706);
-        write_reg(0x003c,0x0701);
-        write_reg(0x003d,0x000f);
-        delay(15);
-        write_reg(0x0050,0x0000);
-        write_reg(0x0051,0x00ef);
-        write_reg(0x0052,0x0000);
-        write_reg(0x0053,0x013f);
-#if defined(_ILI_REVERSE_DIRECTION_)
-        write_reg(0x0060,0x2700);
-#else
-        write_reg(0x0060,0xA700);
-#endif
-        write_reg(0x0061,0x0001);
-        write_reg(0x006a,0x0000);
-        write_reg(0x0080,0x0000);
-        write_reg(0x0081,0x0000);
-        write_reg(0x0082,0x0000);
-        write_reg(0x0083,0x0000);
-        write_reg(0x0084,0x0000);
-        write_reg(0x0085,0x0000);
-        write_reg(0x0090,0x0010);
-        write_reg(0x0092,0x0000);
-        write_reg(0x0093,0x0003);
-        write_reg(0x0095,0x0110);
-        write_reg(0x0097,0x0000);
-        write_reg(0x0098,0x0000);
-        //display on sequence
-        write_reg(0x0007,0x0133);
-        write_reg(0x0020,0x0000);
-        write_reg(0x0021,0x0000);
-    }
-    else if( deviceid==0x9320|| deviceid==0x9300)
-    {
-        write_reg(0x00,0x0000);
-#if defined(_ILI_REVERSE_DIRECTION_)
-        write_reg(0x0001,0x0100);                    //Reverse Display
-#else
-        write_reg(0x0001,0x0000);                    // Driver Output Contral.
-#endif
-        write_reg(0x02,0x0700);	//LCD Driver Waveform Contral.
-//		write_reg(0x03,0x1030);	//Entry Mode Set.
-        write_reg(0x03,0x1018);	//Entry Mode Set.
-
-        write_reg(0x04,0x0000);	//Scalling Contral.
-        write_reg(0x08,0x0202);	//Display Contral 2.(0x0207)
-        write_reg(0x09,0x0000);	//Display Contral 3.(0x0000)
-        write_reg(0x0a,0x0000);	//Frame Cycle Contal.(0x0000)
-        write_reg(0x0c,(1<<0));	//Extern Display Interface Contral 1.(0x0000)
-        write_reg(0x0d,0x0000);	//Frame Maker Position.
-        write_reg(0x0f,0x0000);	//Extern Display Interface Contral 2.
-
-        delay(15);
-        write_reg(0x07,0x0101);	//Display Contral.
-        delay(15);
-
-        write_reg(0x10,(1<<12)|(0<<8)|(1<<7)|(1<<6)|(0<<4));	//Power Control 1.(0x16b0)
-        write_reg(0x11,0x0007);								//Power Control 2.(0x0001)
-        write_reg(0x12,(1<<8)|(1<<4)|(0<<0));					//Power Control 3.(0x0138)
-        write_reg(0x13,0x0b00);								//Power Control 4.
-        write_reg(0x29,0x0000);								//Power Control 7.
-
-        write_reg(0x2b,(1<<14)|(1<<4));
-
-        write_reg(0x50,0);		//Set X Start.
-        write_reg(0x51,239);	//Set X End.
-        write_reg(0x52,0);		//Set Y Start.
-        write_reg(0x53,319);	//Set Y End.
-
-#if defined(_ILI_REVERSE_DIRECTION_)
-        write_reg(0x0060,0x2700);  //Driver Output Control.
-#else
-        write_reg(0x0060,0xA700);
-#endif
-        write_reg(0x61,0x0001);	//Driver Output Control.
-        write_reg(0x6a,0x0000);	//Vertical Srcoll Control.
-
-        write_reg(0x80,0x0000);	//Display Position? Partial Display 1.
-        write_reg(0x81,0x0000);	//RAM Address Start? Partial Display 1.
-        write_reg(0x82,0x0000);	//RAM Address End-Partial Display 1.
-        write_reg(0x83,0x0000);	//Displsy Position? Partial Display 2.
-        write_reg(0x84,0x0000);	//RAM Address Start? Partial Display 2.
-        write_reg(0x85,0x0000);	//RAM Address End? Partial Display 2.
-
-        write_reg(0x90,(0<<7)|(16<<0));	//Frame Cycle Contral.(0x0013)
-        write_reg(0x92,0x0000);	//Panel Interface Contral 2.(0x0000)
-        write_reg(0x93,0x0001);	//Panel Interface Contral 3.
-        write_reg(0x95,0x0110);	//Frame Cycle Contral.(0x0110)
-        write_reg(0x97,(0<<8));	//
-        write_reg(0x98,0x0000);	//Frame Cycle Contral.
-
-
-        write_reg(0x07,0x0173);	//(0x0173)
-    }
-    else if( deviceid==0x4531 )
-    {
-        // Setup display
-        write_reg(0x00,0x0001);
-        write_reg(0x10,0x0628);
-        write_reg(0x12,0x0006);
-        write_reg(0x13,0x0A32);
-        write_reg(0x11,0x0040);
-        write_reg(0x15,0x0050);
-        write_reg(0x12,0x0016);
-        delay(15);
-        write_reg(0x10,0x5660);
-        delay(15);
-        write_reg(0x13,0x2A4E);
-#if defined(_ILI_REVERSE_DIRECTION_)
-        write_reg(0x01,0x0100);
-#else
-        write_reg(0x01,0x0000);
-#endif
-        write_reg(0x02,0x0300);
-
-        write_reg(0x03,0x1030);
-//	    write_reg(0x03,0x1038);
-
-        write_reg(0x08,0x0202);
-        write_reg(0x0A,0x0000);
-        write_reg(0x30,0x0000);
-        write_reg(0x31,0x0402);
-        write_reg(0x32,0x0106);
-        write_reg(0x33,0x0700);
-        write_reg(0x34,0x0104);
-        write_reg(0x35,0x0301);
-        write_reg(0x36,0x0707);
-        write_reg(0x37,0x0305);
-        write_reg(0x38,0x0208);
-        write_reg(0x39,0x0F0B);
-        delay(15);
-        write_reg(0x41,0x0002);
-
-#if defined(_ILI_REVERSE_DIRECTION_)
-        write_reg(0x0060,0x2700);
-#else
-        write_reg(0x0060,0xA700);
-#endif
-
-        write_reg(0x61,0x0001);
-        write_reg(0x90,0x0119);
-        write_reg(0x92,0x010A);
-        write_reg(0x93,0x0004);
-        write_reg(0xA0,0x0100);
-//	    write_reg(0x07,0x0001);
-        delay(15);
-//	    write_reg(0x07,0x0021);
-        delay(15);
-//	    write_reg(0x07,0x0023);
-        delay(15);
-//	    write_reg(0x07,0x0033);
-        delay(15);
-        write_reg(0x07,0x0133);
-        delay(15);
-        write_reg(0xA0,0x0000);
-        delay(20);
-    }
-    else if( deviceid ==0x7783)
-    {
-        // Start Initial Sequence
-        write_reg(0x00FF,0x0001);
-        write_reg(0x00F3,0x0008);
-        write_reg(0x0001,0x0100);
-        write_reg(0x0002,0x0700);
-        write_reg(0x0003,0x1030);  //0x1030
-        write_reg(0x0008,0x0302);
-        write_reg(0x0008,0x0207);
-        write_reg(0x0009,0x0000);
-        write_reg(0x000A,0x0000);
-        write_reg(0x0010,0x0000);  //0x0790
-        write_reg(0x0011,0x0005);
-        write_reg(0x0012,0x0000);
-        write_reg(0x0013,0x0000);
-        delay(20);
-        write_reg(0x0010,0x12B0);
-        delay(20);
-        write_reg(0x0011,0x0007);
-        delay(20);
-        write_reg(0x0012,0x008B);
-        delay(20);
-        write_reg(0x0013,0x1700);
-        delay(20);
-        write_reg(0x0029,0x0022);
-
-        //################# void Gamma_Set(void) ####################//
-        write_reg(0x0030,0x0000);
-        write_reg(0x0031,0x0707);
-        write_reg(0x0032,0x0505);
-        write_reg(0x0035,0x0107);
-        write_reg(0x0036,0x0008);
-        write_reg(0x0037,0x0000);
-        write_reg(0x0038,0x0202);
-        write_reg(0x0039,0x0106);
-        write_reg(0x003C,0x0202);
-        write_reg(0x003D,0x0408);
-        delay(20);
-        write_reg(0x0050,0x0000);
-        write_reg(0x0051,0x00EF);
-        write_reg(0x0052,0x0000);
-        write_reg(0x0053,0x013F);
-        write_reg(0x0060,0xA700);
-        write_reg(0x0061,0x0001);
-        write_reg(0x0090,0x0033);
-        write_reg(0x002B,0x000B);
-        write_reg(0x0007,0x0133);
-        delay(20);
-    }
+    //delay(100000);
+    
+    wr_cmd(0xCF);  //Power control B
+    wr_data(0x00); 
+    wr_data(0xC1); 
+    wr_data(0X30); 
+     
+    wr_cmd(0xED);  //Power on sequence control
+    wr_data(0x64); 
+    wr_data(0x03); 
+    wr_data(0X12); 
+    wr_data(0X81); 
+     
+    wr_cmd(0xE8);  //Driver timing control A
+    wr_data(0x85); 
+    wr_data(0x10); 
+    wr_data(0x7A); 
+     
+    wr_cmd(0xCB);  //Power control A
+    wr_data(0x39); 
+    wr_data(0x2C); 
+    wr_data(0x00); 
+    wr_data(0x34); 
+    wr_data(0x02); 
+     
+    wr_cmd(0xF7);  //Pump ratio control
+    wr_data(0x20); 
+     
+    wr_cmd(0xEA);  //Driver timing control B
+    wr_data(0x00); 
+    wr_data(0x00); 
+     
+    wr_cmd(0xC0);    //Power control 
+    wr_data(0x1B);   //VRH[5:0]  1B
+     
+    wr_cmd(0xC1);    //Power control 
+    wr_data(0x01);   //SAP[2:0];BT[3:0] 
+     
+    wr_cmd(0xC5);    //VCM control 
+    wr_data(0x45);	 //3F
+    wr_data(0x25);	 //3C
+     
+    wr_cmd(0xC7);    //VCM control2 
+    wr_data(0XB7);	    //b7
+     
+    wr_cmd(0x36);    // Memory Access Control 
+    wr_data(0x28); 
+     
+    wr_cmd(0x3A);  //Pixel Format Set
+    wr_data(0x55); 
+    
+    wr_cmd(0xB1);   //Frame Rate Control
+    wr_data(0x00);   
+    wr_data(0x1A); 
+     
+    wr_cmd(0xB6);    // Display Function Control 
+    wr_data(0x0A); 
+    wr_data(0x82); 
+    
+    wr_cmd(0xF2);    // 3Gamma Function Disable 
+    wr_data(0x00); 
+     
+    wr_cmd(0x26);    //Gamma curve selected 
+    wr_data(0x01); 
+     
+    wr_cmd(0xE0);    //Set Gamma 
+    wr_data(0x0F); 
+    wr_data(0x2A); 
+    wr_data(0x28); 
+    wr_data(0x08); 
+    wr_data(0x0E); 
+    wr_data(0x08); 
+    wr_data(0x54); 
+    wr_data(0XA9); 
+    wr_data(0x43); 
+    wr_data(0x0A); 
+    wr_data(0x0F); 
+    wr_data(0x00); 
+    wr_data(0x00); 
+    wr_data(0x00); 
+    wr_data(0x00); 
+     
+    wr_cmd(0XE1);    //Set Gamma 
+    wr_data(0x00); 
+    wr_data(0x15); 
+    wr_data(0x17); 
+    wr_data(0x07); 
+    wr_data(0x11); 
+    wr_data(0x06); 
+    wr_data(0x2B); 
+    wr_data(0x56); 
+    wr_data(0x3C); 
+    wr_data(0x05); 
+    wr_data(0x10); 
+    wr_data(0x0F); 
+    wr_data(0x3F); 
+    wr_data(0x3F); 
+    wr_data(0x0F); 
+    
+    wr_cmd(0x2A);
+    wr_data(0x00);
+    wr_data(0x00);
+    wr_data(0x01);
+    wr_data(0x3F);    
+    
+    wr_cmd(0x2B);
+    wr_data(0x00);
+    wr_data(0x00);
+    wr_data(0x00);
+    wr_data(0xEF);
+    
+    wr_cmd(0x11); //Exit Sleep
+    delay(120);
+    wr_cmd(0x29); //display on
+    wr_cmd(0x2C);
+    
 
     //数据总线测试,用于测试硬件连接是否正常.
     lcd_data_bus_test();
@@ -704,6 +580,8 @@ void rt_hw_lcd_init(void)
         rt_thread_delay(1);
     }
 #endif
+	
+
     /* register lcd device */
     _lcd_device.type  = RT_Device_Class_Graphic;
     _lcd_device.init  = lcd_init;

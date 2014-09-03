@@ -97,7 +97,7 @@ void EXT_SRAM_Configuration(void)
 	PORT_BitFn ( PORTD, PIN_6, FN_5);				// fb_ad[0]
 	//control signals
 //	PORT_BitFn ( PORTC,PIN_16, FN_5);				// fb_be[15:8]
-//	PORT_BitFn ( PORTC,PIN_17, FN_5);				// fb_be[ 7:0]
+	PORT_BitFn ( PORTC,PIN_17, FN_5);				// fb_be[ 7:0]
 	
 	PORT_BitFn ( PORTB,PIN_19, FN_5);				// fb_oe_b
 	PORT_BitFn ( PORTC,PIN_11, FN_5);				// fb_rw_b
@@ -106,8 +106,33 @@ void EXT_SRAM_Configuration(void)
 	
 //	PORT_BitFn ( PORTD, PIN_1, FN_5);				// fb_cs0_b
 	PORT_BitFn ( PORTC,PIN_18, FN_5);				// fb_cs2_b
+
+
+	//control signals
+	//    PORT_BitFn ( PORTC,PIN_16, FN_5 );			    // fb_be[15:8]
+
+
+#if RS_MODE == 0
+	PORT_BitFn ( PORTD, PIN_0, FN_5 );			    // fb_ale
+#endif
+
+	//    PORT_BitFn ( PORTC, PIN_3, FN_5 );			    // fb_clk_out     
+	//    PORT_BitFn ( PORTD, PIN_1, FN_5 );			    // fb_cs0_b
+	//    PORT_BitFn ( PORTC,PIN_18, FN_5 );			    // fb_cs2_b
+
+	PORT_BitFn(PORTD, PIN_1, FN_1 );			    // color lcd cs signal(soft)
+	GPIO_BitDir(PTD, IO_1, OUT );			    // dir output
+	GPIO_SetBit(PTD, IO_1);
+	PORT_BitFn(PORTC, PIN_16, FN_1 );			    // color lcd rs signal(soft)
+
+#if RS_MODE == 1
+	GPIO_BitDir(PTC, IO_16, OUT );				    // dir output
+#else
+	GPIO_BitDir(PTC, IO_16, IN );
+#endif
+    
 	FLEXBUS_ClkEn();
-	FLEXBUS_Init(5);
+	FLEXBUS_Init(0);
 
 }
 #endif

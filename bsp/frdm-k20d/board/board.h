@@ -19,6 +19,8 @@
 #include <MK20D7.h>
 #include "port.h"
 #include "flexbus.h"
+#include "glcd.h"
+#include "gpio.h"
 
 /* board configuration */
 #define K20D_EXT_SRAM          1

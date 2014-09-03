@@ -1,6 +1,6 @@
 #ifndef ILI_LCD_GENERAL_H_INCLUDED
 #define ILI_LCD_GENERAL_H_INCLUDED
-
+#include <board.h>
 /*
  Compatible list:
  ili9320 ili9325 ili9328
@@ -8,7 +8,7 @@
 */
 
 /* LCD color */
-#define White            0xFFFF
+/*#define White            0xFFFF
 #define Black            0x0000
 #define Grey             0xF7DE
 #define Blue             0x001F
@@ -18,7 +18,7 @@
 #define Green            0x07E0
 #define Cyan             0x7FFF
 #define Yellow           0xFFE0
-
+*/
 /*---------------------- Graphic LCD size definitions ------------------------*/
 #define LCD_WIDTH       240                 /* Screen Width (in pixels)           */
 #define LCD_HEIGHT      320                 /* Screen Hight (in pixels)           */
