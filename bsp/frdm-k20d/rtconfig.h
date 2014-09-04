@@ -153,7 +153,7 @@
 #define CHECKSUM_GEN_IP                 0
 #define CHECKSUM_GEN_UDP                0
 
-#define RT_USING_RTGUI 
+#define RT_USING_RTGUI
 
 /* name length of RTGUI object */
 #define RTGUI_NAME_MAX		12

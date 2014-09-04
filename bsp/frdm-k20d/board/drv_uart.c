@@ -143,43 +143,43 @@ static rt_err_t _configure(struct rt_serial_device *serial, struct serial_config
         PORTE->PCR[5] |= (3UL <<  8);      // Pin mux configured as ALT3
         break;
     case UART4_BASE:
-		    /* calc SBR */
-		cal_SBR = /*SystemCoreClock*/(SystemCoreClock/(((SIM->CLKDIV1&SIM_CLKDIV1_OUTDIV2_MASK)>>SIM_CLKDIV1_OUTDIV2_SHIFT)+1)) / (16 * cfg->baud_rate);
-	  
-		/* check to see if sbr is out of range of register bits */
-		if ((cal_SBR > 0x1FFF) || (cal_SBR < 1))
-		{
-		    /* unsupported baud rate for given source clock input*/
-		    return -RT_ERROR;
-		}
-	  
-		/* calc baud_rate */
-		reg_BDH = (cal_SBR & 0x1FFF) >> 8 & 0x00FF;
-		reg_BDL = cal_SBR & 0x00FF;
-	  
-		/* fractional divider */
-		reg_BRFA = (((SystemCoreClock/(((SIM->CLKDIV1&SIM_CLKDIV1_OUTDIV2_MASK)>>SIM_CLKDIV1_OUTDIV2_SHIFT)+1)) * 32) / (cfg->baud_rate * 16)) - (cal_SBR * 32);
-	  
-		reg_C4 = (unsigned char)(reg_BRFA & 0x001F);
-	  
-		/*SIM->SOPT5 &= ~ SIM_SOPT5_UART0RXSRC(0);
-		SIM->SOPT5 |= SIM_SOPT5_UART0RXSRC(0);
-		SIM->SOPT5 &= ~ SIM_SOPT5_UART0TXSRC(0);
-		SIM->SOPT5 |= SIM_SOPT5_UART0TXSRC(0);*/
-	  
-		// set UART4 clock
-		// Enable UART gate clocking
-		// Enable PORTE gate clocking
-		SIM->SCGC1 |= SIM_SCGC1_UART4_MASK;
-		SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
-	  
-		// set UART4 pin
-		PORTC->PCR[14] &= ~(3UL <<  8);
-		PORTC->PCR[14] |= (3UL <<  8);      // Pin mux configured as ALT3
-	  
-		PORTC->PCR[15] &= ~(3UL <<  8);
-		PORTC->PCR[15] |= (3UL <<  8);      // Pin mux configured as ALT3
-		break;
+	    /* calc SBR */
+	cal_SBR = /*SystemCoreClock*/(SystemCoreClock/(((SIM->CLKDIV1&SIM_CLKDIV1_OUTDIV2_MASK)>>SIM_CLKDIV1_OUTDIV2_SHIFT)+1)) / (16 * cfg->baud_rate);
+  
+	/* check to see if sbr is out of range of register bits */
+	if ((cal_SBR > 0x1FFF) || (cal_SBR < 1))
+	{
+	    /* unsupported baud rate for given source clock input*/
+	    return -RT_ERROR;
+	}
+  
+	/* calc baud_rate */
+	reg_BDH = (cal_SBR & 0x1FFF) >> 8 & 0x00FF;
+	reg_BDL = cal_SBR & 0x00FF;
+  
+	/* fractional divider */
+	reg_BRFA = (((SystemCoreClock/(((SIM->CLKDIV1&SIM_CLKDIV1_OUTDIV2_MASK)>>SIM_CLKDIV1_OUTDIV2_SHIFT)+1)) * 32) / (cfg->baud_rate * 16)) - (cal_SBR * 32);
+  
+	reg_C4 = (unsigned char)(reg_BRFA & 0x001F);
+  
+	/*SIM->SOPT5 &= ~ SIM_SOPT5_UART0RXSRC(0);
+	SIM->SOPT5 |= SIM_SOPT5_UART0RXSRC(0);
+	SIM->SOPT5 &= ~ SIM_SOPT5_UART0TXSRC(0);
+	SIM->SOPT5 |= SIM_SOPT5_UART0TXSRC(0);*/
+  
+	// set UART4 clock
+	// Enable UART gate clocking
+	// Enable PORTE gate clocking
+	SIM->SCGC1 |= SIM_SCGC1_UART4_MASK;
+	SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
+  
+	// set UART4 pin
+	PORTC->PCR[14] &= ~(3UL <<  8);
+	PORTC->PCR[14] |= (3UL <<  8);      // Pin mux configured as ALT3
+  
+	PORTC->PCR[15] &= ~(3UL <<  8);
+	PORTC->PCR[15] |= (3UL <<  8);      // Pin mux configured as ALT3
+	break;
 
     default:
         return -RT_ERROR;

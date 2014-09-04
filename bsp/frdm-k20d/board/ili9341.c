@@ -34,7 +34,7 @@ static void delay(int cnt)
         for(dl=0; dl<500; dl++);
     }
 }
-lcd_inline void LCD_WR_REG(rt_uint16_t index)
+lcd_inline void LCD_WR_REG(rt_uint8_t index)
 {
 	GLCD_CS_L();
 	GLCD_RS_L();
@@ -52,7 +52,7 @@ lcd_inline rt_uint16_t LCD_RD_DAT(void)
     return(a);
 }
 
-lcd_inline void LCD_WR_DAT(rt_uint16_t val)
+lcd_inline void LCD_WR_DAT(rt_uint8_t val)
 {  
 	GLCD_CS_L();
 	GLCD_RS_H();

@@ -23,7 +23,7 @@
 #include "gpio.h"
 
 /* board configuration */
-#define K20D_EXT_SRAM          1
+#define K20D_EXT_SRAM          0
 #define K20D_EXT_SRAM_BEGIN    0x80000000 /* the begining address of external SRAM */
 #define K20D_EXT_SRAM_END      0x80010000 /* the end address of external SRAM */
 
@@ -58,7 +58,7 @@ void rt_hw_board_init(void);
 
 #define FINSH_DEVICE_NAME   CONSOLE_DEVICE
 
-
+int Mem_Check(unsigned long offset);
 #endif
 
 // <<< Use Configuration Wizard in Context Menu >>>

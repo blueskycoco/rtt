@@ -65,7 +65,7 @@ void SysTick_Handler(void)
     /* leave interrupt */
     rt_interrupt_leave();
 }
-#if K20D_EXT_SRAM
+//#if K20D_EXT_SRAM
 void EXT_SRAM_Configuration(void)
 {
 	PORT_ClkEn ( PORTA );
@@ -86,9 +86,12 @@ void EXT_SRAM_Configuration(void)
 	PORT_BitFn ( PORTC, PIN_0, FN_5);				// fb_ad[14]
 	PORT_BitFn ( PORTC, PIN_1, FN_5);				// fb_ad[13]
 	PORT_BitFn ( PORTC, PIN_2, FN_5);				// fb_ad[12]
-	PORT_BitFn ( PORTC, PIN_4, FN_5);				// fb_ad[11]	PORT_BitFn ( PORTC, PIN_5, FN_5);				// fb_ad[10]
-	PORT_BitFn ( PORTC, PIN_6, FN_5);				// fb_ad[9] PORT_BitFn ( PORTC, PIN_7, FN_5);				// fb_ad[8]
-	PORT_BitFn ( PORTC, PIN_8, FN_5);				// fb_ad[7] PORT_BitFn ( PORTC, PIN_9, FN_5);				// fb_ad[6]
+	PORT_BitFn ( PORTC, PIN_4, FN_5);				// fb_ad[11]	
+	PORT_BitFn ( PORTC, PIN_5, FN_5);				// fb_ad[10]
+	PORT_BitFn ( PORTC, PIN_6, FN_5);				// fb_ad[9] 
+	PORT_BitFn ( PORTC, PIN_7, FN_5);				// fb_ad[8]// fb_ad[8]
+	PORT_BitFn ( PORTC, PIN_8, FN_5);				// fb_ad[7] 
+	PORT_BitFn ( PORTC, PIN_9, FN_5);				// fb_ad[6]// fb_ad[6]
 	PORT_BitFn ( PORTC,PIN_10, FN_5);				// fb_ad[5]
 	PORT_BitFn ( PORTD, PIN_2, FN_5);				// fb_ad[4]
 	PORT_BitFn ( PORTD, PIN_3, FN_5);				// fb_ad[3]
@@ -106,7 +109,7 @@ void EXT_SRAM_Configuration(void)
 	
 //	PORT_BitFn ( PORTD, PIN_1, FN_5);				// fb_cs0_b
 	PORT_BitFn ( PORTC,PIN_18, FN_5);				// fb_cs2_b
-
+#if 1
 
 	//control signals
 	//    PORT_BitFn ( PORTC,PIN_16, FN_5 );			    // fb_be[15:8]
@@ -130,12 +133,31 @@ void EXT_SRAM_Configuration(void)
 #else
 	GPIO_BitDir(PTC, IO_16, IN );
 #endif
-    
+    #endif
 	FLEXBUS_ClkEn();
 	FLEXBUS_Init(0);
 
 }
-#endif
+//#endif
+int Mem_Check(unsigned long offset)
+{	
+	static rt_uint16_t test_data[2] = { 0x55AA, 0xAA55 };
+	rt_uint16_t tmp = 0x3C3C;
+	int ret = 1;
+
+	if (offset<PSRAM_CY) {
+		Mem_Wr ( test_data[0], offset);
+		Mem_Rd ( &tmp, offset);
+		if (tmp != test_data[0])
+			ret = 0;
+		Mem_Wr ( test_data[1], offset);
+		Mem_Rd ( &tmp, offset);
+		if (tmp != test_data[1])
+			ret = 0;
+	}
+
+	return (ret);
+}
 /**
  * This function will initial Tower board.
  */
@@ -146,9 +168,9 @@ void rt_hw_board_init()
 
     /* Configure the SysTick */
     SysTick_Configuration();
-#if K20D_EXT_SRAM
+//#if K20D_EXT_SRAM
 	EXT_SRAM_Configuration();
-#endif
+//#endif
     rt_hw_uart_init();
 
 #ifdef RT_USING_CONSOLE

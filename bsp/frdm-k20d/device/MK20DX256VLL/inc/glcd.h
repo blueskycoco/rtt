@@ -12,7 +12,7 @@
 /* development tools. Nothing else gives you the right to use this software.  */
 /******************************************************************************/
 
-#define RS_MODE				0				//1:IO software RS 0:ADDR1 hardware RS
+#define RS_MODE				1				//1:IO software RS 0:ADDR1 hardware RS
 
 #if RS_MODE == 1
 	#define GLCD_RS_H()		GPIO_SetBit(PTC, IO_16)

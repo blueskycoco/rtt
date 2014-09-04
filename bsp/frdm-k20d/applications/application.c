@@ -88,7 +88,7 @@ void rt_init_thread_entry(void* parameter)
 
 #ifndef RT_USING_COMPONENTS_INIT
         /* init rtgui system server */
-        rtgui_system_server_init();
+      //  rtgui_system_server_init();
 #endif
 
         //calibration_set_restore(cali_setup);
@@ -110,6 +110,7 @@ struct rt_thread thread_led1;
 static void rt_thread_entry_led1(void* parameter)
 {
     int n = 0;
+    rt_uint32_t offset=0;
     rt_hw_led_init();
 
     while (1)
@@ -118,12 +119,19 @@ static void rt_thread_entry_led1(void* parameter)
 
         rt_hw_led_on(n);
         rt_thread_delay(RT_TICK_PER_SECOND/2);
+	if(Mem_Check(offset))
+		rt_kprintf("offset %x test ok\r\n",offset);
+	else
+		rt_kprintf("offset %x test failed\r\n",offset);
+	offset++;
+	if(offset==0x10000)
+		offset=0;
         rt_hw_led_off(n);
         rt_thread_delay(RT_TICK_PER_SECOND/2);
 
         n++;
 
-        if (n == LED_MAX+1)
+        if (n == (LED_MAX+1))
             n = 0;
     }
 }
