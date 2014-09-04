@@ -137,10 +137,10 @@ static rt_err_t _configure(struct rt_serial_device *serial, struct serial_config
 
         // set UART3 pin
         PORTE->PCR[4] &= ~(3UL <<  8);
-        PORTE->PCR[4] |= (1UL <<  8);      // Pin mux configured as ALT3
+        PORTE->PCR[4] |= (3UL <<  8);      // Pin mux configured as ALT3
 
         PORTE->PCR[5] &= ~(3UL <<  8);
-        PORTE->PCR[5] |= (1UL <<  8);      // Pin mux configured as ALT3
+        PORTE->PCR[5] |= (3UL <<  8);      // Pin mux configured as ALT3
         break;
     case UART4_BASE:
 		    /* calc SBR */
@@ -175,10 +175,10 @@ static rt_err_t _configure(struct rt_serial_device *serial, struct serial_config
 	  
 		// set UART4 pin
 		PORTC->PCR[14] &= ~(3UL <<  8);
-		PORTC->PCR[14] |= (0UL <<  8);      // Pin mux configured as ALT3
+		PORTC->PCR[14] |= (3UL <<  8);      // Pin mux configured as ALT3
 	  
 		PORTC->PCR[15] &= ~(3UL <<  8);
-		PORTC->PCR[15] |= (0UL <<  8);      // Pin mux configured as ALT3
+		PORTC->PCR[15] |= (3UL <<  8);      // Pin mux configured as ALT3
 		break;
 
     default:
