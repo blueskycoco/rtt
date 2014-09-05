@@ -44,6 +44,7 @@
 #endif
 #ifdef RT_USING_DFS_UFFS
 #include <dfs_uffs.h>
+#include "psram_mtd.h"
 #endif
 
 void rt_init_thread_entry(void* parameter)
@@ -74,8 +75,8 @@ void rt_init_thread_entry(void* parameter)
 //FS
 #ifdef RT_USING_DFS
 	dfs_init();
-#ifdef RT_USING_MTD_NAND
-	psram_mtd_init();
+#ifdef RT_USING_MTD_NOR
+	nand_mtd_init();
 	dfs_uffs_init();
 
 	if (dfs_mount("psram0", "/", "uffs", 0, 0) == 0)

@@ -90,6 +90,10 @@
 #define RT_DFS_ELM_MAX_SECTOR_SIZE  512
 
 #define RT_USING_DFS_ROMFS
+#define RT_USING_MTD_NAND
+#define RT_USING_DFS_UFFS
+#define RT_CONFIG_UFFS_ECC_MODE UFFS_ECC_SOFT
+#define RT_UFFS_DEVICE_MAX	        5
 
 /* the max number of mounted filesystem */
 #define DFS_FILESYSTEMS_MAX			2
