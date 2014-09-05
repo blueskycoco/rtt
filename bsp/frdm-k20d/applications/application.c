@@ -109,7 +109,7 @@ void rt_init_thread_entry(void* parameter)
 
 #ifndef RT_USING_COMPONENTS_INIT
         /* init rtgui system server */
-      //  rtgui_system_server_init();
+        rtgui_system_server_init();
 #endif
 
         //calibration_set_restore(cali_setup);
