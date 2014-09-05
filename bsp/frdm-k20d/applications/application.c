@@ -38,6 +38,13 @@
 #include <rtgui/driver.h>
 //#include <rtgui/calibration.h>
 #endif
+#ifdef RT_USING_DFS
+#include <dfs_init.h>
+#include <dfs_fs.h>
+#endif
+#ifdef RT_USING_DFS_UFFS
+#include <dfs_uffs.h>
+#endif
 
 void rt_init_thread_entry(void* parameter)
 {
@@ -65,7 +72,20 @@ void rt_init_thread_entry(void* parameter)
 #endif
 
 //FS
+#ifdef RT_USING_DFS
+	dfs_init();
+#ifdef RT_USING_MTD_NAND
+	psram_mtd_init();
+	dfs_uffs_init();
 
+	if (dfs_mount("psram0", "/", "uffs", 0, 0) == 0)
+	{
+	rt_kprintf("uffs mount / partion ok\n");
+	}
+	else
+	rt_kprintf("uffs mount / partion failed!\n");
+#endif
+#endif
 //GUI
 #ifdef RT_USING_RTGUI
     {
