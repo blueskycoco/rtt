@@ -29,8 +29,8 @@ static rt_err_t nand_mtd_check_block(
 {
 	rt_err_t result=RT_EOK;	
 	rt_uint16_t bad;
-	rt_mutex_take(&nand, RT_WAITING_FOREVER);	
 	rt_uint32_t spare_offs = NOR_SPARE_BLOCK+block*32;
+	rt_mutex_take(&nand, RT_WAITING_FOREVER);		
 	Mem_Rd(&bad,spare_offs);
 	rt_mutex_release(&nand);
 	return ((bad&0xff)==0xff) ? RT_EOK:RT_ERROR;
@@ -42,10 +42,10 @@ static rt_err_t nand_mtd_mark_bad_block(
 {
 	rt_err_t result=RT_EOK;	
 	rt_uint16_t data=0xff00;
-	rt_mutex_take(&nand, RT_WAITING_FOREVER);	
 	rt_uint32_t spare_offs = NOR_SPARE_BLOCK+block*32;
+	rt_mutex_take(&nand, RT_WAITING_FOREVER);		
 	//write spare_offs to 0xff00
-	Mem_Wr(&data,spare_offs);
+	Mem_Wr(data,spare_offs);
 	rt_mutex_release(&nand);
 	return result;
 }
@@ -57,15 +57,15 @@ static rt_err_t nand_mtd_erase_block(
 	rt_err_t result=RT_EOK;	
 	int i;
 	rt_uint16_t data=0xffff;
-	rt_mutex_take(&nand, RT_WAITING_FOREVER);	
 	rt_uint32_t block_offs=block*32*512;
 	rt_uint32_t spare_offs = NOR_SPARE_BLOCK+block*32;
+	rt_mutex_take(&nand, RT_WAITING_FOREVER);		
 	//erase block offs , len=one block size /2 , 16bit wr
 	for(i=0;i<(32*512)/2;i++)
-		Mem_Wr(&data,block_offs+i);
+		Mem_Wr(data,block_offs+i);
 	//erase spare offs, len=one block spare size /2 , 16bit wr
 	for(i=0;i<(32*16)/2;i++)
-		Mem_Wr(&data,spare_offs+i);	
+		Mem_Wr(data,spare_offs+i);	
 	rt_mutex_release(&nand);
 	return result;
 }
@@ -126,7 +126,7 @@ static rt_err_t nand_mtd_write (
 	    // get offset of sst39vf's write position
 		rt_uint32_t page_offs = page*512;
 		for(i=0;i<data_len/2;i++)
-			Mem_Wr((rt_uint16_t *)data+i,page_offs+i);
+			Mem_Wr(*(rt_uint16_t *)((rt_uint16_t *)data+i),page_offs+i);
 	}
 
 	
@@ -135,7 +135,7 @@ static rt_err_t nand_mtd_write (
 	    // get spare offset of sst39vf's write position
 		rt_uint32_t spare_offs = page*16 + NOR_SPARE_BLOCK;
 	    	for(i=0;i<spare_len/2;i++)
-		    Mem_Wr((rt_uint16_t *)spare+i,spare_offs+i);
+		    Mem_Wr(*(rt_uint16_t *)((rt_uint16_t *)spare+i),spare_offs+i);
 
 	}
 	
@@ -181,7 +181,7 @@ void nand_mtd_init()
 	nand_part[0].block_end = 123;
 	nand_part[0].oob_size = 16;
 	nand_part[0].ops = &nand_mtd_ops;
-	rt_mtd_nand_register_device("psram0", &nand_part);
+	rt_mtd_nand_register_device("psram0", &nand_part[0]);
 
 	nand_read_id(RT_NULL);
 

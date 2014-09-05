@@ -75,7 +75,7 @@ void rt_init_thread_entry(void* parameter)
 //FS
 #ifdef RT_USING_DFS
 	dfs_init();
-#ifdef RT_USING_MTD_NOR
+#ifdef RT_USING_MTD_NAND
 	nand_mtd_init();
 	dfs_uffs_init();
 
@@ -140,9 +140,9 @@ static void rt_thread_entry_led1(void* parameter)
 
         rt_hw_led_on(n);
         rt_thread_delay(RT_TICK_PER_SECOND/2);
-	if(Mem_Check(offset))
-		rt_kprintf("offset %x test ok\r\n",offset);
-	else
+	if(!Mem_Check(offset))
+		//rt_kprintf("offset %x test ok\r\n",offset);
+	//else
 		rt_kprintf("offset %x test failed\r\n",offset);
 	offset++;
 	if(offset==0x10000)
