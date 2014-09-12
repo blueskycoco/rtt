@@ -31,10 +31,12 @@ extern unsigned int lcd_getdeviceid(void);
 //#define _ILI_REVERSE_DIRECTION_
 
 #include "rtthread.h"
+#ifdef RT_USING_RTGUI
 #include <rtgui/rtgui.h>
 #include <rtgui/driver.h>
 #include <rtgui/rtgui_server.h>
 #include <rtgui/rtgui_system.h>
+#endif
 //extern void rt_hw_lcd_update(rtgui_rect_t *rect);
 //extern rt_uint8_t * rt_hw_lcd_get_framebuffer(void);
 //extern void rt_hw_lcd_set_pixel(rtgui_color_t *c, rt_base_t x, rt_base_t y);

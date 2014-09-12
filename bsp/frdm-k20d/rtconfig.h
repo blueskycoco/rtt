@@ -77,7 +77,7 @@
 #define FINSH_USING_DESCRIPTION
 
 /* SECTION: device filesystem */
-#define RT_USING_DFS
+/*#define RT_USING_DFS*/
 //#define RT_USING_DFS_ELMFAT
 #define RT_DFS_ELM_WORD_ACCESS
 /* Reentrancy (thread safe) of the FatFs module.  */
@@ -90,11 +90,11 @@
 #define RT_DFS_ELM_MAX_SECTOR_SIZE  512
 
 #define RT_USING_DFS_ROMFS
-#define RT_USING_MTD_NAND
+/*#define RT_USING_MTD_NAND
 #define RT_USING_DFS_UFFS
 #define RT_CONFIG_UFFS_ECC_MODE UFFS_ECC_SOFT
 #define RT_UFFS_DEVICE_MAX	        5
-
+*/
 /* the max number of mounted filesystem */
 #define DFS_FILESYSTEMS_MAX			2
 /* the max number of opened files 		*/
@@ -157,7 +157,7 @@
 #define CHECKSUM_GEN_IP                 0
 #define CHECKSUM_GEN_UDP                0
 
-#define RT_USING_RTGUI
+/*#define RT_USING_RTGUI*/
 
 /* name length of RTGUI object */
 #define RTGUI_NAME_MAX		12
