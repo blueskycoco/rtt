@@ -77,7 +77,7 @@
 #define FINSH_USING_DESCRIPTION
 
 /* SECTION: device filesystem */
-#define RT_USING_DFS
+/*#define RT_USING_DFS*/
 //#define RT_USING_DFS_ELMFAT
 #define RT_DFS_ELM_WORD_ACCESS
 /* Reentrancy (thread safe) of the FatFs module.  */
@@ -157,7 +157,7 @@
 #define CHECKSUM_GEN_IP                 0
 #define CHECKSUM_GEN_UDP                0
 
-#define RT_USING_RTGUI
+/*#define RT_USING_RTGUI*/
 
 /* name length of RTGUI object */
 #define RTGUI_NAME_MAX		12
