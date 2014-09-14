@@ -41,10 +41,11 @@
 #ifdef RT_USING_DFS
 #include <dfs_init.h>
 #include <dfs_fs.h>
-#endif
+
 #ifdef RT_USING_DFS_UFFS
 #include <dfs_uffs.h>
 #include "psram_mtd.h"
+#endif
 #endif
 
 void rt_init_thread_entry(void* parameter)

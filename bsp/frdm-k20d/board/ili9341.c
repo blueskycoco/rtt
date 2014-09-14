@@ -184,7 +184,7 @@ void lcd_clear()
     {
         while(h--)
         {
-            LCD_WR_DAT(0xffff);
+            LCD_WR_DAT(0xff);
         }
         h = VDP + 1;
     }
