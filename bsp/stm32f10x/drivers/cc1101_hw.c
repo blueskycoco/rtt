@@ -334,6 +334,7 @@ void cc1101_send_packet(uint8_t *txBuffer, uint8_t size)
 	
 	wait_int(RT_TRUE);
     	wait_int(RT_FALSE);
+	//rt_thread_delay(1);
 	write_cc1101(CCxxx0_SRX,RT_NULL,0,TYPE_STROBE_STATUS);  
 	if((read_cc1101(CCxxx0_TXBYTES,RT_NULL,0,TYPE_REG)&0x7f)==0)
 	{
