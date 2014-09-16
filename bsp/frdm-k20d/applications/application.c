@@ -88,6 +88,7 @@ void rt_init_thread_entry(void* parameter)
 	rt_kprintf("uffs mount / partion failed!\n");
 #endif
 #endif
+	rt_hw_lcd_init();
 //GUI
 #ifdef RT_USING_RTGUI
     {
