@@ -1,3 +1,5 @@
+bsp/tm4c129x/tm4c129x.*
+bsp/tm4c129x/checkin.sh
 bsp/stm32f10x/make.sh
 *.pyc
 *.map
