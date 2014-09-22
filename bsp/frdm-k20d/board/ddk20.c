@@ -54,14 +54,7 @@ signed short ADC_GetCh ( ADC_Type *ADCx, unsigned char ch ,int type)
 }
 
 /*bmp*/
- 
-/*-------------------------------------------------------------------------
-|	unsigned short Rgb24to16(unsigned char r,unsigned char g,unsigned char b)
-|
-|
-|
-|-------------------------------------------------------------------------*/
-unsigned short Rgb24to16(unsigned char r,unsigned char g,unsigned char b)
+ unsigned short Rgb24to16(unsigned char r,unsigned char g,unsigned char b)
 {
 	unsigned short rgb16=0;					// RGB  565
 	
@@ -77,12 +70,6 @@ unsigned short Rgb24to16(unsigned char r,unsigned char g,unsigned char b)
 	rgb16 |= (unsigned short)b;
 	return rgb16;
 }
-/*-------------------------------------------------------------------------
-|	unsigned char CheckIsBmp(void *pBmp)
-|
-|
-|
-|-------------------------------------------------------------------------*/
 int CheckIsBmp(void *pBmp)
 {
 	if(pBmp==0)
@@ -98,12 +85,6 @@ int CheckIsBmp(void *pBmp)
 		return 0;
 	}
 }
-/*-------------------------------------------------------------------------
-|	int GetBmpFSize(void *pBmp ,unsigned long FSize)
-|
-|
-|
-|-------------------------------------------------------------------------*/
 int GetBmpFSize(void *pBmp ,unsigned long *FSize)
 {
 	if(FSize==0)
@@ -119,12 +100,6 @@ int GetBmpFSize(void *pBmp ,unsigned long *FSize)
 
 	return 1;
 }
-/*-------------------------------------------------------------------------
-|	int GetBmpHWSize(void *pBmp ,unsigned long WBmp ,unsigned long HBmp)
-|
-|
-|
-|-------------------------------------------------------------------------*/
 int GetBmpHWSize(void *pBmp ,unsigned long *WBmp ,unsigned long *HBmp)
 {
 	if(WBmp==0 || HBmp==0)
@@ -141,12 +116,6 @@ int GetBmpHWSize(void *pBmp ,unsigned long *WBmp ,unsigned long *HBmp)
 
 	return 1;
 }
-/*-------------------------------------------------------------------------
-|	int GetColorOffser(void *pBmp ,unsigned long ColorOffset)
-|
-|
-|
-|-------------------------------------------------------------------------*/
 int GetColorOffser(void *pBmp ,unsigned long *ColorOffset)
 {
 	if(ColorOffset==0)
@@ -161,12 +130,6 @@ int GetColorOffser(void *pBmp ,unsigned long *ColorOffset)
 
 	return 1;
 }
-/*-------------------------------------------------------------------------
-|	int GetBmpInfo(void *pBmp ,BmpInfoHeader *BmpInfo)
-|
-|
-|
-|-------------------------------------------------------------------------*/
 int GetBmpInfo(void *pBmp ,BmpInfoHeader *BmpInfo)
 {
 	if(BmpInfo==0)
@@ -182,12 +145,6 @@ int GetBmpInfo(void *pBmp ,BmpInfoHeader *BmpInfo)
 	
 	return 1;		
 }
-/*-------------------------------------------------------------------------
-|	int DrawBmp(void *pBmp ,)
-|
-|
-|
-|-------------------------------------------------------------------------*/
 int DrawBmp(unsigned short x ,unsigned short y, void *pBmp)
 {
 	unsigned long w_temp,WBmp;
@@ -357,23 +314,19 @@ void CMP2_IRQHandler (void)
 	            |CMP_SCR_CFF_MASK;
 }
 /*dac*/
-BOOL DAC_ClkEn ( DAC_Type *DACx )
+int DAC_ClkCtl( DAC_Type *DACx int on)
 {
-	BOOL retval = TRUE;
-	SIM->SCGC2 |= SIM_SCGC2_DAC0_MASK;
+	int retval = 1;
+	if(on)
+		SIM->SCGC2 |= SIM_SCGC2_DAC0_MASK;
+	else
+		SIM->SCGC2 &= ~SIM_SCGC2_DAC0_MASK;
 	return (retval);
 }
 
-BOOL DAC_ClkDis ( DAC_Type *DACx )
-{
-	BOOL retval = TRUE;
-	SIM->SCGC2 &= ~SIM_SCGC2_DAC0_MASK;
-	return (retval);
-}
-
-BOOL DAC_Init ( DAC_Type *DACx)
+int DAC_Init ( DAC_Type *DACx)
 {  
-	BOOL retval = TRUE;
+	int retval = 1;
 	
 	DACx->C0 |= DAC_C0_DACEN_MASK
 	           |DAC_C0_DACRFS_MASK
@@ -385,9 +338,9 @@ BOOL DAC_Init ( DAC_Type *DACx)
 	return (retval);
 }
 
-BOOL DAC_Convert ( DAC_Type *DACx, INT16U stage )
+int DAC_Convert ( DAC_Type *DACx, unsigned short stage )
 {
-	BOOL retval = TRUE;
+	int retval = 1;
 	
 	DACx->DAT[0].DATL = stage &  0xFF;
 	DACx->DAT[0].DATH = stage >> 8;
@@ -401,7 +354,7 @@ BOOL DAC_Convert ( DAC_Type *DACx, INT16U stage )
 #define SecsPerFourYear 126230400//((365*3600*24)*3+(366*3600*24))
 #define SecsPerDay      (3600*24)
 
-const INT32S Year_Secs_Accu[5] =
+const signed long Year_Secs_Accu[5] =
 {
 	0,
 	31622400,
@@ -410,7 +363,7 @@ const INT32S Year_Secs_Accu[5] =
 	126230400
 };
 
-const INT32S Month_Secs_Accu_C[13] = 
+const signed long Month_Secs_Accu_C[13] = 
 {
 	0,
 	2678400,
@@ -427,7 +380,7 @@ const INT32S Month_Secs_Accu_C[13] =
 	31536000
 };
 
-const INT32S Month_Secs_Accu_L[13] = 
+const signed long Month_Secs_Accu_L[13] = 
 {
 	0,
 	2678400,
@@ -444,36 +397,31 @@ const INT32S Month_Secs_Accu_L[13] =
 	31622400
 };
 
-const INT16U Month_Days_Accu_C[13] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
-const INT16U Month_Days_Accu_L[13] = {0,31,60,91,121,152,182,213,244,274,305,335,366};
+const unsigned short Month_Days_Accu_C[13] = {0,31,59,90,120,151,181,212,243,273,304,334,365};
+const unsigned short Month_Days_Accu_L[13] = {0,31,60,91,121,152,182,213,244,274,305,335,366};
 
 #define SecsPerDay (3600*24)
-BOOL RTC_ClkEn (void)
+int RTC_ClkCtl (int on)
 {
-	SIM->SCGC6 |= SIM_SCGC6_RTC_MASK;;
-	return (TRUE);
+	if(on)
+		SIM->SCGC6 |= SIM_SCGC6_RTC_MASK;
+	else
+		SIM->SCGC6 &= ~SIM_SCGC6_RTC_MASK;
+	return (1);
 }
 
-BOOL RTC_ClkDis (void)
+int RTC_Ctl (int start)
 {
-	SIM->SCGC6 &= ~SIM_SCGC6_RTC_MASK;;
-	return (TRUE);
-}
-BOOL RTC_Start ( void )
-{
-    RTC->SR |= RTC_SR_TCE_MASK;
-	return (TRUE);
+	if(start)
+    		RTC->SR |= RTC_SR_TCE_MASK;
+	else
+    		RTC->SR &= ~RTC_SR_TCE_MASK;		
+	return (1);
 }
 
-BOOL RTC_Stop ( void )
+int RTC_Init (void)
 {
-    RTC->SR &= ~RTC_SR_TCE_MASK;
-	return (TRUE);
-}
-
-BOOL RTC_Init (void)
-{
-    RTC_ClkEn();
+    RTC_ClkCtl(1);
     if (RTC->TSR == 0) {
 		RTC->CR  = RTC_CR_SWR_MASK;
 		RTC->CR  &= ~RTC_CR_SWR_MASK;
@@ -484,39 +432,39 @@ BOOL RTC_Init (void)
     
     RTC->TCR = RTC_TCR_CIR(0) | RTC_TCR_TCR(0);  
     RTC->TPR = 0;
-	RTC_Start();
+	RTC_Ctl(1);
 	
-	return (TRUE);
+	return (1);
 }
 
-BOOL RTC_SetSec ( INT32U sec )
+int RTC_SetSec ( unsigned long sec )
 {
-	RTC_Stop();
+	RTC_Ctl(0);
 	RTC->TSR = sec;
-	RTC_Start();
-	return (TRUE);
+	RTC_Ctl(1);
+	return (1);
 }
-INT32U RTC_GetSec ( void )
+unsigned long RTC_GetSec ( void )
 {
 	return (RTC->TSR);
 }
-BOOL RTC_SetAlarm ( INT32U alarm )
+int RTC_SetAlarm ( unsigned long alarm )
 {
     RTC->TAR = alarm;
-	return (TRUE);
+	return (1);
 }
 
-BOOL Date_Init(void)
+int Date_Init(void)
 {	
 	RTC_Init();	
-	return TRUE;
+	return 1;
 }
 
-INT32U DateTimeToSeconds(DateTime *ct)
+unsigned long DateTimeToSeconds(DateTime *ct)
 {
-	INT32U Tmp_Year=0xFFFF, Tmp_Month=0xFF, Tmp_Date=0xFF;
-	INT32U LeapY, ComY, TotSeconds, TotDays;
-	INT32U Tmp_HH = 0xFF, Tmp_MM = 0xFF, Tmp_SS = 0xFF;
+	unsigned long Tmp_Year=0xFFFF, Tmp_Month=0xFF, Tmp_Date=0xFF;
+	unsigned long LeapY, ComY, TotSeconds, TotDays;
+	unsigned long Tmp_HH = 0xFF, Tmp_MM = 0xFF, Tmp_SS = 0xFF;
 	
 	Tmp_Year  = ct->year/*+2000*/;
 	Tmp_Month = ct->month;
@@ -546,7 +494,7 @@ INT32U DateTimeToSeconds(DateTime *ct)
 	return TotSeconds;
 }
 
-INT8U RTC_SetTime(DateTime *tp)
+unsigned char RTC_SetTime(DateTime *tp)
 {
 	RTC_SetSec(DateTimeToSeconds(tp));
 	return 0;
@@ -554,18 +502,18 @@ INT8U RTC_SetTime(DateTime *tp)
 
 void RTC_GetTime(DateTime *tp)
 { 
-	INT32U TY = 0;
-	INT32U TM = 1;
-	INT32U TD = 0;
-	INT32S Num4Y,NumY, OffSec, Off4Y = 0;
-	INT32U i;
-	INT32S NumDay;
-	INT32S AllNumDay;
-	//INT32S OffDay;
-	INT32U THH = 0;
-	INT32U TMM = 0;
-	INT32U TSS = 0;
-	INT32U TimeVar;
+	unsigned long TY = 0;
+	unsigned long TM = 1;
+	unsigned long TD = 0;
+	signed long Num4Y,NumY, OffSec, Off4Y = 0;
+	unsigned long i;
+	signed long NumDay;
+	signed long AllNumDay;
+	//signed long OffDay;
+	unsigned long THH = 0;
+	unsigned long TMM = 0;
+	unsigned long TSS = 0;
+	unsigned long TimeVar;
 	
 	TimeVar = RTC_GetSec();
 	AllNumDay = TimeVar/SecsPerDay;
@@ -610,19 +558,16 @@ void RTC_GetTime(DateTime *tp)
 }
 
 /*flex bus*/
-BOOL FLEXBUS_ClkEn (void)
+int FLEXBUS_ClkCtl(int on)
 {
-	SIM->SCGC7 |= SIM_SCGC7_FLEXBUS_MASK;
-	return (TRUE);
+	if(on)
+		SIM->SCGC7 |= SIM_SCGC7_FLEXBUS_MASK;
+	else
+		SIM->SCGC7 &= ~SIM_SCGC7_FLEXBUS_MASK;
+	return (1);
 }
 
-BOOL FLEXBUS_ClkDis (void)
-{
-	SIM->SCGC7 &= ~SIM_SCGC7_FLEXBUS_MASK;
-	return (TRUE);
-}
-
-BOOL FLEXBUS_Init ( INT32U div_n )
+int FLEXBUS_Init ( unsigned long div_n )
 {
 	//fb clock divider 3
 	SIM->CLKDIV1 |= SIM_CLKDIV1_OUTDIV3(div_n);		// div_n
@@ -668,89 +613,76 @@ BOOL FLEXBUS_Init ( INT32U div_n )
 
 	FB->CS[0].CSMR = FB_CSMR_V_MASK;    //Enable cs signal
 //--------------------------------------------------------------------------------------------------------------
-	return (TRUE);
+	return (1);
 }
 
-BOOL Mem_Rd ( INT16U *dat, INT32U offset )
+int Mem_Rd ( unsigned short *dat, unsigned long offset )
 {
-	BOOL ret = TRUE;
+	int ret = 1;
 	
 	if ( offset < PSRAM_CY ) {
-		*dat = *(INT16U*)(CS2_BASE + (offset<<1));
+		*dat = *(unsigned short*)(CS2_BASE + (offset<<1));
 	}
 	else {
-		ret = FALSE;
+		ret = 0;
 	}
 	
 	return (ret);
 }
 
-BOOL Mem_Wr ( INT16U dat, INT32U offset )
+int Mem_Wr ( unsigned short dat, unsigned long offset )
 {
-	BOOL ret = TRUE;
+	int ret = 1;
 		
 	if ( offset < PSRAM_CY ) {
-		*(INT16U*)(CS2_BASE + (offset<<1)) = dat;
+		*(unsigned short*)(CS2_BASE + (offset<<1)) = dat;
 	}
 	else {
-		ret = FALSE;
+		ret = 0;
 	}
 	
 	return (ret);
 }
 
 /*flex can*/
-INT32U CAN_MBRxflag[2] = { 0 };
-INT32U Rx_mb  [2]    = { 0 };
-INT32U Tx_rtr_mb [2] = { 0 };
-INT32U Tx_mb  [2]    = { 0 };
-INT32U Rx_rtr_mb [2] = { 0 };
+unsigned long CAN_MBRxflag[2] = { 0 };
+unsigned long Rx_mb  [2]    = { 0 };
+unsigned long Tx_rtr_mb [2] = { 0 };
+unsigned long Tx_mb  [2]    = { 0 };
+unsigned long Rx_rtr_mb [2] = { 0 };
 
 CAN_msg_t CAN_MsgBox[32] = {0};
 
-BOOL CAN_ClkEn (CAN_Type *CANx)
+int CAN_ClkCtl (CAN_Type *CANx,int on)
 {
-	BOOL retval = TRUE;
-	switch ((INT32U)CANx) {
+	int retval = 1;
+	switch ((unsigned long)CANx) {
 		case CAN0_BASE:
-			SIM->SCGC6 |= SIM_SCGC6_FLEXCAN0_MASK;
+			if(on)
+				SIM->SCGC6 |= SIM_SCGC6_FLEXCAN0_MASK;
+			else
+				SIM->SCGC6 &= ~SIM_SCGC6_FLEXCAN0_MASK;
 			break;
 //		case CAN1_BASE:
 //			SIM->SCGC3 |= SIM_SCGC3_FLEXCAN1_MASK;
 //			break;
 		default:
-			retval = FALSE;
+			retval = 0;
 	}
 	return (retval);
 }
 
-BOOL CAN_ClkDis (CAN_Type *CANx)
+int CAN_SetTiming (CAN_Type *CANx, unsigned long presdiv, unsigned char prop_seg, unsigned char pseg1, unsigned char pseg2)
 {
-	BOOL retval = TRUE;
-	switch ((INT32U)CANx) {
-		case CAN0_BASE:
-			SIM->SCGC6 &= ~SIM_SCGC6_FLEXCAN0_MASK;
-			break;
-//		case CAN1_BASE:
-//			SIM->SCGC3 &= ~SIM_SCGC3_FLEXCAN1_MASK;
-//			break;
-		default:
-			retval = FALSE;
-	}
-	return (retval);
-}
-
-BOOL CAN_SetTiming (CAN_Type *CANx, INT32U presdiv, INT8U prop_seg, INT8U pseg1, INT8U pseg2)
-{
-	BOOL retval = TRUE;
-	INT8U rjw;
+	int retval = 1;
+	unsigned char rjw;
 
 	/* Check input parameters are in expected boundaries                        */
 	if ((!presdiv)  || (presdiv  > 256)  ||
 		(!pseg1)    || (pseg1    >   8)  || 
 		(!pseg2)    || (pseg2    >   8)  ||
 		(!prop_seg) || (prop_seg >   8))  {
-		return (FALSE);
+		return (0);
 	}
 
 	/* Calculate other needed values                                            */
@@ -773,13 +705,13 @@ BOOL CAN_SetTiming (CAN_Type *CANx, INT32U presdiv, INT8U prop_seg, INT8U pseg1,
 	return (retval);
 }
 
-BOOL CAN_Init (CAN_Type *CANx, INT32U baud)
+int CAN_Init (CAN_Type *CANx, unsigned long baud)
 {
-	BOOL retval;
-	INT8U i;
+	int retval;
+	unsigned char i;
 	
-	retval = CAN_ClkEn (CANx);
-	if (retval == TRUE) {
+	retval = CAN_ClkCtl(CANx,1);
+	if (retval == 1) {
 		CANx->CTRL1 |=  CAN_CTRL1_CLKSRC_MASK;      /* CAN Engine Clock Src is Bus Clock  */		
 		CANx->MCR   &= ~CAN_MCR_MDIS_MASK;          /* Enable FlexCAN module              */
 		CANx->MCR   |=  CAN_MCR_SOFTRST_MASK;       /* Start Soft Reset                   */
@@ -817,48 +749,45 @@ BOOL CAN_Init (CAN_Type *CANx, INT32U baud)
 			while (CANx->MCR & CAN_MCR_NOTRDY_MASK);/* Wait for syn to bus                */
 		}
 		else {
-			retval = FALSE;
+			retval = 0;
 		}
 	}
 
 	return (retval);
 }
 
-BOOL CAN_DeInit (CAN_Type *CANx)
+int CAN_DeInit (CAN_Type *CANx)
 {
-	BOOL retval;
+	int retval;
 	
-	retval = CAN_ClkDis (CANx);
-	if (retval == TRUE) {
+	retval = CAN_ClkCtl(CANx,0);
+	if (retval == 1) {
 		;
 	}
 	
 	return (retval);
 }
 
-BOOL CAN_Loopback (CAN_Type *CANx, INT8U val)
+int CAN_Loopback (CAN_Type *CANx, unsigned char val)
 {
 	(val==0) ? (CANx->CTRL1 &= ~CAN_CTRL1_LPB_MASK) : (CANx->CTRL1 |= CAN_CTRL1_LPB_MASK);
-	return (TRUE);
+	return (1);
 }
 
-BOOL CAN_EnChanelInterrupt(CAN_Type *CANx, INT8U ch)
+int CAN_EnChanelInterruptCtl(CAN_Type *CANx, unsigned char ch,int on)
 {
-	CANx->IMASK1 |= CAN_IMASK1_BUFLM(1<<ch);
+	if(on)
+		CANx->IMASK1 |= CAN_IMASK1_BUFLM(1<<ch);
+	else
+		CANx->IMASK1 &= ~CAN_IMASK1_BUFLM(1<<ch);
 	return (0);
 }
 
-BOOL CAN_DisChanelInterrupt(CAN_Type *CANx, INT8U ch)
+int CAN_Wr (CAN_Type *CANx, unsigned char ch, CAN_msg_t *msg)
 {
-	CANx->IMASK1 &= ~CAN_IMASK1_BUFLM(1<<ch);
-	return (0);
-}
-
-BOOL CAN_Wr (CAN_Type *CANx, INT8U ch, CAN_msg_t *msg)
-{
-	INT32U  cs; 
-	INT8U remote_type, standard_id;
-	INT8U ctrl;
+	unsigned long  cs; 
+	unsigned char remote_type, standard_id;
+	unsigned char ctrl;
 
 	remote_type = (msg->type   != DATA_FRAME);
 	standard_id = (msg->format == STANDARD_FORMAT);
@@ -885,14 +814,14 @@ BOOL CAN_Wr (CAN_Type *CANx, INT8U ch, CAN_msg_t *msg)
 	      CAN_CS_DLC(msg->len);            /* DLC                                */
 
 	/* Setup data bytes                                                         */
-	CANx->MB[ch].WORD0 = CAN_WORD0_DATA_BYTE_0((INT32U)msg->data[0])| 
-	                     CAN_WORD0_DATA_BYTE_1((INT32U)msg->data[1])| 
-	                     CAN_WORD0_DATA_BYTE_2((INT32U)msg->data[2])| 
-	                     CAN_WORD0_DATA_BYTE_3((INT32U)msg->data[3]);
-	CANx->MB[ch].WORD1 = CAN_WORD1_DATA_BYTE_4((INT32U)msg->data[4])| 
-	                     CAN_WORD1_DATA_BYTE_5((INT32U)msg->data[5])| 
-	                     CAN_WORD1_DATA_BYTE_6((INT32U)msg->data[6])| 
-	                     CAN_WORD1_DATA_BYTE_7((INT32U)msg->data[7]);
+	CANx->MB[ch].WORD0 = CAN_WORD0_DATA_BYTE_0((unsigned long)msg->data[0])| 
+	                     CAN_WORD0_DATA_BYTE_1((unsigned long)msg->data[1])| 
+	                     CAN_WORD0_DATA_BYTE_2((unsigned long)msg->data[2])| 
+	                     CAN_WORD0_DATA_BYTE_3((unsigned long)msg->data[3]);
+	CANx->MB[ch].WORD1 = CAN_WORD1_DATA_BYTE_4((unsigned long)msg->data[4])| 
+	                     CAN_WORD1_DATA_BYTE_5((unsigned long)msg->data[5])| 
+	                     CAN_WORD1_DATA_BYTE_6((unsigned long)msg->data[6])| 
+	                     CAN_WORD1_DATA_BYTE_7((unsigned long)msg->data[7]);
 	
 	if (remote_type) { 
 		Tx_rtr_mb[ctrl] |= (1 << ch);     /* Send RTR                           */
@@ -911,13 +840,13 @@ BOOL CAN_Wr (CAN_Type *CANx, INT8U ch, CAN_msg_t *msg)
 
 	CANx->MB[ch].CS = cs;                 /* Activate transfer                  */
 
-	return (TRUE);
+	return (1);
 }
 
-BOOL CAN_Rd (CAN_Type *CANx, INT8U ch, CAN_msg_t *msg)
+int CAN_Rd (CAN_Type *CANx, unsigned char ch, CAN_msg_t *msg)
 {
-	BOOL retval;
-	INT32U cs;
+	int retval;
+	unsigned long cs;
 
 	cs  = CANx->MB[ch].CS;
 
@@ -955,12 +884,12 @@ BOOL CAN_Rd (CAN_Type *CANx, INT8U ch, CAN_msg_t *msg)
 	return (retval);
 }
 
-BOOL CAN_Set (CAN_Type *CANx, CAN_msg_t *msg)
+int CAN_Set (CAN_Type *CANx, CAN_msg_t *msg)
 {
-	INT32U cs;
-	INT8U ch;
-	BOOL standard_id;
-	INT8U ctrl;
+	unsigned long cs;
+	unsigned char ch;
+	int standard_id;
+	unsigned char ctrl;
 	
 	ctrl = (CANx == CAN0) ? 0 : 1;
 	
@@ -972,9 +901,9 @@ BOOL CAN_Set (CAN_Type *CANx, CAN_msg_t *msg)
 
 	/* Setup the identifier information                                         */
 	if (standard_id)  {                                      /* Standard ID     */
-		CANx->MB[ch].ID = (INT32U)(msg->id << CAN_ID_STD_SHIFT);
+		CANx->MB[ch].ID = (unsigned long)(msg->id << CAN_ID_STD_SHIFT);
 	}  else  {                                               /* Extended ID     */
-		CANx->MB[ch].ID = (INT32U)(msg->id << CAN_ID_EXT_SHIFT);
+		CANx->MB[ch].ID = (unsigned long)(msg->id << CAN_ID_EXT_SHIFT);
 		cs = CAN_CS_IDE_MASK;
 	}
 
@@ -982,14 +911,14 @@ BOOL CAN_Set (CAN_Type *CANx, CAN_msg_t *msg)
 	      CAN_CS_DLC(msg->len);            /* DLC                                */
 
 	/* Setup data bytes                                                         */
-	CANx->MB[ch].WORD0 = CAN_WORD0_DATA_BYTE_0((INT32U)msg->data[0])| 
-	                     CAN_WORD0_DATA_BYTE_1((INT32U)msg->data[1])| 
-	                     CAN_WORD0_DATA_BYTE_2((INT32U)msg->data[2])| 
-	                     CAN_WORD0_DATA_BYTE_3((INT32U)msg->data[3]);
-	CANx->MB[ch].WORD1 = CAN_WORD1_DATA_BYTE_4((INT32U)msg->data[4])| 
-	                     CAN_WORD1_DATA_BYTE_5((INT32U)msg->data[5])| 
-	                     CAN_WORD1_DATA_BYTE_6((INT32U)msg->data[6])| 
-	                     CAN_WORD1_DATA_BYTE_7((INT32U)msg->data[7]);
+	CANx->MB[ch].WORD0 = CAN_WORD0_DATA_BYTE_0((unsigned long)msg->data[0])| 
+	                     CAN_WORD0_DATA_BYTE_1((unsigned long)msg->data[1])| 
+	                     CAN_WORD0_DATA_BYTE_2((unsigned long)msg->data[2])| 
+	                     CAN_WORD0_DATA_BYTE_3((unsigned long)msg->data[3]);
+	CANx->MB[ch].WORD1 = CAN_WORD1_DATA_BYTE_4((unsigned long)msg->data[4])| 
+	                     CAN_WORD1_DATA_BYTE_5((unsigned long)msg->data[5])| 
+	                     CAN_WORD1_DATA_BYTE_6((unsigned long)msg->data[6])| 
+	                     CAN_WORD1_DATA_BYTE_7((unsigned long)msg->data[7]);
 
 	Rx_rtr_mb[ctrl] |= (1 << ch);       /* Receive RTR                        */
 	Tx_mb[ctrl]     |= (1 << ch);       /* Transmit response                  */
@@ -1000,16 +929,16 @@ BOOL CAN_Set (CAN_Type *CANx, CAN_msg_t *msg)
 
 	CANx->MB[ch].CS = cs;                 /* Activate transfer                  */
 
-	return TRUE;
+	return 1;
 }
 
-BOOL CAN_RxObject (CAN_Type *CANx, INT8U ch, INT32U id, INT32U object_para)
+int CAN_RxObject (CAN_Type *CANx, unsigned char ch, unsigned long id, unsigned long object_para)
 {
-	BOOL retval = TRUE;
-	INT32U cs; 
-	//BOOL remote_type;
-	BOOL standard_id;
-	INT8U ctrl;
+	int retval = 1;
+	unsigned long cs; 
+	//int remote_type;
+	int standard_id;
+	unsigned char ctrl;
 	
 	ctrl = (CANx == CAN0) ? 0 : 1;
 	//remote_type = (object_para != DATA_FRAME);
@@ -1022,10 +951,10 @@ BOOL CAN_RxObject (CAN_Type *CANx, INT8U ch, INT32U id, INT32U object_para)
 	
 	/* Setup the identifier information                                         */
 	if (standard_id)  {                                      /* Standard ID     */
-		CANx->MB[ch].ID = (INT32U)(id << 18);
+		CANx->MB[ch].ID = (unsigned long)(id << 18);
 	}
 	else  {                                               /* Extended ID     */
-		CANx->MB[ch].ID = (INT32U)(id <<  0);
+		CANx->MB[ch].ID = (unsigned long)(id <<  0);
 		cs = CAN_CS_IDE_MASK ;
 	}
 	
@@ -1045,7 +974,7 @@ BOOL CAN_RxObject (CAN_Type *CANx, INT8U ch, INT32U id, INT32U object_para)
 
 void CAN0_ORed_Message_buffer_IRQHandler (void)
 {
-	INT32U    iflag1, mb;
+	unsigned long    iflag1, mb;
 
 	iflag1 = CAN0->IFLAG1;
 	while (iflag1) {
@@ -1072,56 +1001,56 @@ void CAN0_ORed_Message_buffer_IRQHandler (void)
 }
 
 /*flex timer*/
-BOOL FTM_ClkEn ( FTM_Type *FTMx )
+int FTM_ClkEn ( FTM_Type *FTMx )
 {
-	BOOL ret = TRUE;
-	switch ( (INT32U)FTMx ) {
-		case (INT32U)FTM0:
+	int ret = 1;
+	switch ( (unsigned long)FTMx ) {
+		case (unsigned long)FTM0:
 			SIM->SCGC6 |= SIM_SCGC6_FTM0_MASK;
 			break;
-		case (INT32U)FTM1:
+		case (unsigned long)FTM1:
 			SIM->SCGC6 |= SIM_SCGC6_FTM1_MASK;
 			break;
-		case (INT32U)FTM2:
+		case (unsigned long)FTM2:
 			SIM->SCGC3 |= SIM_SCGC3_FTM2_MASK;
 			break;
 		default:
-			ret = FALSE;
+			ret = 0;
 	}
 	return (ret);
 }
 
-BOOL FTM_ClkDis ( FTM_Type *FTMx )
+int FTM_ClkDis ( FTM_Type *FTMx )
 {
-	BOOL ret = TRUE;
-	switch ( (INT32U)FTMx ) {
-		case (INT32U)FTM0:
+	int ret = 1;
+	switch ( (unsigned long)FTMx ) {
+		case (unsigned long)FTM0:
 			SIM->SCGC6 &= ~SIM_SCGC6_FTM0_MASK;
 			break;
-		case (INT32U)FTM1:
+		case (unsigned long)FTM1:
 			SIM->SCGC6 &= ~SIM_SCGC6_FTM1_MASK;
 			break;
-		case (INT32U)FTM2:
+		case (unsigned long)FTM2:
 			SIM->SCGC3 &= ~SIM_SCGC3_FTM2_MASK;
 			break;
 		default:
-			ret = FALSE;
+			ret = 0;
 	}
 	return (ret);
 }
 
-BOOL FTM_Stop ( FTM_Type *FTMx )
+int FTM_Stop ( FTM_Type *FTMx )
 {
 	FTMx->SC &= ~FTM_SC_CLKS_MASK;
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL FTM_PWM_Init ( FTM_Type *FTMx, INT32U rate )
+int FTM_PWM_Init ( FTM_Type *FTMx, unsigned long rate )
 {   
-	INT8U ps;
-	INT32U mod;
+	unsigned char ps;
+	unsigned long mod;
 	ps = (SystemCoreClock/rate)/65535;
 	if ( ps >= 4 ) ps = 4;
 	
@@ -1156,50 +1085,50 @@ BOOL FTM_PWM_Init ( FTM_Type *FTMx, INT32U rate )
 	FTMx->CONTROLS[3].CnSC &= ~(FTM_CnSC_MSB_MASK|FTM_CnSC_ELSA_MASK|FTM_CnSC_MSA_MASK|FTM_CnSC_ELSB_MASK );
 	FTMx->CONTROLS[3].CnSC |= (FTM_CnSC_MSB_MASK|FTM_CnSC_ELSA_MASK );
 	FTMx->CONTROLS[3].CnV  =  (FTMx->MOD)/2;
-	return (TRUE);
+	return (1);
 }
 
-BOOL FTM_PWM_Set ( FTM_Type *FTMx, INT8U channel, INT32U duty )
+int FTM_PWM_Set ( FTM_Type *FTMx, unsigned char channel, unsigned long duty )
 {
-	INT32U cv;
+	unsigned long cv;
 	if ( duty >= 10000 ) duty = 10000;
 	cv = (FTMx->MOD)*(10000-duty)/10000;
 	FTMx->CONTROLS[channel].CnV = cv;
-	return (TRUE);
+	return (1);
 }
 
 /*i2c*/
-BOOL I2C_ClkEn ( I2C_Type *I2Cx )
+int I2C_ClkEn ( I2C_Type *I2Cx )
 {
-	BOOL ret = TRUE;
-	switch ((INT32U)I2Cx) {
-		case (INT32U)I2C0:
+	int ret = 1;
+	switch ((unsigned long)I2Cx) {
+		case (unsigned long)I2C0:
 			SIM->SCGC4 |= SIM_SCGC4_I2C0_MASK;
 			break;
-		case (INT32U)I2C1:
+		case (unsigned long)I2C1:
 			SIM->SCGC4 |= SIM_SCGC4_I2C1_MASK;
 			break;
 		default:
-			ret = FALSE;
+			ret = 0;
 	}
 	return (ret);
 }
 
-BOOL I2C_ClkDis ( I2C_Type *I2Cx )
+int I2C_ClkDis ( I2C_Type *I2Cx )
 {
-	BOOL ret = TRUE;
-	switch ((INT32U)I2Cx) {
-		case (INT32U)I2C0:
+	int ret = 1;
+	switch ((unsigned long)I2Cx) {
+		case (unsigned long)I2C0:
 			SIM->SCGC4 &= ~SIM_SCGC4_I2C0_MASK;
-		case (INT32U)I2C1:
+		case (unsigned long)I2C1:
 			SIM->SCGC4 &= ~SIM_SCGC4_I2C1_MASK;
 		default:
-			ret = FALSE;
+			ret = 0;
 	}
 	return (ret);
 }
 
-BOOL I2C_Init ( I2C_Type *I2Cx )
+int I2C_Init ( I2C_Type *I2Cx )
 {
 	I2Cx->F = 0x70|
 	I2C_F_MULT(0x02)|       	/* set MULT and ICR */
@@ -1207,44 +1136,39 @@ BOOL I2C_Init ( I2C_Type *I2Cx )
     I2Cx->C1 = I2C_C1_IICEN_MASK;       /* enable IIC */
 //I2Cx->C1 |= I2C_C1_IICIE_MASK;;
 	
-	return (TRUE);
+	return (1);
 }
 
 void Pause(void){
-	INT32U n;
+	unsigned long n;
 	for(n=0;n<I2C_PAUSE;n++) {
 		__asm("nop");
 	}
 }
 
-/******************************************************************************
-**    function  : I2C_Wait 
-**    parameter : type 0 = wait transfer done
-**                type 1 = wait ack
-******************************************************************************/
-BOOL I2C_Wait ( I2C_Type *I2Cx, INT8U type )
+int I2C_Wait ( I2C_Type *I2Cx, unsigned char type )
 {
-	BOOL ret = TRUE;
-	INT32U tm_out = I2C_TIME_OUT;
+	int ret = 1;
+	unsigned long tm_out = I2C_TIME_OUT;
 	
 	if (type == 0) {
 		while((--tm_out) && ((I2Cx->S & I2C_S_IICIF_MASK)==0));
 		I2Cx->S |= I2C_S_IICIF_MASK;
 		if (tm_out == 0)
-			ret = FALSE;
+			ret = 0;
 	}
 	else {
 		while((--tm_out) && ((I2Cx->S & I2C_S_RXAK_MASK)!=0));
 		if (tm_out == 0)
-			ret = FALSE;
+			ret = 0;
 	}
 
 	return (ret);
 }
 
-BOOL I2C_Write ( I2C_Type *I2Cx, INT8U slvaddr, INT8U subaddr, INT8U *buff, INT32U len )
+int I2C_Write ( I2C_Type *I2Cx, unsigned char slvaddr, unsigned char subaddr, unsigned char *buff, unsigned long len )
 {
-	BOOL ret = TRUE;
+	int ret = 1;
 	
 	if ((I2Cx->S & I2C_S_BUSY_MASK)==0) {
 		//start
@@ -1274,15 +1198,15 @@ BOOL I2C_Write ( I2C_Type *I2Cx, INT8U slvaddr, INT8U subaddr, INT8U *buff, INT3
 		Pause();
 	}
 	else {
-		ret = FALSE;
+		ret = 0;
 	}
 	
 	return (ret);
 }
 
-BOOL I2C_Read ( I2C_Type *I2Cx, INT8U slvaddr, INT8U subaddr, INT8U *buff, INT32U len )
+int I2C_Read ( I2C_Type *I2Cx, unsigned char slvaddr, unsigned char subaddr, unsigned char *buff, unsigned long len )
 {
-	BOOL ret = TRUE;
+	int ret = 1;
 	
 	if ((I2Cx->S & I2C_S_BUSY_MASK)==0) {
 		//start
@@ -1342,31 +1266,31 @@ BOOL I2C_Read ( I2C_Type *I2Cx, INT8U slvaddr, INT8U subaddr, INT8U *buff, INT32
 		Pause();
 	}
 	else {
-		ret = FALSE;
+		ret = 0;
 	}
 	
 	return (ret);
 }
 
 /*i2s*/
-BOOL I2c_Cs4322_RegRead(INT8U subaddr, INT8U *value)
+int I2c_Cs4322_RegRead(unsigned char subaddr, unsigned char *value)
 {
-	BOOL retval;
+	int retval;
 	retval = I2C_Read ( I2C1, CS43L22_I2C_ADDRESS, subaddr, value, 1 );
 	return retval;
 }
 
-BOOL I2c_Cs4322_RegWrite(INT8U subaddr, INT8U value)
+int I2c_Cs4322_RegWrite(unsigned char subaddr, unsigned char value)
 {
-	BOOL retval;
+	int retval;
 	retval = I2C_Write ( I2C1, CS43L22_I2C_ADDRESS, subaddr, &value, 1 );
 	return retval;
 }
 
-BOOL CS43L22_Init (void)
+int CS43L22_Init (void)
 {
-	BOOL ret;
-	INT8U id,status;
+	int ret;
+	unsigned char id,status;
 	
 	// check ID of CS43L22
 	ret &= I2c_Cs4322_RegRead(0x01, &id);	
@@ -1408,9 +1332,9 @@ BOOL CS43L22_Init (void)
 	ret &= I2c_Cs4322_RegWrite(0x1E, 0x00);
 
 	// Headphone A Volume: Headphone Volume is -6db
-	ret &= I2c_Cs4322_RegWrite(0x22, (INT8U)(0-12));
+	ret &= I2c_Cs4322_RegWrite(0x22, (unsigned char)(0-12));
 	// Headphone B Volume: Headphone Volume is -6db
-	ret &= I2c_Cs4322_RegWrite(0x23, (INT8U)(0-12));
+	ret &= I2c_Cs4322_RegWrite(0x23, (unsigned char)(0-12));
 
 	// check status of CS43L22
 	ret &= I2c_Cs4322_RegRead(0x2E, &status);
@@ -1428,10 +1352,10 @@ BOOL CS43L22_Init (void)
 	return ret;
 }
 
-BOOL I2S_ClkEn ( I2S_Type *I2Sx )
+int I2S_ClkEn ( I2S_Type *I2Sx )
 {
 	SIM->SCGC6 |= SIM_SCGC6_I2S_MASK;
-	return TRUE;
+	return 1;
 }
 
 void I2S_Init(void)
@@ -1439,21 +1363,21 @@ void I2S_Init(void)
   /* SIM_SCGC6: SAI0=1 */
   SIM->SCGC6 |= SIM_SCGC6_I2S_MASK;                                                   
   /* I2S0->MCR: MOE=0 */
-  I2S0->MCR &= (uint32_t)~(uint32_t)(I2S_MCR_MOE_MASK);                                                   
+  I2S0->MCR &= (unsigned long)~(unsigned long)(I2S_MCR_MOE_MASK);                                                   
     while((I2S0->MCR & I2S_MCR_MOE_MASK) != 0U){} /* Wait for MCLK disable*/
   /* I2S0->MCR: MICS=0 */
-  I2S0->MCR &= (uint32_t)~(uint32_t)(I2S_MCR_MICS(0x03));                                                   
+  I2S0->MCR &= (unsigned long)~(unsigned long)(I2S_MCR_MICS(0x03));                                                   
   /* I2S0->MDR: FRACT=0,DIVIDE=9 */
-  I2S0->MDR = (uint32_t)((I2S0->MDR & (uint32_t)~(uint32_t)(
+  I2S0->MDR = (unsigned long)((I2S0->MDR & (unsigned long)~(unsigned long)(
               I2S_MDR_FRACT(0xFF) |
               I2S_MDR_DIVIDE(0x0FF6)
-             )) | (uint32_t)(
+             )) | (unsigned long)(
               I2S_MDR_DIVIDE(0x09)
              ));                                                  
   /* I2S0->MCR: MOE=1 */
   I2S0->MCR |= I2S_MCR_MOE_MASK;                                                   
   /* I2S0->TCSR: TE=0,STOPE=0,DBGE=0,BCE=0,FR=1,SR=0,WSF=1,SEF=1,FEF=1,WSIE=0,SEIE=0,FEIE=0,FWIE=0,FRIE=0,FWDE=0,FRDE=0 */
-  I2S0->TCSR = (uint32_t)((I2S0->TCSR & (uint32_t)~(uint32_t)(
+  I2S0->TCSR = (unsigned long)((I2S0->TCSR & (unsigned long)~(unsigned long)(
                I2S_TCSR_TE_MASK |
                I2S_TCSR_STOPE_MASK |
                I2S_TCSR_DBGE_MASK |
@@ -1466,7 +1390,7 @@ void I2S_Init(void)
                I2S_TCSR_FRIE_MASK |
                I2S_TCSR_FWDE_MASK |
                I2S_TCSR_FRDE_MASK
-              )) | (uint32_t)(
+              )) | (unsigned long)(
                I2S_TCSR_FR_MASK |
                I2S_TCSR_WSF_MASK |
                I2S_TCSR_SEF_MASK |
@@ -1474,7 +1398,7 @@ void I2S_Init(void)
               ));                                                  
     while((I2S0->TCSR & I2S_TCSR_TE_MASK) != 0U){} /* Wait for transmitter disable*/
   /* I2S0->RCSR: RE=0,STOPE=0,DBGE=0,BCE=0,FR=1,SR=0,WSF=1,SEF=1,FEF=1,WSIE=0,SEIE=0,FEIE=0,FWIE=0,FRIE=0,FWDE=0,FRDE=0 */
-  I2S0->RCSR = (uint32_t)((I2S0->RCSR & (uint32_t)~(uint32_t)(
+  I2S0->RCSR = (unsigned long)((I2S0->RCSR & (unsigned long)~(unsigned long)(
                I2S_RCSR_RE_MASK |
                I2S_RCSR_STOPE_MASK |
                I2S_RCSR_DBGE_MASK |
@@ -1487,7 +1411,7 @@ void I2S_Init(void)
                I2S_RCSR_FRIE_MASK |
                I2S_RCSR_FWDE_MASK |
                I2S_RCSR_FRDE_MASK
-              )) | (uint32_t)(
+              )) | (unsigned long)(
                I2S_RCSR_FR_MASK |
                I2S_RCSR_WSF_MASK |
                I2S_RCSR_SEF_MASK |
@@ -1495,82 +1419,82 @@ void I2S_Init(void)
               ));                                                  
     while((I2S0->RCSR & I2S_RCSR_RE_MASK) != 0U){} /* Wait for receiver disable*/
   /* I2S0->TCR1: TFW=0 */
-  I2S0->TCR1 &= (uint32_t)~(uint32_t)(I2S_TCR1_TFW(0x07));                                                   
+  I2S0->TCR1 &= (unsigned long)~(unsigned long)(I2S_TCR1_TFW(0x07));                                                   
   /* I2S0->RCR1: RFW=0 */
-  I2S0->RCR1 &= (uint32_t)~(uint32_t)(I2S_RCR1_RFW(0x07));                                                   
+  I2S0->RCR1 &= (unsigned long)~(unsigned long)(I2S_RCR1_RFW(0x07));                                                   
   /* I2S0->TCR2: SYNC=0,BCS=0,BCI=0,MSEL=1,BCP=1,BCD=1,DIV=3 */
-  I2S0->TCR2 = (uint32_t)((I2S0->TCR2 & (uint32_t)~(uint32_t)(
+  I2S0->TCR2 = (unsigned long)((I2S0->TCR2 & (unsigned long)~(unsigned long)(
                I2S_TCR2_SYNC(0x03) |
                I2S_TCR2_BCS_MASK |
                I2S_TCR2_BCI_MASK |
                I2S_TCR2_MSEL(0x02) |
                I2S_TCR2_DIV(0xFC)
-              )) | (uint32_t)(
+              )) | (unsigned long)(
                I2S_TCR2_MSEL(0x01) |
                I2S_TCR2_BCP_MASK |
                I2S_TCR2_BCD_MASK |
                I2S_TCR2_DIV(0x03)
               ));                                                  
   /* I2S0->RCR2: SYNC=0,BCS=0,BCI=0,MSEL=1,BCP=0,BCD=1,DIV=3 */
-  I2S0->RCR2 = (uint32_t)((I2S0->RCR2 & (uint32_t)~(uint32_t)(
+  I2S0->RCR2 = (unsigned long)((I2S0->RCR2 & (unsigned long)~(unsigned long)(
                I2S_RCR2_SYNC(0x03) |
                I2S_RCR2_BCS_MASK |
                I2S_RCR2_BCI_MASK |
                I2S_RCR2_MSEL(0x02) |
                I2S_RCR2_BCP_MASK |
                I2S_RCR2_DIV(0xFC)
-              )) | (uint32_t)(
+              )) | (unsigned long)(
                I2S_RCR2_MSEL(0x01) |
                I2S_RCR2_BCD_MASK |
                I2S_RCR2_DIV(0x03)
               ));                                                  
   /* I2S0->TCR3: TCE=1,WDFL=0 */
-  I2S0->TCR3 = (uint32_t)((I2S0->TCR3 & (uint32_t)~(uint32_t)(
+  I2S0->TCR3 = (unsigned long)((I2S0->TCR3 & (unsigned long)~(unsigned long)(
                I2S_TCR3_TCE(0x02) |
                I2S_TCR3_WDFL(0x1F)
-              )) | (uint32_t)(
+              )) | (unsigned long)(
                I2S_TCR3_TCE(0x01)
               ));                                                  
   /* I2S0->RCR3: RCE=0,WDFL=0 */
-  I2S0->RCR3 &= (uint32_t)~(uint32_t)((I2S_RCR3_RCE(0x03) | I2S_RCR3_WDFL(0x1F)));                                                   
+  I2S0->RCR3 &= (unsigned long)~(unsigned long)((I2S_RCR3_RCE(0x03) | I2S_RCR3_WDFL(0x1F)));                                                   
   /* I2S0->TCR4: FRSZ=1,SYWD=0x0F,MF=1,FSE=0,FSP=0,FSD=1 */
-  I2S0->TCR4 = (uint32_t)((I2S0->TCR4 & (uint32_t)~(uint32_t)(
+  I2S0->TCR4 = (unsigned long)((I2S0->TCR4 & (unsigned long)~(unsigned long)(
                I2S_TCR4_FRSZ(0x1E) |
                I2S_TCR4_SYWD(0x10) |
                I2S_TCR4_FSE_MASK |
                I2S_TCR4_FSP_MASK
-              )) | (uint32_t)(
+              )) | (unsigned long)(
                I2S_TCR4_FRSZ(0x01) |
                I2S_TCR4_SYWD(0x0F) |
                I2S_TCR4_MF_MASK |
                I2S_TCR4_FSD_MASK
               ));                                                  
   /* I2S0->RCR4: FRSZ=1,SYWD=0,MF=0,FSE=0,FSP=0,FSD=0 */
-  I2S0->RCR4 = (uint32_t)((I2S0->RCR4 & (uint32_t)~(uint32_t)(
+  I2S0->RCR4 = (unsigned long)((I2S0->RCR4 & (unsigned long)~(unsigned long)(
                I2S_RCR4_FRSZ(0x1E) |
                I2S_RCR4_SYWD(0x1F) |
                I2S_RCR4_MF_MASK |
                I2S_RCR4_FSE_MASK |
                I2S_RCR4_FSP_MASK |
                I2S_RCR4_FSD_MASK
-              )) | (uint32_t)(
+              )) | (unsigned long)(
                I2S_RCR4_FRSZ(0x01)
               ));                                                  
   /* I2S0->TCR5: WNW=0x0F,W0W=0x0F,FBT=0 */
-  I2S0->TCR5 = (uint32_t)((I2S0->TCR5 & (uint32_t)~(uint32_t)(
+  I2S0->TCR5 = (unsigned long)((I2S0->TCR5 & (unsigned long)~(unsigned long)(
                I2S_TCR5_WNW(0x10) |
                I2S_TCR5_W0W(0x10) |
                I2S_TCR5_FBT(0x1F)
-              )) | (uint32_t)(
+              )) | (unsigned long)(
                I2S_TCR5_WNW(0x0F) |
                I2S_TCR5_W0W(0x0F)
               ));                                                  
   /* I2S0->RCR5: WNW=7,W0W=7,FBT=0 */
-  I2S0->RCR5 = (uint32_t)((I2S0->RCR5 & (uint32_t)~(uint32_t)(
+  I2S0->RCR5 = (unsigned long)((I2S0->RCR5 & (unsigned long)~(unsigned long)(
                I2S_RCR5_WNW(0x18) |
                I2S_RCR5_W0W(0x18) |
                I2S_RCR5_FBT(0x1F)
-              )) | (uint32_t)(
+              )) | (unsigned long)(
                I2S_RCR5_WNW(0x07) |
                I2S_RCR5_W0W(0x07)
               ));                                                  
@@ -1579,7 +1503,7 @@ void I2S_Init(void)
   /* I2S0->RMR: RWM=0 */
   I2S0->RMR = 0x00U;                                                   
   /* I2S0->TCSR: TE=1,STOPE=0,DBGE=0,BCE=1,WSF=0,SEF=0,FEF=0,WSIE=0,SEIE=0,FEIE=0,FWIE=0,FRIE=0,FWDE=0,FRDE=0 */
-  I2S0->TCSR = (uint32_t)((I2S0->TCSR & (uint32_t)~(uint32_t)(
+  I2S0->TCSR = (unsigned long)((I2S0->TCSR & (unsigned long)~(unsigned long)(
                I2S_TCSR_STOPE_MASK |
                I2S_TCSR_DBGE_MASK |
                I2S_TCSR_WSF_MASK |
@@ -1592,12 +1516,12 @@ void I2S_Init(void)
                I2S_TCSR_FRIE_MASK |
                I2S_TCSR_FWDE_MASK |
                I2S_TCSR_FRDE_MASK
-              )) | (uint32_t)(
+              )) | (unsigned long)(
                I2S_TCSR_TE_MASK |
                I2S_TCSR_BCE_MASK
               ));                                                  
   /* I2S0->RCSR: RE=0,STOPE=0,DBGE=0,BCE=0,WSF=0,SEF=0,FEF=0,WSIE=0,SEIE=0,FEIE=0,FWIE=0,FRIE=0,FWDE=0,FRDE=0 */
-  I2S0->RCSR &= (uint32_t)~(uint32_t)(
+  I2S0->RCSR &= (unsigned long)~(unsigned long)(
                 I2S_RCSR_RE_MASK |
                 I2S_RCSR_STOPE_MASK |
                 I2S_RCSR_DBGE_MASK |
@@ -2068,32 +1992,32 @@ void LCD_WriteData(unsigned char data)
 }
 
 /*pit*/
-BOOL PIT_ClkEn ( PIT_Type *PITx )
+int PIT_ClkEn ( PIT_Type *PITx )
 {
 	SIM->SCGC6 |= SIM_SCGC6_PIT_MASK;
 	PITx->MCR &= ~PIT_MCR_MDIS_MASK;
 	PITx->MCR |= PIT_MCR_FRZ_MASK;
-	return (TRUE);
+	return (1);
 }
 
-BOOL PIT_ClkDis ( PIT_Type *PITx )
+int PIT_ClkDis ( PIT_Type *PITx )
 {
 	SIM->SCGC6 &= ~SIM_SCGC6_PIT_MASK;
-	return (TRUE);
+	return (1);
 }
 
-BOOL PIT_ChSetup ( PIT_Type *PITx, INT8U ch, INT32U value )
+int PIT_ChSetup ( PIT_Type *PITx, unsigned char ch, unsigned long value )
 {
-	PITx->CHANNEL[ch].LDVAL = (INT32U)value;
+	PITx->CHANNEL[ch].LDVAL = (unsigned long)value;
 	PITx->CHANNEL[ch].TFLG  |= PIT_TFLG_TIF_MASK;
 	PITx->CHANNEL[ch].TCTRL |= PIT_TCTRL_TEN_MASK
 	                         |PIT_TCTRL_TIE_MASK;
-	return (TRUE);
+	return (1);
 }
 
 void PIT0_IRQHandler(void)
 {
-	extern INT32U CounterPIT;
+	extern unsigned long CounterPIT;
 	PIT->CHANNEL[0].TFLG |= PIT_TFLG_TIF_MASK;	
 	CounterPIT++;
 }
@@ -2114,54 +2038,54 @@ void PIT3_IRQHandler(void)
 }
 
 /*port*/
-BOOL PORT_ClkEn ( PORT_Type *PORTx)
+int PORT_ClkEn ( PORT_Type *PORTx)
 {
-	switch ((INT32U)PORTx) {
-		case (INT32U)PORTA:
+	switch ((unsigned long)PORTx) {
+		case (unsigned long)PORTA:
 			SIM->SCGC5 |= SIM_SCGC5_PORTA_MASK;
 			break;
-		case (INT32U)PORTB:
+		case (unsigned long)PORTB:
 			SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
 			break;
-		case (INT32U)PORTC:
+		case (unsigned long)PORTC:
 			SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
 			break;
-		case (INT32U)PORTD:
+		case (unsigned long)PORTD:
 			SIM->SCGC5 |= SIM_SCGC5_PORTD_MASK;
 			break;
-		case (INT32U)PORTE:
+		case (unsigned long)PORTE:
 			SIM->SCGC5 |= SIM_SCGC5_PORTE_MASK;
 			break;
 		default:
 			break;
 	}
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //端口n时钟禁止
-BOOL PORT_ClkDis ( PORT_Type *PORTx)
+int PORT_ClkDis ( PORT_Type *PORTx)
 {
-	switch ((INT32U)PORTx) {
-		case (INT32U)PORTA:
+	switch ((unsigned long)PORTx) {
+		case (unsigned long)PORTA:
 			SIM->SCGC5 &= ~SIM_SCGC5_PORTA_MASK;
 			break;
-		case (INT32U)PORTB:
+		case (unsigned long)PORTB:
 			SIM->SCGC5 &= ~SIM_SCGC5_PORTB_MASK;
 			break;
-		case (INT32U)PORTC:
+		case (unsigned long)PORTC:
 			SIM->SCGC5 &= ~SIM_SCGC5_PORTC_MASK;
 			break;
-		case (INT32U)PORTD:
+		case (unsigned long)PORTD:
 			SIM->SCGC5 &= ~SIM_SCGC5_PORTD_MASK;
 			break;
-		case (INT32U)PORTE:
+		case (unsigned long)PORTE:
 			SIM->SCGC5 &= ~SIM_SCGC5_PORTE_MASK;
 			break;
 		default:
 			break;
 	}
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2176,28 +2100,28 @@ BOOL PORT_ClkDis ( PORT_Type *PORTx)
 //		1010 Interrupt on falling edge
 //		1011 Interrupt on either edge
 //		1100 Interrupt when logic one
-BOOL PORT_IntCfg ( PORT_Type *PORTx, INT32U pin_n, INT32U mode_n)
+int PORT_IntCfg ( PORT_Type *PORTx, unsigned long pin_n, unsigned long mode_n)
 {
 	PORTx->PCR[pin_n] &= ~PORT_PCR_IRQC_MASK;
 	PORTx->PCR[pin_n] |= PORT_PCR_IRQC(mode_n);
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //端口n第n位控制寄存器锁定（如果锁定，该寄存器在下一次复位时解锁）
-BOOL PORT_BitLock ( PORT_Type *PORTx, INT32U pin_n)
+int PORT_BitLock ( PORT_Type *PORTx, unsigned long pin_n)
 {
 	PORTx->PCR[pin_n] |= PORT_PCR_LK_MASK;
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //端口n第n位引脚功能选择
-BOOL PORT_BitFn ( PORT_Type *PORTx, INT32U pin_n, INT32U fn_n)
+int PORT_BitFn ( PORT_Type *PORTx, unsigned long pin_n, unsigned long fn_n)
 {
 	PORTx->PCR[pin_n] &= ~PORT_PCR_MUX_MASK;
 	PORTx->PCR[pin_n] |= PORT_PCR_MUX(fn_n);
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2205,10 +2129,10 @@ BOOL PORT_BitFn ( PORT_Type *PORTx, INT32U pin_n, INT32U fn_n)
 //dse: drive strength enable			ode: open drain enable
 //pfe: passive filter enable			sre: slew rate enable
 //pe : pull enable						ps : pull select(0:pull-down 1:pull-up)
-BOOL PORT_BitDrive ( PORT_Type *PORTx, INT32U pin_n, INT32U dse, INT32U ode,
-					INT32U pfe, INT32U sre, INT32U pe, INT32U ps)
+int PORT_BitDrive ( PORT_Type *PORTx, unsigned long pin_n, unsigned long dse, unsigned long ode,
+					unsigned long pfe, unsigned long sre, unsigned long pe, unsigned long ps)
 {
-	INT32U tmp = 0;
+	unsigned long tmp = 0;
 	
 	PORTx->PCR[pin_n] &= ~0xFF;
 	
@@ -2220,37 +2144,37 @@ BOOL PORT_BitDrive ( PORT_Type *PORTx, INT32U pin_n, INT32U dse, INT32U ode,
 	if (ps  != 0) {tmp |= PORT_PCR_PS_MASK;}
 	
 	PORTx->PCR[pin_n] |= tmp;
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //端口n所有位控制寄存器锁定
-BOOL PORT_GlobalLock ( PORT_Type *PORTx)
+int PORT_GlobalLock ( PORT_Type *PORTx)
 {
 	PORTx->GPCLR = PORT_PCR_LK_MASK|
 				PORT_PCR_LK_MASK<<16;
 	PORTx->GPCHR = PORT_PCR_LK_MASK|
 				PORT_PCR_LK_MASK<<16;
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //端口n所有位功能选择
-BOOL PORT_GlobalFn ( PORT_Type *PORTx, INT32U fn_n)
+int PORT_GlobalFn ( PORT_Type *PORTx, unsigned long fn_n)
 {
 	PORTx->GPCLR = PORT_PCR_MUX(fn_n)|
 				PORT_PCR_MUX_MASK<<16;
 	PORTx->GPCHR = PORT_PCR_MUX(fn_n)|
 				PORT_PCR_MUX_MASK<<16;
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //端口n所有位引脚驱动能力设置
-BOOL PORT_GlobalDrive ( PORT_Type *PORTx, INT32U dse, INT32U ode,
-					INT32U pfe, INT32U sre, INT32U pe, INT32U ps)
+int PORT_GlobalDrive ( PORT_Type *PORTx, unsigned long dse, unsigned long ode,
+					unsigned long pfe, unsigned long sre, unsigned long pe, unsigned long ps)
 {
-	INT32U tmp = 0;	
+	unsigned long tmp = 0;	
 	if (dse != 0) {tmp |= PORT_PCR_DSE_MASK;}
 	if (ode != 0) {tmp |= PORT_PCR_ODE_MASK;}
 	if (pfe != 0) {tmp |= PORT_PCR_PFE_MASK;}
@@ -2260,91 +2184,91 @@ BOOL PORT_GlobalDrive ( PORT_Type *PORTx, INT32U dse, INT32U ode,
 
 	PORTx->GPCLR = tmp | 0xFF<<16;
 	PORTx->GPCHR = tmp | 0xFF<<16;
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //端口n第n位的滤波器允许
-BOOL PORT_BitFilterEn ( PORT_Type *PORTx, INT32U bit_n)
+int PORT_BitFilterEn ( PORT_Type *PORTx, unsigned long bit_n)
 {
 	PORTx->DFER |= 1<<bit_n;
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //端口n第n位的滤波器禁止
-BOOL PORT_BitFilterDis ( PORT_Type *PORTx, INT32U bit_n)
+int PORT_BitFilterDis ( PORT_Type *PORTx, unsigned long bit_n)
 {
 	PORTx->DFER &= ~(1<<bit_n);
-	return (TRUE);
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //端口n所有位的滤波器允许
-BOOL PORT_GlobalFilterEn ( PORT_Type *PORTx)
+int PORT_GlobalFilterEn ( PORT_Type *PORTx)
 {
-	PORTx->DFER = (INT32U)0xFFFFFFFF;
-	return (TRUE);
+	PORTx->DFER = (unsigned long)0xFFFFFFFF;
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //端口n所有位的滤波器禁止
-BOOL PORT_GlobalFilterDis ( PORT_Type *PORTx)
+int PORT_GlobalFilterDis ( PORT_Type *PORTx)
 {
-	PORTx->DFER = (INT32U)0x0;
-	return (TRUE);
+	PORTx->DFER = (unsigned long)0x0;
+	return (1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //端口n滤波器设置
 //cs : clock source						flen: filter length
-BOOL PORT_FilterCfg ( PORT_Type *PORTx, INT32U cs, INT32U flen)
+int PORT_FilterCfg ( PORT_Type *PORTx, unsigned long cs, unsigned long flen)
 {
-	(cs == 0) ? (PORTx->DFCR = (INT32U)0x0) : (PORTx->DFCR = (INT32U)0x1);
+	(cs == 0) ? (PORTx->DFCR = (unsigned long)0x0) : (PORTx->DFCR = (unsigned long)0x1);
 	PORTx->DFWR = PORT_DFWR_FILT(flen);
-	return (TRUE);
+	return (1);
 }
 
 /*spi*/
-BOOL SPI_ClkEn ( SPI_Type *SPIx )
+int SPI_ClkEn ( SPI_Type *SPIx )
 {
-	switch ((INT32U)SPIx) {
-		case (INT32U)SPI0:
+	switch ((unsigned long)SPIx) {
+		case (unsigned long)SPI0:
 			SIM->SCGC6 |= SIM_SCGC6_SPI0_MASK;
 			break;
-		case (INT32U)SPI1:
+		case (unsigned long)SPI1:
 			SIM->SCGC6 |= SIM_SCGC6_SPI1_MASK;
 			break;
-//		case (INT32U)SPI2:
+//		case (unsigned long)SPI2:
 //			SIM->SCGC3 |= SIM_SCGC3_SPI2_MASK;
 //			break;
 		default:
 			;
 	}
 	
-	return (TRUE);
+	return (1);
 }
 
-BOOL SPI_ClkDis ( SPI_Type *SPIx )
+int SPI_ClkDis ( SPI_Type *SPIx )
 {
-	switch ((INT32U)SPIx) {
-		case (INT32U)SPI0:
+	switch ((unsigned long)SPIx) {
+		case (unsigned long)SPI0:
 			SIM->SCGC6 &= ~SIM_SCGC6_SPI0_MASK;
 			break;
-		case (INT32U)SPI1:
+		case (unsigned long)SPI1:
 			SIM->SCGC6 &= ~SIM_SCGC6_SPI1_MASK;
 			break;
-//		case (INT32U)SPI2:
+//		case (unsigned long)SPI2:
 //			SIM->SCGC3 &= ~SIM_SCGC3_SPI2_MASK;
 //			break;
 		default:
 			;
 	}
 	
-	return (TRUE);
+	return (1);
 }
 
-BOOL SPI_Init ( SPI_Type *SPIx, INT32U baud )
+int SPI_Init ( SPI_Type *SPIx, unsigned long baud )
 {
 	SPIx->MCR	 = (SPI_MCR_CLR_RXF_MASK|
 					SPI_MCR_CLR_TXF_MASK|
@@ -2370,10 +2294,10 @@ BOOL SPI_Init ( SPI_Type *SPIx, INT32U baud )
 					SPI_SR_RFOF_MASK	);
 
 	SPIx->MCR	&=  ~SPI_MCR_HALT_MASK;
-	return (TRUE);
+	return (1);
 }
 
-INT8U SPI_SendReceive ( SPI_Type *SPIx, INT8U tx_dat )
+unsigned char SPI_SendReceive ( SPI_Type *SPIx, unsigned char tx_dat )
 {
 	SPIx->SR	 = (SPI_SR_EOQF_MASK	|
 				SPI_SR_TFFF_MASK	|
@@ -2395,14 +2319,14 @@ INT8U SPI_SendReceive ( SPI_Type *SPIx, INT8U tx_dat )
 	return (SPIx->POPR);
 }
 
-INT32U SPI_Send ( SPI_Type *SPIx, INT8U *buff, INT32U len )
+unsigned long SPI_Send ( SPI_Type *SPIx, unsigned char *buff, unsigned long len )
 {
 	while(len-- != 0) 
 		SPI_SendReceive ( SPIx, *buff++);
 	return (len);
 }
 
-INT32U SPI_Receive ( SPI_Type *SPIx, INT8U *buff, INT32U len )
+unsigned long SPI_Receive ( SPI_Type *SPIx, unsigned char *buff, unsigned long len )
 {
 	while(len-- != 0)
 		*buff++ = SPI_SendReceive ( SPIx, 0xFF);
@@ -2566,33 +2490,33 @@ INT8S TSI_GetKey(TSI_Type *TSIx)
 	return (sKeyVal);
 }
 
-BOOL TSI_ClkEn(TSI_Type *TSIx)
+int TSI_ClkEn(TSI_Type *TSIx)
 {
-	BOOL ret = TRUE;
-	switch ((INT32U)TSIx) {
-		case (INT32U)TSI0:
+	int ret = 1;
+	switch ((unsigned long)TSIx) {
+		case (unsigned long)TSI0:
 			SIM->SCGC5 |= SIM_SCGC5_TSI_MASK;
 			break;
 		default :
-			ret = FALSE;
+			ret = 0;
 	}
 	return (ret);
 }
 
-BOOL TSI_ClkDis(TSI_Type *TSIx)
+int TSI_ClkDis(TSI_Type *TSIx)
 {
-	BOOL ret = TRUE;
-	switch ((INT32U)TSIx) {
-		case (INT32U)TSI0:
+	int ret = 1;
+	switch ((unsigned long)TSIx) {
+		case (unsigned long)TSI0:
 			SIM->SCGC5 &= ~SIM_SCGC5_TSI_MASK;
 			break;
 		default :
-			ret = FALSE;
+			ret = 0;
 	}
 	return (ret);
 }
 
-BOOL TSI_Init(TSI_Type *TSIx)
+int TSI_Init(TSI_Type *TSIx)
 {		
 	TSI_ClkEn(TSIx);
 	
@@ -2614,25 +2538,25 @@ BOOL TSI_Init(TSI_Type *TSIx)
 					TSI_PEN_PEN8_MASK;
 
 	TSIx->GENCS |=  TSI_GENCS_TSIEN_MASK;		// enables tsi
-	return (TRUE);
+	return (1);
 }
 	
-BOOL TSI_Cal(TSI_Type *TSIx)
+int TSI_Cal(TSI_Type *TSIx)
 {
 	TSIx->GENCS |= TSI_GENCS_SWTS_MASK;
 	while(!(TSIx->GENCS&TSI_GENCS_EOSF_MASK));	
 	
-	Tsich_cal[0] = TSI0->CNTR1 & (INT32U)0xFFFF;
-	Tsich_cal[1] = TSI0->CNTR7 & (INT32U)0xFFFF;
+	Tsich_cal[0] = TSI0->CNTR1 & (unsigned long)0xFFFF;
+	Tsich_cal[1] = TSI0->CNTR7 & (unsigned long)0xFFFF;
 	Tsich_cal[2] = TSI0->CNTR7 >> 16;
-	Tsich_cal[3] = TSI0->CNTR9 & (INT32U)0xFFFF;
+	Tsich_cal[3] = TSI0->CNTR9 & (unsigned long)0xFFFF;
 	
-	TSIx->THRESHOLD = TSI0->CNTR9 & (INT32U)0xFFFF + TSI_TRIG_THR;
+	TSIx->THRESHOLD = TSI0->CNTR9 & (unsigned long)0xFFFF + TSI_TRIG_THR;
 
 	TSIx->GENCS |= TSI_GENCS_OUTRGF_MASK;
 	TSIx->GENCS |= TSI_GENCS_EOSF_MASK;
 	
-	return (TRUE);
+	return (1);
 }
 
 void TSI0_IRQHandler(void)
@@ -2650,10 +2574,10 @@ void TSI0_IRQHandler(void)
 					TSI_GENCS_OVRF_MASK|
 					TSI_GENCS_EXTERF_MASK;
 	
-	tsich_val[0] = (TSI0->CNTR1 & (INT32U)0xFFFF) - Tsich_cal[0];
-	tsich_val[1] = (TSI0->CNTR7 & (INT32U)0xFFFF) - Tsich_cal[1];
+	tsich_val[0] = (TSI0->CNTR1 & (unsigned long)0xFFFF) - Tsich_cal[0];
+	tsich_val[1] = (TSI0->CNTR7 & (unsigned long)0xFFFF) - Tsich_cal[1];
 	tsich_val[2] = (TSI0->CNTR7 >> 16)            - Tsich_cal[2];
-	tsich_val[3] = (TSI0->CNTR9 & (INT32U)0xFFFF) - Tsich_cal[3];
+	tsich_val[3] = (TSI0->CNTR9 & (unsigned long)0xFFFF) - Tsich_cal[3];
 	
 	for (i=0; i<4; i++) {
 		for (j=i+1; j<4; j++) {
