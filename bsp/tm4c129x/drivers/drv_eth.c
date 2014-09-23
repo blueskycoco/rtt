@@ -67,7 +67,7 @@
 #include <lwip/snmp.h>
 #include "lwip/tcpip.h"
 #include "netif/etharp.h"
-#include "netif/ppp_oe.h"
+#include "netif/ppp/pppoe.h"
 
 
 /**
