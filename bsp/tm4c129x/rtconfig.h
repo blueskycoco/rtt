@@ -168,7 +168,7 @@
 // <section name="RT_USING_LWIP" description="lwip, a lightweight TCP/IP protocol stack" default="true" >
 #define RT_USING_LWIP
 // <bool name="RT_USING_LWIP141" description="Using lwIP 1.4.1 version" default="true" />
-#define RT_USING_LWIP141
+/*#define RT_USING_LWIP141*/
 // <bool name="RT_LWIP_ICMP" description="Enable ICMP protocol" default="true" />
 #define RT_LWIP_ICMP
 // <bool name="RT_LWIP_IGMP" description="Enable IGMP protocol" default="false" />
@@ -221,7 +221,8 @@
 #define RT_LWIP_MSKADDR2 255
 #define RT_LWIP_MSKADDR3 0
 // </section>
-
+#define RT_LWIP_IPV6 1
+#define RT_USING_LWIP_HEAD 1
 
 
 // </RDTConfigurator>
