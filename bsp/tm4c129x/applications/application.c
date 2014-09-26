@@ -19,6 +19,24 @@
 #ifdef RT_USING_LWIP
 #include "drv_eth.h"
 #endif
+#include "led.h"
+
+/* led thread entry */
+static void led_thread_entry(void* parameter)
+{
+	//rt_hw_led_init();
+
+	  while(1)
+	  {
+			rt_hw_led_on();
+			rt_thread_delay(RT_TICK_PER_SECOND);
+			rt_kprintf("led on\r\n");
+			rt_hw_led_off();
+			rt_thread_delay(RT_TICK_PER_SECOND);
+			rt_kprintf("led off\r\n");
+	  }
+}
+
 /* thread phase init */
 void rt_init_thread_entry(void *parameter)
 {
@@ -35,10 +53,17 @@ void rt_init_thread_entry(void *parameter)
 int rt_application_init(void)
 {
     rt_thread_t tid;
+    rt_thread_t led_thread;
     tid = rt_thread_create("init",
                            rt_init_thread_entry, RT_NULL,
                            2048, RT_THREAD_PRIORITY_MAX / 3, 20);
     if (tid != RT_NULL) rt_thread_startup(tid);
+    /* Create led thread */
+    led_thread = rt_thread_create("led",
+			    led_thread_entry, RT_NULL,
+			    256, 20, 20);
+    if(led_thread != RT_NULL)
+		  rt_thread_startup(led_thread);
 
     return 0;
 }
