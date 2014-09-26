@@ -28,11 +28,11 @@
 #include "driverlib/rom_map.h"
 
 void rt_hw_led_on(){
-	GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_0|GPIO_PIN_1);
+	MAP_GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_0|GPIO_PIN_1);
 }
 
 void rt_hw_led_off(){
-	GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_0|GPIO_PIN_1, 0);
+	MAP_GPIOPinWrite(GPIO_PORTN_BASE, GPIO_PIN_0|GPIO_PIN_1, 0);
 }
 
 /*
@@ -43,10 +43,10 @@ LED_RED  : PC9
 /* Initial led gpio pin  */
 void rt_hw_led_init(void)
 {
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPION);
-    SysCtlDelay(1);
-    GPIOPinTypeGPIOOutput(GPIO_PORTN_BASE, GPIO_PIN_1);
-    GPIOPinTypeGPIOOutput(GPIO_PORTN_BASE, GPIO_PIN_0);
+    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPION);
+    MAP_SysCtlDelay(1);
+    MAP_GPIOPinTypeGPIOOutput(GPIO_PORTN_BASE, GPIO_PIN_1);
+    MAP_GPIOPinTypeGPIOOutput(GPIO_PORTN_BASE, GPIO_PIN_0);
 }
 
 /* Initial components for device */
