@@ -147,7 +147,7 @@ void dac_dma(void)
 	PDB0->SC |= PDB_SC_MULT(mult);
 	PDB0->SC |= PDB_SC_PRESCALER(prescaler);
 	PDB0->SC |= PDB_SC_LDMOD(0); 
-	PDB0->SC |= PDB_SC_TRGSEL(4);
+	PDB0->SC |= PDB_SC_TRGSEL(0);
 	PDB0->SC &= ~(PDB_SC_CONT_MASK);
 	PDB0->SC &= ~(PDB_SC_DMAEN_MASK);
 	if( delayus <= us )
