@@ -133,15 +133,38 @@ struct rt_thread thread_led1;
 static void rt_thread_entry_led1(void* parameter)
 {
     int n = 0;
+	int stage=0;
     rt_uint32_t offset=0;
+	int i=2000;
+	int delta = 50;
     rt_hw_led_init();
-
+	dac_dma();
+	
+	/*SIM->SCGC2 |= SIM_SCGC2_DAC0_MASK;
+		DAC0->C0 |= DAC_C0_DACEN_MASK
+				   |DAC_C0_DACRFS_MASK
+				   |DAC_C0_DACTRGSEL_MASK;
+		
+		DAC0->DAT[0].DATL = stage &  0xFF;
+		DAC0->DAT[0].DATH = stage >> 8;
+		DAC0->C0 |= DAC_C0_DACSWTRG_MASK;
+*/
     while (1)
     {
         //rt_kprintf("LED\t%d\tis shining\r\n",n);
-
+		/*if(i==2000)
+			  delta = 50;
+			else if(i==4000)
+			  delta = -50;
+			
+			i += delta;
+*/
         rt_hw_led_on(n);
         rt_thread_delay(RT_TICK_PER_SECOND/2);
+		/*rt_kprintf("i is %d\r\n",i);
+		DAC0->DAT[0].DATL = i &  0xFF;
+		DAC0->DAT[0].DATH = i >> 8;
+		DAC0->C0 |= DAC_C0_DACSWTRG_MASK;*/
 	if(!Mem_Check(offset))
 		//rt_kprintf("offset %x test ok\r\n",offset);
 	//else
@@ -153,7 +176,7 @@ static void rt_thread_entry_led1(void* parameter)
         rt_thread_delay(RT_TICK_PER_SECOND/2);
 
         n++;
-
+		//stage=stage+100000;
         if (n == (LED_MAX+1))
             n = 0;
     }

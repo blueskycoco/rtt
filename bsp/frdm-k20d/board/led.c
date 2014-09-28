@@ -70,3 +70,98 @@ void rt_hw_led_off(rt_uint32_t n)
 	else
 		PTE->PSOR |= led_mask[n];
 }
+/*pit trigger pdb , pdb trigger dac0 , dac0 trigger dma read from buffer*/
+void dac_dma(void)
+{
+	unsigned short buffer[36];
+	int i;
+	unsigned int g_bus_clock=(SystemCoreClock/(((SIM->CLKDIV1&SIM_CLKDIV1_OUTDIV2_MASK)>>SIM_CLKDIV1_OUTDIV2_SHIFT)+1));
+	unsigned char pdb_sc_mults[4] = {1, 10, 20, 40};
+	unsigned int  us = 1000*1000;
+  	unsigned int  delayus = 0,mod;
+	unsigned int bus_clk = g_bus_clock/1000000;
+  	unsigned char prescaler, mult,j;
+	float temp=0;
+	unsigned int ldval = 500*1000*(g_bus_clock/1000000);
+
+	rt_kprintf("g_bus_clock is %d\r\n",g_bus_clock);
+	for(i=0;i<36;i++)
+		buffer[i]=2000+i*100;
+	/*1 config dac0*/
+	SIM->SCGC2 |= SIM_SCGC2_DAC0_MASK;
+	DAC0->C2 = DAC_C2_DACBFUP(0x00);
+	DAC0->C1 = 0;
+	DAC0->C1 |= DAC_C1_DACBFMD(0x00);
+	DAC0->C1 |= DAC_C1_DACBFWM(0x00);
+	DAC0->C1 |= DAC_C1_DMAEN_MASK; 
+	DAC0->C0 = 0;
+	DAC0->C0 |= DAC_C0_DACBBIEN_MASK;
+    //DAC_RDPTBOT_ISR[x] = rdptbot_isr;
+	DAC0->C0 |= DAC_C0_DACRFS_MASK;
+	DAC0->C0 |= DAC_C0_DACEN_MASK;
+	/*2 config dma*/
+	SIM->SCGC6 |= SIM_SCGC6_DMAMUX_MASK;
+	SIM->SCGC7 |= SIM_SCGC7_DMA_MASK;
+	DMA0->ERQ &= ~(1<<0);
+	DMAMUX->CHCFG[0] = DMAMUX_CHCFG_SOURCE(45);
+	DMAMUX->CHCFG[0] &= ~(DMAMUX_CHCFG_TRIG_MASK);
+	DMA0->TCD[0].SADDR = DMA_SADDR_SADDR((unsigned int)&(buffer[0]));
+	DMA0->TCD[0].SOFF = DMA_SOFF_SOFF(1);
+	DMA0->TCD[0].ATTR = 0 | DMA_ATTR_SSIZE(1);
+	DMA0->TCD[0].SLAST = DMA_SLAST_SLAST(-2);
+	DMA0->TCD[0].DADDR = DMA_DADDR_DADDR((unsigned int)&(DAC0->DAT[0]));
+	DMA0->TCD[0].DOFF = DMA_DOFF_DOFF(0);
+	DMA0->TCD[0].ATTR |= DMA_ATTR_DSIZE(1);
+	DMA0->TCD[0].DLAST_SGA = DMA_DLAST_SGA_DLASTSGA(0);
+	DMA0->TCD[0].CITER_ELINKNO = DMA_CITER_ELINKNO_CITER(18);//?
+	DMA0->TCD[0].BITER_ELINKNO = DMA_CITER_ELINKNO_CITER(18);//?
+	DMA0->TCD[0].NBYTES_MLNO = DMA_NBYTES_MLNO_NBYTES(2);//?
+	DMA0->TCD[0].CSR = 0;
+	DMA0->TCD[0].CSR &= ~(DMA_CSR_DREQ_MASK);
+	DMAMUX->CHCFG[0] |= DMAMUX_CHCFG_ENBL_MASK;
+	DMA0->ERQ|=(1<<0);
+	/*3 config pdb*/
+	
+	for(i=0; i<4; i++)
+	{
+		mult = i;
+		for(j=0; j<8; j++)
+		{
+			prescaler = j;
+			mod = (bus_clk*us)/((1<<j)*pdb_sc_mults[i]);
+			if(mod <= 0xFFFFu)
+			break;
+		}
+		if(mod <= 0xFFFFu)
+			break;
+		else if(i == 3)
+			{
+			rt_kprintf("return %d\r\n",i);
+			return;         
+			}
+	}
+	rt_kprintf("mod %d , mult %d , prescaler %d , us %d , delayus %d , temp %f busclk %d\r\n",mod,mult,prescaler,us,delayus,temp,bus_clk);
+	SIM->SCGC6 |= SIM_SCGC6_PDB_MASK;
+	PDB0->SC = 0x00;
+	PDB0->SC |= PDB_SC_PDBEN_MASK;
+	PDB0->SC |= PDB_SC_MULT(mult);
+	PDB0->SC |= PDB_SC_PRESCALER(prescaler);
+	PDB0->SC |= PDB_SC_LDMOD(0); 
+	PDB0->SC |= PDB_SC_TRGSEL(4);
+	PDB0->SC &= ~(PDB_SC_CONT_MASK);
+	PDB0->SC &= ~(PDB_SC_DMAEN_MASK);
+	if( delayus <= us )
+  	{
+    	temp = (float)mod/(float)us;
+    	PDB0->IDLY = (unsigned int)(delayus*temp);
+  	}
+	PDB0->SC |= PDB_SC_LDOK_MASK;
+	PDB0->DAC[0].INTC |= 0;
+	PDB0->DAC[0].INT = (bus_clk * 0)/(prescaler * mult);
+	PDB0->SC |= PDB_SC_LDOK_MASK;
+	/*4 config pit*/	
+	SIM->SCGC6 |= SIM_SCGC6_PIT_MASK;
+	PIT->MCR = 0x00;
+	PIT->CHANNEL[0].LDVAL = ldval-1;
+	PIT->CHANNEL[0].TCTRL |= PIT_TCTRL_TEN_MASK;
+}

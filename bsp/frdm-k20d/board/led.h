@@ -29,5 +29,5 @@ void rt_hw_led_init(void);
 void rt_hw_led_uninit(void);
 void rt_hw_led_on(rt_uint32_t n);
 void rt_hw_led_off(rt_uint32_t n);
-
+void dac_dma(void);
 #endif /* end  of __LED_H__ */
