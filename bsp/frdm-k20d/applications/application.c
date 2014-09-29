@@ -24,6 +24,7 @@
 #include <rtthread.h>
 
 #include "led.h"
+#include "ili9341.h"
 
 #ifdef RT_USING_LWIP
 #include <lwip/sys.h>
@@ -133,10 +134,10 @@ struct rt_thread thread_led1;
 static void rt_thread_entry_led1(void* parameter)
 {
     int n = 0;
-	int stage=0;
+//	int stage=0;
     rt_uint32_t offset=0;
-	int i=2000;
-	int delta = 50;
+//	int i=2000;
+//	int delta = 50;
     rt_hw_led_init();
 	dac_dma();
 	
