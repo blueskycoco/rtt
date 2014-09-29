@@ -210,6 +210,7 @@ static rt_err_t _control(struct rt_serial_device *serial, int cmd, void *arg)
 
     uart_reg = ((struct k20_serial_device *)serial->parent.user_data)->baseAddress;
     uart_irq_num = ((struct k20_serial_device *)serial->parent.user_data)->irq_num;
+	
 
     switch (cmd)
     {
