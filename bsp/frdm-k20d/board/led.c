@@ -71,9 +71,11 @@ void rt_hw_led_off(rt_uint32_t n)
 		PTE->PSOR |= led_mask[n];
 }
 /*pit trigger pdb , pdb trigger dac0 , dac0 trigger dma read from buffer*/
+unsigned short buffer[16];
+
 void dac_dma(void)
 {
-	unsigned short buffer[36];
+
 	int i;
 	unsigned int g_bus_clock=(SystemCoreClock/(((SIM->CLKDIV1&SIM_CLKDIV1_OUTDIV2_MASK)>>SIM_CLKDIV1_OUTDIV2_SHIFT)+1));
 	unsigned char pdb_sc_mults[4] = {1, 10, 20, 40};
@@ -85,14 +87,14 @@ void dac_dma(void)
 	unsigned int ldval = 500*1000*(g_bus_clock/1000000);
 
 	rt_kprintf("g_bus_clock is %d\r\n",g_bus_clock);
-	for(i=0;i<36;i++)
-		buffer[i]=2000+i*100;
+	for(i=0;i<16;i++)
+		buffer[i]=1000+i*100;
 	/*1 config dac0*/
 	SIM->SCGC2 |= SIM_SCGC2_DAC0_MASK;
-	for(i=0;i<15;i++)
+	for(i=0;i<16;i++)
 	{
 		DAC0->DAT[i].DATL=0;
-  		DAC0->DAT[i].DATH=0x0;
+  		DAC0->DAT[i].DATH=0;
 	}
 	DAC0->C2 = DAC_C2_DACBFUP(0x0f);
 	DAC0->C1 = 0;
@@ -101,7 +103,7 @@ void dac_dma(void)
 	DAC0->C1 |= DAC_C1_DMAEN_MASK; 
 	DAC0->C1 |= DAC_C1_DACBFEN_MASK; 
 	DAC0->C0 = 0;
-	//DAC0->C0 |= DAC_C0_DACBBIEN_MASK|DAC_C0_DACBTIEN_MASK|DAC_C0_DACBWIEN_MASK/*|DAC_C0_DACTRGSEL_MASK*/;
+	DAC0->C0 |= DAC_C0_DACBBIEN_MASK|DAC_C0_DACBTIEN_MASK|DAC_C0_DACBWIEN_MASK/*|DAC_C0_DACTRGSEL_MASK*/;
 	DAC0->C0 |= DAC_C0_DACRFS_MASK;
 	DAC0->C0 |= DAC_C0_DACEN_MASK;
 	/*2 config dma0*/
@@ -111,17 +113,17 @@ void dac_dma(void)
 	DMAMUX->CHCFG[0] = DMAMUX_CHCFG_SOURCE(45);
 	DMAMUX->CHCFG[0] &= ~(DMAMUX_CHCFG_TRIG_MASK);
 	DMA0->EEI|=DMA_EEI_EEI0_MASK;
-	DMA0->TCD[0].SADDR = DMA_SADDR_SADDR((unsigned int)&(buffer[0]));
-	DMA0->TCD[0].SOFF = DMA_SOFF_SOFF(1);
+	DMA0->TCD[0].SADDR = DMA_SADDR_SADDR(buffer);
+	DMA0->TCD[0].SOFF = DMA_SOFF_SOFF(2);
 	DMA0->TCD[0].ATTR = 0 | DMA_ATTR_SSIZE(1);
-	DMA0->TCD[0].SLAST = DMA_SLAST_SLAST(-36);
-	DMA0->TCD[0].DADDR = DMA_DADDR_DADDR((unsigned int)&(DAC0->DAT[0]));
-	DMA0->TCD[0].DOFF = DMA_DOFF_DOFF(1);
+	DMA0->TCD[0].SLAST = DMA_SLAST_SLAST(-32);
+	DMA0->TCD[0].DADDR = DMA_DADDR_DADDR((unsigned int)&(DAC0->DAT[0].DATL));
+	DMA0->TCD[0].DOFF = DMA_DOFF_DOFF(2);
 	DMA0->TCD[0].ATTR |= DMA_ATTR_DSIZE(1);
-	DMA0->TCD[0].DLAST_SGA = DMA_DLAST_SGA_DLASTSGA(0);
-	DMA0->TCD[0].CITER_ELINKNO = DMA_CITER_ELINKNO_CITER(16);//?
+	DMA0->TCD[0].DLAST_SGA = DMA_DLAST_SGA_DLASTSGA(-32);
+	DMA0->TCD[0].CITER_ELINKNO = DMA_CITER_ELINKNO_CITER(1);//?
 	DMA0->TCD[0].BITER_ELINKNO = DMA_CITER_ELINKNO_CITER(1);//?
-	DMA0->TCD[0].NBYTES_MLNO = DMA_NBYTES_MLNO_NBYTES(16);//?
+	DMA0->TCD[0].NBYTES_MLNO = DMA_NBYTES_MLNO_NBYTES(32);//?
 	DMA0->TCD[0].CSR = 0;
 	DMA0->TCD[0].CSR &= ~(DMA_CSR_DREQ_MASK);
 	DMAMUX->CHCFG[0] |= DMAMUX_CHCFG_ENBL_MASK;
@@ -177,14 +179,26 @@ void dac_dma(void)
 	NVIC_EnableIRQ(PIT0_IRQn);
 	NVIC_EnableIRQ(PDB0_IRQn);
 	NVIC_EnableIRQ(DMA0_IRQn);
+	NVIC_EnableIRQ(DMA_Error_IRQn);
 	NVIC_EnableIRQ(DAC0_IRQn);
 }
+int j=0;
 void PIT0_IRQHandler(void)
 {
+	int i;
 	rt_interrupt_enter();
 
 	PIT->CHANNEL[0].TFLG |= PIT_TFLG_TIF_MASK;
 	//rt_kprintf("pit0 intr %d\r\n",PDB0->CNT&0xffff);
+	
+	rt_kprintf("\r\n");
+	for(i=0;i<16;i++)
+		rt_kprintf("dac_buf[%2d] %x %x\r\n",i,DAC0->DAT[i].DATL,DAC0->DAT[i].DATH);
+	//DMA0->TCD[0].CSR |= DMA_CSR_START_MASK;
+	//DMA0->ERQ|=(1<<0);
+	for(i=0;i<16;i++)
+		buffer[i]=2000+j+i*100;
+	j++;
 	rt_interrupt_leave();
 }
 
@@ -194,7 +208,6 @@ void PDB0_IRQHandler(void)
 
 	if((PDB0->SC & PDB_SC_PDBIF_MASK) && (PDB0->SC & PDB_SC_PDBIE_MASK))
 	{
-		//rt_kprintf("pdb0 intr %d\r\n",PDB0->CNT&0xffff);
 		PDB0->SC &= ~PDB_SC_PDBIF_MASK;
 	}
 
@@ -209,22 +222,22 @@ void PDB0_IRQHandler(void)
 }
 void DAC0_IRQHandler(void)
 {
-	int i;
+	//int i;
 	rt_interrupt_enter();
 
   if((DAC0->SR & DAC_SR_DACBFRPBF_MASK) && (DAC0->C0 & DAC_C0_DACBBIEN_MASK))
   {
-    //rt_kprintf("dac0 DACBFRPBF intr \r\n");
+    rt_kprintf("dac0 DACBFRPBF intr \r\n");
     DAC0->SR &= ~(DAC_SR_DACBFRPBF_MASK);
   }
   if((DAC0->SR & DAC_SR_DACBFRPTF_MASK) && (DAC0->C0 & DAC_C0_DACBTIEN_MASK))
   {
-    //rt_kprintf("dac0 DACBFRPTF intr \r\n");
+    rt_kprintf("dac0 DACBFRPTF intr \r\n");
     DAC0->SR &= ~(DAC_SR_DACBFRPTF_MASK);
   }
   if((DAC0->SR & DAC_SR_DACBFWMF_MASK) && (DAC0->C0 & DAC_C0_DACBWIEN_MASK))
   {
-    //rt_kprintf("dac0 DACBFWMF intr \r\n");
+    rt_kprintf("dac0 DACBFWMF intr \r\n");
     DAC0->SR &= ~(DAC_SR_DACBFWMF_MASK);
   }
   
@@ -237,6 +250,14 @@ void DMA0_isr(void)
 	DMA0->INT =0x01;
 	DMA0->CDNE = 0x01;
 	rt_kprintf("dma0 intr \r\n");
+	rt_interrupt_leave();
+}
+void DMA_Error_IRQHandler()
+{
+	rt_interrupt_enter();
+	//DMA0->INT =0x01;
+	//DMA0->CDNE = 0x01;
+	rt_kprintf("DMA_Error_IRQHandler intr \r\n");
 	rt_interrupt_leave();
 }
 
