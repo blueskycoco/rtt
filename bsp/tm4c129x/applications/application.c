@@ -30,7 +30,7 @@ static void led_thread_entry(void* parameter)
 	  {
 			rt_hw_led_on();
 			rt_thread_delay(RT_TICK_PER_SECOND);
-			rt_kprintf("led on\r\n");
+			rt_kprintf("led on3\r\n");
 			rt_hw_led_off();
 			rt_thread_delay(RT_TICK_PER_SECOND);
 			rt_kprintf("led off\r\n");
