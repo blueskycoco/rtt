@@ -128,5 +128,5 @@ uint16_t read_adc(unsigned char channel)
 	  ADC1ConvertedVoltage = ((ADC1ConvertedValue1 *3300)/0xFFF)/10;	
 	  return ADC1ConvertedVoltage;
 }
-INIT_DEVICE_EXPORT(rt_hw_adc_init);
+//INIT_DEVICE_EXPORT(rt_hw_adc_init);
 

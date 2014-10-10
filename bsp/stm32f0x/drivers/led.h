@@ -19,10 +19,10 @@
 #include <rtthread.h>
 #include <stm32f0xx.h>
 
-#define rt_hw_led1_on()   GPIO_SetBits(GPIOC, GPIO_Pin_9)
-#define rt_hw_led1_off()  GPIO_ResetBits(GPIOC, GPIO_Pin_9)
-#define rt_hw_led2_on()   GPIO_ResetBits(GPIOA, GPIO_Pin_4)
-#define rt_hw_led2_off()  GPIO_SetBits(GPIOA, GPIO_Pin_4)
+#define rt_hw_led1_on()   GPIO_SetBits(GPIOA, GPIO_Pin_0)
+#define rt_hw_led1_off()  GPIO_ResetBits(GPIOA, GPIO_Pin_0)
+#define rt_hw_led2_on()   GPIO_ResetBits(GPIOA, GPIO_Pin_0)
+#define rt_hw_led2_off()  GPIO_SetBits(GPIOA, GPIO_Pin_0)
 
 int rt_hw_led_init(void);
 

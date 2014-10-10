@@ -76,5 +76,5 @@ void rt_hw_timer_init(void)
   //TIM_Cmd(TIM3, ENABLE);
   TIM_CtrlPWMOutputs(TIM3, ENABLE);
 }
-INIT_DEVICE_EXPORT(rt_hw_timer_init);
+//INIT_DEVICE_EXPORT(rt_hw_timer_init);
 
