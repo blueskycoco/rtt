@@ -41,6 +41,7 @@ static void rt_init_thread_entry(void* parameter)
   finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif  /* RT_USING_FINSH */
   rt_hw_led1_off();
+		cmx865a_init();
 
 	
 		unsigned int count=0;
@@ -50,15 +51,16 @@ static void rt_init_thread_entry(void* parameter)
 		while (1)
 		{
 			/* led1 on */
-#ifndef RT_USING_FINSH
+#ifdef RT_USING_FINSH
 			rt_kprintf("led on, count : %d\r\n",count);
 #endif
+	test_cmx865a();
 			count++;
 			rt_hw_led1_off();
 			rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
 	
 			/* led1 off */
-#ifndef RT_USING_FINSH
+#ifdef RT_USING_FINSH
 			rt_kprintf("led off\r\n");
 #endif
 			rt_hw_led1_on();

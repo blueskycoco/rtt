@@ -1,3 +1,7 @@
+#include <rthw.h>
+#include <rtthread.h>
+#include "stm32f0xx.h"
+
 #define	G_Reset_Command_addr		0x01
 #define	G_Control_Command_addr	0xe0
 #define	Transmit_Mode_addr			0xe1
@@ -8,7 +12,7 @@
 #define	Programming_addr			0xe8
 
 #define		NULL			0xff
-#define		NORMAL			0x8141//8141/815f
+#define		NORMAL			0x815f//0x8141//8141/815f
 #define		TXAOutDisable		0x4000
 #define         AnalogueLoopbackTest  0x0800
 #define           equalizer     0x0400

@@ -1,16 +1,17 @@
 #include <stm32f0xx.h>
 #include "cmx865a.h"
 SPI_InitTypeDef  SPI_InitStructure;
-//rt_uint8_t send_data=0;
-//rt_uint8_t recv_data=0;
-unsigned char DTMF_TX_Busy = 0;//?????
-unsigned char DTMF_TX_Num= 0;//????
-unsigned char CMX865_RX_Flag;//????FSKorDTMF
-unsigned char CID_RX_buff[max_buff];//?????
-unsigned char CID_RX_count= 0;//???????
-unsigned	int	temp_int;//?CMX865?????
-unsigned char  CID_State=0;//????????
-enum CID_recive_state//??FSK ?????
+rt_uint8_t send_data=0;
+rt_uint8_t recv_data=0;
+#define max_buff 256
+unsigned char DTMF_TX_Busy = 0;
+unsigned char DTMF_TX_Num= 0;
+unsigned char CMX865_RX_Flag;
+unsigned char CID_RX_buff[max_buff];
+unsigned char CID_RX_count= 0;
+unsigned	int	temp_int;
+unsigned char  CID_State=0;
+enum CID_recive_state
 {
 	Waite,
        Recived_55,
@@ -48,6 +49,7 @@ void init_spi()
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
+	init_irq();
 
 	/* Enable the SPI periph */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
@@ -88,10 +90,10 @@ void init_spi()
 	SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
 	SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
 	SPI_InitStructure.SPI_NSS = SPI_NSS_Hard;
-	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_4;
+	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_64;
 	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
 	SPI_InitStructure.SPI_CRCPolynomial = 7;
-#if 0
+#if 1
 	/* Configure the SPI interrupt priority */
 	NVIC_InitStructure.NVIC_IRQChannel = SPI1_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPriority = 1;
@@ -110,11 +112,12 @@ void init_spi()
 	/* Enable the SPI Error interrupt */
 	SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_ERR, ENABLE);
 	/* Data transfer is performed in the SPI interrupt routine */
-
+	SPI_SSOutputCmd(SPI1,ENABLE);
+	//SPI_NSSPulseModeCmd(SPI1,ENABLE);
 	/* Enable the SPI peripheral */
 	SPI_Cmd(SPI1, ENABLE);
 }
-#if 0
+#if 1
 void write_spi(rt_uint8_t data)
 {
 	send_data=data;
@@ -138,6 +141,34 @@ rt_uint8_t read_spi()
 	
 	return recv_data;
 }
+void write_cmx865a(rt_uint8_t addr,rt_uint16_t data,rt_uint8_t len)
+{
+	//SPI_Cmd(SPI1, ENABLE);
+	if(len==0)
+		write_spi(addr);
+	else
+		{
+		write_spi(addr);
+		write_spi((data>>8) & 0xff);
+		write_spi(data&0xff);
+		}
+	//while (SPI_GetTransmissionFIFOStatus(SPI1) != SPI_TransmissionFIFOStatus_Empty);
+}
+void read_cmx865a(rt_uint8_t addr,rt_uint8_t* data,rt_uint8_t len)
+{
+
+	rt_uint8_t i=0;
+	
+	write_spi(addr);
+//	while (SPI_GetTransmissionFIFOStatus(SPI1) != SPI_TransmissionFIFOStatus_Empty)
+	for(i=0;i<len;i++)
+	{
+		//write_spi(0);
+		//while(SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE) == RESET);
+		data[len-i-1]=read_spi();//SPI_ReceiveData8(SPI1);
+		//SPI_SendData8(SPI1, 0);
+	}
+}
 
 void SPI1_IRQHandler(void)
 {
@@ -147,6 +178,8 @@ void SPI1_IRQHandler(void)
   {
     
       SPI_SendData8(SPI1, send_data);
+	  SPI_SendData8(SPI1, 0);
+	  recv_data=SPI_ReceiveData8(SPI1);
       SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_TXE, DISABLE);
      
   }
@@ -177,23 +210,33 @@ void write_cmx865a(rt_uint8_t addr,rt_uint16_t data,rt_uint8_t len)
 		SPI_SendData8(SPI1, (data>>8) & 0xff);
 		SPI_SendData8(SPI1, data&0xff);
 		}
+	while (SPI_GetTransmissionFIFOStatus(SPI1) != SPI_TransmissionFIFOStatus_Empty);
 }
 void read_cmx865a(rt_uint8_t addr,rt_uint8_t* data,rt_uint8_t len)
 {
+
 	rt_uint8_t i=0;
 	SPI_SendData8(SPI1, addr);
+//	while (SPI_GetTransmissionFIFOStatus(SPI1) != SPI_TransmissionFIFOStatus_Empty)
 	for(i=0;i<len;i++)
+	{
+		
+		//while(SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE) == RESET);
 		data[len-i-1]=SPI_ReceiveData8(SPI1);
+		SPI_SendData8(SPI1, 0);
+	}
 }
 
 #endif
 void cmx865a_isr(void)
 {
-	unsigned int  i; 
+//rt_kprintf("cmx865a_isr intr\r\n");
+#if 0
+	unsigned int  i,tmp; 
 		unsigned char  j; 
 		static unsigned char  k=0; 
 		static unsigned char  fsk_long=0; 
-		i =  Read_CMX865_AddrAndWord(Status_addr);
+		read_cmx865a(Status_addr,&i,2);
 		if(CMX865_RX_Flag)
 		{
 			if(i&0x0020)//??DTMF
@@ -223,7 +266,7 @@ void cmx865a_isr(void)
 			}
 			else
 			{
-				Read_CMX865_AddrAndByte(Receive_Data_addr);
+				read_cmx865a(Receive_Data_addr,&tmp,2);
 				//Tx_char(Read_CMX865_AddrAndByte(Receive_Data_addr));
 			}
 		}
@@ -231,7 +274,7 @@ void cmx865a_isr(void)
 		{
 			if(i&0x0040)//??FSK
 			{
-				j=Read_CMX865_AddrAndByte(Receive_Data_addr);
+				read_cmx865a(Receive_Data_addr,&j,2);
 				   if((j>='0')&&(j<='9'))
 				   {
 					    if(j==Permit_Num_Buff[CID_State])
@@ -329,19 +372,37 @@ void cmx865a_isr(void)
                     #endif
 			}
 		}
-
+#endif
 }
 
+void test_cmx865a()
+{
+	rt_uint16_t data;
+
+	//while(1){
+		read_cmx865a(Status_addr,&data,2);
+		rt_kprintf("cmx865a_init status %x\r\n",data);
+		//rt_thread_delay(5);
+		read_cmx865a(Receive_Data_addr,&data,1);
+		rt_kprintf("cmx865a_init rx data %x\r\n",data);
+	//	rt_thread_delay(100);
+	//	}
+
+}
 void cmx865a_init(void)
 {
-	rt_uint8_t data[2];
+	rt_uint16_t data;
 	phone_state=0;
+	init_spi();
 	write_cmx865a(G_Reset_Command_addr,0,0);
+	rt_thread_delay(5);
+//	return;
 	write_cmx865a(G_Control_Command_addr, Reset_CMX865|PowerUp,1);
 	rt_thread_delay(50);
 	write_cmx865a(G_Control_Command_addr, NORMAL,1);
-	read_cmx865a(Status_addr,data,2);
-	if(data[0]&0x00ff)
+	rt_thread_delay(5);
+	read_cmx865a(Status_addr,&data,2);
+	if(data&0x00ff)
 	{
 		rt_kprintf("init cmx865a failed");
 		return ;
@@ -349,27 +410,27 @@ void cmx865a_init(void)
 	}
 	else
 	{	
-		if(phone_state|DC_state)
+	//	if(phone_state|DC_state)
 		{
-			temp_int = CMX865_Rx_Gain; 
+			//temp_int = CMX865_Rx_Gain; 
 			temp_int=temp_int<<9;
 			if (1)
 			{
 				write_cmx865a(Receive_Mode_addr, Received_DTMF|temp_int,1);//????
-				phone_state |= CID_Way;//??DTMF??
+			//	phone_state |= CID_Way;//??DTMF??
 				rt_kprintf("DTMF Re");
 			}
 			else
 			{
 				write_cmx865a(Receive_Mode_addr, Received_FSK|temp_int,1);//????
-				phone_state &=~ CID_Way;//??FSK??
+			//	phone_state &=~ CID_Way;//??FSK??
 				rt_kprintf("FSK Re");
 			}
-		}
-		else//??????
-		{
-			write_cmx865a(G_Reset_Command_addr,0,0);
-			write_cmx865a(G_Control_Command_addr, Reset_CMX865,1);
+		//}
+		//else//??????
+		//{
+		//	write_cmx865a(G_Reset_Command_addr,0,0);
+		//	write_cmx865a(G_Control_Command_addr, Reset_CMX865,1);
 		}		
 	}	
 	return	1;
