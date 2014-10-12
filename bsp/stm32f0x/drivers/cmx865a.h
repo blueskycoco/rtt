@@ -12,7 +12,7 @@
 #define	Programming_addr			0xe8
 
 #define		NULL			0xff
-#define		NORMAL			0x815f//0x8141//8141/815f
+#define		NORMAL			0x8141//8141/815f
 #define		TXAOutDisable		0x4000
 #define         AnalogueLoopbackTest  0x0800
 #define           equalizer     0x0400

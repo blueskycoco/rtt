@@ -60,7 +60,7 @@ void init_spi()
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource5, GPIO_AF_0);//sck
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_0);//miso
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_0);//mosi
-	GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_0);//cs
+	//GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_0);//cs
 
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
@@ -80,6 +80,8 @@ void init_spi()
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	/* SPI NSS pin configuration */
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
@@ -143,7 +145,7 @@ rt_uint8_t read_spi()
 }
 void write_cmx865a(rt_uint8_t addr,rt_uint16_t data,rt_uint8_t len)
 {
-	//SPI_Cmd(SPI1, ENABLE);
+	GPIO_ResetBits(GPIOA, GPIO_Pin_4);
 	if(len==0)
 		write_spi(addr);
 	else
@@ -152,22 +154,22 @@ void write_cmx865a(rt_uint8_t addr,rt_uint16_t data,rt_uint8_t len)
 		write_spi((data>>8) & 0xff);
 		write_spi(data&0xff);
 		}
-	//while (SPI_GetTransmissionFIFOStatus(SPI1) != SPI_TransmissionFIFOStatus_Empty);
+	GPIO_SetBits(GPIOA, GPIO_Pin_4);
 }
 void read_cmx865a(rt_uint8_t addr,rt_uint8_t* data,rt_uint8_t len)
 {
 
 	rt_uint8_t i=0;
-	
+	GPIO_ResetBits(GPIOA, GPIO_Pin_4);
 	write_spi(addr);
-//	while (SPI_GetTransmissionFIFOStatus(SPI1) != SPI_TransmissionFIFOStatus_Empty)
-	for(i=0;i<len;i++)
-	{
-		//write_spi(0);
-		//while(SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE) == RESET);
-		data[len-i-1]=read_spi();//SPI_ReceiveData8(SPI1);
-		//SPI_SendData8(SPI1, 0);
-	}
+	write_spi(0);	
+	data[0]=read_spi();
+	if(len==2){	
+		write_spi(0);
+		data[1]=data[0];
+	data[0]=read_spi();
+		}
+	GPIO_SetBits(GPIOA, GPIO_Pin_4);
 }
 
 void SPI1_IRQHandler(void)
@@ -178,8 +180,12 @@ void SPI1_IRQHandler(void)
   {
     
       SPI_SendData8(SPI1, send_data);
-	  SPI_SendData8(SPI1, 0);
-	  recv_data=SPI_ReceiveData8(SPI1);
+	 // SPI_SendData8(SPI1, 0);
+//	 while (SPI_GetReceptionFIFOStatus(SPI1) != SPI_ReceptionFIFOStatus_Empty);
+	//  rt_kprintf("get %x\r\n",SPI_ReceiveData8(SPI1));
+	  //recv_data=recv_data<<8;
+	  //recv_data|=SPI_ReceiveData8(SPI1);
+	 // rt_kprintf("get %x\r\n",recv_data);
       SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_TXE, DISABLE);
      
   }
@@ -187,9 +193,9 @@ void SPI1_IRQHandler(void)
   /* SPI in Master Receiver mode--------------------------------------- */
   if (SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE) == SET)
   {
-    
-      recv_data=SPI_ReceiveData8(SPI1);
-      
+    recv_data=SPI_ReceiveData8(SPI1);
+	//SPI_SendData8(SPI1, 0);
+      //rt_kprintf("g2et %x\r\n",recv_data);
   }
   
   /* SPI Error interrupt--------------------------------------- */
@@ -383,6 +389,7 @@ void test_cmx865a()
 		read_cmx865a(Status_addr,&data,2);
 		rt_kprintf("cmx865a_init status %x\r\n",data);
 		//rt_thread_delay(5);
+		data=0;
 		read_cmx865a(Receive_Data_addr,&data,1);
 		rt_kprintf("cmx865a_init rx data %x\r\n",data);
 	//	rt_thread_delay(100);
