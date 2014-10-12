@@ -95,13 +95,13 @@ void init_spi()
 	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_64;
 	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
 	SPI_InitStructure.SPI_CRCPolynomial = 7;
-#if 1
+
 	/* Configure the SPI interrupt priority */
 	NVIC_InitStructure.NVIC_IRQChannel = SPI1_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
-#endif
+
 	/* Initializes the SPI communication */
 	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
 	SPI_Init(SPI1, &SPI_InitStructure);
@@ -119,7 +119,7 @@ void init_spi()
 	/* Enable the SPI peripheral */
 	SPI_Cmd(SPI1, ENABLE);
 }
-#if 1
+
 void write_spi(rt_uint8_t data)
 {
 	send_data=data;
@@ -151,7 +151,8 @@ void write_cmx865a(rt_uint8_t addr,rt_uint16_t data,rt_uint8_t len)
 	else
 		{
 		write_spi(addr);
-		write_spi((data>>8) & 0xff);
+		if(len==2)
+			write_spi((data>>8) & 0xff);
 		write_spi(data&0xff);
 		}
 	GPIO_SetBits(GPIOA, GPIO_Pin_4);
@@ -180,12 +181,6 @@ void SPI1_IRQHandler(void)
   {
     
       SPI_SendData8(SPI1, send_data);
-	 // SPI_SendData8(SPI1, 0);
-//	 while (SPI_GetReceptionFIFOStatus(SPI1) != SPI_ReceptionFIFOStatus_Empty);
-	//  rt_kprintf("get %x\r\n",SPI_ReceiveData8(SPI1));
-	  //recv_data=recv_data<<8;
-	  //recv_data|=SPI_ReceiveData8(SPI1);
-	 // rt_kprintf("get %x\r\n",recv_data);
       SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_TXE, DISABLE);
      
   }
@@ -194,8 +189,6 @@ void SPI1_IRQHandler(void)
   if (SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE) == SET)
   {
     recv_data=SPI_ReceiveData8(SPI1);
-	//SPI_SendData8(SPI1, 0);
-      //rt_kprintf("g2et %x\r\n",recv_data);
   }
   
   /* SPI Error interrupt--------------------------------------- */
@@ -205,38 +198,11 @@ void SPI1_IRQHandler(void)
     SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_OVR);
   }
 }
-#else
-void write_cmx865a(rt_uint8_t addr,rt_uint16_t data,rt_uint8_t len)
-{
-	if(len==0)
-		SPI_SendData8(SPI1, addr);
-	else
-		{
-		SPI_SendData8(SPI1, addr);
-		SPI_SendData8(SPI1, (data>>8) & 0xff);
-		SPI_SendData8(SPI1, data&0xff);
-		}
-	while (SPI_GetTransmissionFIFOStatus(SPI1) != SPI_TransmissionFIFOStatus_Empty);
-}
-void read_cmx865a(rt_uint8_t addr,rt_uint8_t* data,rt_uint8_t len)
-{
-
-	rt_uint8_t i=0;
-	SPI_SendData8(SPI1, addr);
-//	while (SPI_GetTransmissionFIFOStatus(SPI1) != SPI_TransmissionFIFOStatus_Empty)
-	for(i=0;i<len;i++)
-	{
-		
-		//while(SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE) == RESET);
-		data[len-i-1]=SPI_ReceiveData8(SPI1);
-		SPI_SendData8(SPI1, 0);
-	}
-}
-
-#endif
 void cmx865a_isr(void)
 {
-//rt_kprintf("cmx865a_isr intr\r\n");
+rt_kprintf("cmx865a_isr intr\r\n");
+//test_cmx865a();
+
 #if 0
 	unsigned int  i,tmp; 
 		unsigned char  j; 
@@ -388,10 +354,13 @@ void test_cmx865a()
 	//while(1){
 		read_cmx865a(Status_addr,&data,2);
 		rt_kprintf("cmx865a_init status %x\r\n",data);
-		//rt_thread_delay(5);
+		rt_thread_delay(5);
 		data=0;
+		write_cmx865a(Transmit_Data_addr,data,1);
+		//rt_kprintf("cmx865a_init tx data %x\r\n",data);
 		read_cmx865a(Receive_Data_addr,&data,1);
-		rt_kprintf("cmx865a_init rx data %x\r\n",data);
+		rt_kprintf("cmx865a_init rx data %x\r\n\r\n",data);
+		
 	//	rt_thread_delay(100);
 	//	}
 
@@ -404,9 +373,9 @@ void cmx865a_init(void)
 	write_cmx865a(G_Reset_Command_addr,0,0);
 	rt_thread_delay(5);
 //	return;
-	write_cmx865a(G_Control_Command_addr, Reset_CMX865|PowerUp,1);
+	write_cmx865a(G_Control_Command_addr, Reset_CMX865|PowerUp,2);
 	rt_thread_delay(50);
-	write_cmx865a(G_Control_Command_addr, NORMAL,1);
+	write_cmx865a(G_Control_Command_addr, NORMAL,2);
 	rt_thread_delay(5);
 	read_cmx865a(Status_addr,&data,2);
 	if(data&0x00ff)
@@ -423,13 +392,13 @@ void cmx865a_init(void)
 			temp_int=temp_int<<9;
 			if (1)
 			{
-				write_cmx865a(Receive_Mode_addr, Received_DTMF|temp_int,1);//????
+				write_cmx865a(Receive_Mode_addr, Received_DTMF|temp_int,2);//????
 			//	phone_state |= CID_Way;//??DTMF??
 				rt_kprintf("DTMF Re");
 			}
 			else
 			{
-				write_cmx865a(Receive_Mode_addr, Received_FSK|temp_int,1);//????
+				write_cmx865a(Receive_Mode_addr, Received_FSK|temp_int,2);//????
 			//	phone_state &=~ CID_Way;//??FSK??
 				rt_kprintf("FSK Re");
 			}
