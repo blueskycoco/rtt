@@ -951,6 +951,7 @@ tivaif_process_phy_interrupt(net_device_t dev)
      * read EPHY_MISR2.
      */
     ui16Val = EMACPHYRead(EMAC0_BASE, PHY_PHYS_ADDR, EPHY_MISR1);
+    
 
 	/* 
 	 * Dummy read PHY REG EPHY_BMSR, it will force update the EPHY_STS register
@@ -958,6 +959,7 @@ tivaif_process_phy_interrupt(net_device_t dev)
 		EMACPHYRead(EMAC0_BASE, PHY_PHYS_ADDR, EPHY_BMSR);
     /* Read the current PHY status. */
     ui16Status = EMACPHYRead(EMAC0_BASE, PHY_PHYS_ADDR, EPHY_STS);
+   // rt_kprintf("tivaif_process_phy_interrupt phy irq status val = %x , status = %x\r\n",ui16Val,ui16Status);
 
     /* Has the link status changed? */
     if(ui16Val & EPHY_MISR1_LINKSTAT)
@@ -990,7 +992,7 @@ tivaif_process_phy_interrupt(net_device_t dev)
     }
 
     /* Has the speed or duplex status changed? */
-    if(ui16Val & (EPHY_MISR1_SPEED | EPHY_MISR1_SPEED | EPHY_MISR1_ANC))
+    if(ui16Val & (EPHY_MISR1_DUPLEXM| EPHY_MISR1_SPEED | EPHY_MISR1_ANC))
     {
         /* Get the current MAC configuration. */
         EMACConfigGet(EMAC0_BASE, &ui32Config, &ui32Mode,
@@ -1020,7 +1022,7 @@ tivaif_process_phy_interrupt(net_device_t dev)
             /* Half duplex. */
             ui32Config &= ~EMAC_CONFIG_FULL_DUPLEX;
         }
-
+	//	rt_kprintf("tivaif_process_phy_interrupt reconfig mac ui32Config = %x ,ui32Mode = %x ,ui32RxMaxFrameSize =%x\r\n",ui32Config,ui32Mode,ui32RxMaxFrameSize);
         /* Reconfigure the MAC */
         EMACConfigSet(EMAC0_BASE, ui32Config, ui32Mode, ui32RxMaxFrameSize);
     }
@@ -1118,7 +1120,7 @@ void lwIPEthernetIntHandler(void)
     // Read and Clear the interrupt.
     //
     ui32Status = MAP_EMACIntStatus(EMAC0_BASE, true);
-
+	//rt_kprintf("lwIPEthernetIntHandler irq status %x\r\n",ui32Status);
     //
     // If the interrupt really came from the Ethernet and not our
     // timer, clear it.
@@ -1375,8 +1377,9 @@ static struct pbuf* eth_dev_rx(rt_device_t dev)
 	rt_err_t result;
 	rt_uint32_t temp =0;
 	net_device_t net_dev = (net_device_t)dev;
+	rt_kprintf("eth_dev_rx 1\r\n");
 	result = rt_mb_recv(net_dev->rx_pbuf_mb, &temp, RT_WAITING_NO);
-	
+	rt_kprintf("eth_dev_rx 2\r\n");
 	return (result == RT_EOK)? (struct pbuf*)temp : RT_NULL;
 }
 
@@ -1402,10 +1405,10 @@ rt_err_t rt_hw_tiva_eth_init(void)
                         &rx_pbuf_mb_pool[0], sizeof(rx_pbuf_mb_pool)/4,
                         RT_IPC_FLAG_FIFO);
 	RT_ASSERT(result == RT_EOK);
-	eth_dev->rx_pbuf_mb = &eth_rx_pbuf_mb;
-	
+	eth_dev->rx_pbuf_mb = &eth_rx_pbuf_mb;	
 	
 	result = eth_device_init(&(eth_dev->parent), "e0");
+	
 	return result;
 }
 #if 0

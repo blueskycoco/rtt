@@ -18,7 +18,7 @@
 #include <rthw.h>
 #include <rtthread.h>
 
-void rt_hw_led_init(void);
+int rt_hw_led_init(void);
 void rt_hw_led_on();
 void rt_hw_led_off();
 

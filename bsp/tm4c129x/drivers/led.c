@@ -41,12 +41,13 @@ LED_RED  : PC9
 */
 
 /* Initial led gpio pin  */
-void rt_hw_led_init(void)
+int rt_hw_led_init(void)
 {
     MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPION);
     MAP_SysCtlDelay(1);
     MAP_GPIOPinTypeGPIOOutput(GPIO_PORTN_BASE, GPIO_PIN_1);
     MAP_GPIOPinTypeGPIOOutput(GPIO_PORTN_BASE, GPIO_PIN_0);
+    return 0;
 }
 
 /* Initial components for device */
