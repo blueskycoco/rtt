@@ -52,7 +52,7 @@ extern void HardFault_Handler(void);
 // Reserve space for the system stack.
 //
 //*****************************************************************************
-static uint32_t pui32Stack[64];
+static uint32_t pui32Stack[512];
 
 //*****************************************************************************
 //

@@ -61,7 +61,7 @@ extern void HardFault_Handler(void);
  */
 void rt_hw_board_init()
 {
-  MAP_IntMasterDisable();
+    MAP_IntMasterDisable();
     IntRegister(FAULT_HARD, HardFault_Handler);	
     IntRegister(FAULT_PENDSV, PendSV_Handler);
     IntRegister(FAULT_SYSTICK, SysTick_Handler);
@@ -97,5 +97,5 @@ void rt_hw_board_init()
     //
     // Enable interrupts to the processor.
     //
-	  MAP_IntMasterEnable();
+    MAP_IntMasterEnable();
 }
