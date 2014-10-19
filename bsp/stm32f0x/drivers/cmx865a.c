@@ -1,5 +1,6 @@
 #include <stm32f0xx.h>
 #include "cmx865a.h"
+#define HW_SPI 0
 SPI_InitTypeDef  SPI_InitStructure;
 rt_uint8_t send_data=0;
 rt_uint8_t recv_data=0;
@@ -20,6 +21,7 @@ enum CID_recive_state
        Recived_num,
 }CID_state=0;
 rt_uint8_t phone_state;
+
 void init_irq()
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -50,10 +52,11 @@ void init_spi()
 	GPIO_InitTypeDef GPIO_InitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
 	init_irq();
-
+	
+	#if HW_SPI
 	/* Enable the SPI periph */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
-
+	#endif
 	/* Enable SCK, MOSI, MISO and NSS GPIO clocks */
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 
@@ -61,8 +64,11 @@ void init_spi()
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_0);//miso
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_0);//mosi
 	//GPIO_PinAFConfig(GPIOA, GPIO_PinSource4, GPIO_AF_0);//cs
-
+	#if HW_SPI
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	#else
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+	#endif
 	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_DOWN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_Level_3;
@@ -76,6 +82,9 @@ void init_spi()
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	/* SPI MISO pin configuration */
+	#if !HW_SPI
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	#endif
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
@@ -84,7 +93,7 @@ void init_spi()
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-
+	#if HW_SPI
 	/* SPI configuration -------------------------------------------------------*/
 	SPI_I2S_DeInit(SPI1);
 	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
@@ -92,7 +101,7 @@ void init_spi()
 	SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
 	SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
 	SPI_InitStructure.SPI_NSS = SPI_NSS_Hard;
-	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_64;
+	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_8;
 	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
 	SPI_InitStructure.SPI_CRCPolynomial = 7;
 
@@ -118,10 +127,17 @@ void init_spi()
 	//SPI_NSSPulseModeCmd(SPI1,ENABLE);
 	/* Enable the SPI peripheral */
 	SPI_Cmd(SPI1, ENABLE);
+	#endif
 }
-
-void write_spi(rt_uint8_t data)
+void ms_delay()
 {
+	volatile int i,j;
+	for(i=0;i<10;i++)
+		j=0;
+}
+rt_uint8_t write_spi(rt_uint8_t data)
+{
+	#if HW_SPI
 	send_data=data;
 	/* Enable the Tx buffer empty interrupt */
 	SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_TXE, ENABLE);
@@ -129,10 +145,47 @@ void write_spi(rt_uint8_t data)
 	/* Waiting until TX FIFO is empty */
 	while (SPI_GetTransmissionFIFOStatus(SPI1) != SPI_TransmissionFIFOStatus_Empty)
 	{}
+	#else
+	rt_uint8_t i; 
+	rt_uint8_t Temp=0x00;
+	unsigned char SDI; 
+	//GPIO_ResetBits(GPIOA, GPIO_Pin_5);
+	for (i = 0; i < 8; i++)
+	{
+		GPIO_SetBits(GPIOA, GPIO_Pin_5);//sclk = 0;//先将时钟拉低
+		ms_delay();
+		if (data&0x80)      
+		{
+			GPIO_SetBits(GPIOA, GPIO_Pin_7); //    //mosi=1 
+		}
+		else
+		{
+			GPIO_ResetBits(GPIOA, GPIO_Pin_7);//     //smosi=0
+		}
+		data <<= 1;  
+		GPIO_ResetBits(GPIOA, GPIO_Pin_5);//    //sclk = 1; 拉高时钟
+		ms_delay();
+		SDI = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_6);//判断miso是否有输出
+		Temp<<=1;
 
+		if(SDI)       //读到1时
+		{
+			Temp++;  //置1  即向右移动一位同时加1   因上边有<<=1
+		}
+		GPIO_SetBits(GPIOA, GPIO_Pin_5);//sclk = 0;//   拉低时钟 
+	}
+	//GPIO_SetBits(GPIOA, GPIO_Pin_4);
+	return Temp; //返回读到miso输入的值     
+
+
+          
+	#endif
 }
+#if HW_SPI
+
 rt_uint8_t read_spi()
 {
+	
 	/* Wait busy flag */
 	while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET)
 	{}
@@ -140,9 +193,12 @@ rt_uint8_t read_spi()
 	/* Waiting until RX FIFO is empty */
 	while (SPI_GetReceptionFIFOStatus(SPI1) != SPI_ReceptionFIFOStatus_Empty)
 	{}
+
 	
 	return recv_data;
 }
+#endif
+
 void write_cmx865a(rt_uint8_t addr,rt_uint16_t data,rt_uint8_t len)
 {
 	GPIO_ResetBits(GPIOA, GPIO_Pin_4);
@@ -163,16 +219,16 @@ void read_cmx865a(rt_uint8_t addr,rt_uint8_t* data,rt_uint8_t len)
 	rt_uint8_t i=0;
 	GPIO_ResetBits(GPIOA, GPIO_Pin_4);
 	write_spi(addr);
-	write_spi(0);	
-	data[0]=read_spi();
+	//write_spi(0);	
+	data[0]=write_spi(0);
 	if(len==2){	
-		write_spi(0);
+		//write_spi(0);
 		data[1]=data[0];
-	data[0]=read_spi();
+		data[0]=write_spi(0);
 		}
 	GPIO_SetBits(GPIOA, GPIO_Pin_4);
 }
-
+#if HW_SPI
 void SPI1_IRQHandler(void)
 {
 
@@ -198,6 +254,7 @@ void SPI1_IRQHandler(void)
     SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_OVR);
   }
 }
+#endif
 void cmx865a_isr(void)
 {
 rt_kprintf("cmx865a_isr intr\r\n");
@@ -356,7 +413,7 @@ void test_cmx865a()
 		rt_kprintf("cmx865a_init status %x\r\n",data);
 		rt_thread_delay(5);
 		data=0;
-		write_cmx865a(Transmit_Data_addr,data,1);
+		//write_cmx865a(Transmit_Data_addr,data,1);
 		//rt_kprintf("cmx865a_init tx data %x\r\n",data);
 		read_cmx865a(Receive_Data_addr,&data,1);
 		rt_kprintf("cmx865a_init rx data %x\r\n\r\n",data);
