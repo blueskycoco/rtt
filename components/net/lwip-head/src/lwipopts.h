@@ -75,7 +75,7 @@
 #define API_LIB_DEBUG               LWIP_DBG_OFF
 #define API_MSG_DEBUG               LWIP_DBG_OFF
 #define TCPIP_DEBUG                 LWIP_DBG_OFF
-#define NETIF_DEBUG                 LWIP_DBG_ON
+#define NETIF_DEBUG                 LWIP_DBG_OFF
 #define SOCKETS_DEBUG               LWIP_DBG_OFF
 #define DNS_DEBUG                   LWIP_DBG_OFF
 #define AUTOIP_DEBUG                LWIP_DBG_OFF

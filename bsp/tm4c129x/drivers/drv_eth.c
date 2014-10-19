@@ -906,7 +906,7 @@ tivaif_receive(net_device_t dev)
       }
       else
       {
-          LWIP_DEBUGF(NETIF_DEBUG, ("tivaif_receive: pbuf_alloc error\n"));
+          LWIP_DEBUGF(NETIF_DEBUG, ("tivaif_receive: pbuf_alloc error %d\n",PBUF_POOL_BUFSIZE));
 
           pDescList->pDescriptors[pDescList->ui32Read].Desc.pvBuffer1 = 0;
 
