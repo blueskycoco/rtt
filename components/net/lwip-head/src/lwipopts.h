@@ -363,5 +363,4 @@
 #include <stdlib.h>
 #define LWIP_RAND                  rand
 #endif
-
 #endif /* __LWIPOPTS_H__ */
