@@ -48,6 +48,7 @@ void rt_init_thread_entry(void *parameter)
 #ifdef RT_USING_LWIP
     rt_hw_tiva_eth_init();
 #endif
+	netio_init();
 }
 
 int rt_application_init(void)

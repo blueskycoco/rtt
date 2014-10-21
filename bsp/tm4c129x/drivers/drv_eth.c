@@ -489,7 +489,6 @@ tivaif_check_pbuf(struct pbuf *p)
                     tivaif_trace_pbuf("Copied:", pBuf);
 #endif
                     DRIVER_STATS_INC(TXCopyCount);
-
                     /* Reduce the reference count on the original pbuf since
                      * we're not going to hold on to it after returning from
                      * tivaif_transmit.  Note that we already bumped
