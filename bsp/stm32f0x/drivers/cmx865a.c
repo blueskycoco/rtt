@@ -413,7 +413,7 @@ void test_cmx865a()
 		rt_kprintf("cmx865a_init status %x\r\n",data);
 		rt_thread_delay(5);
 		data=0;
-		//write_cmx865a(Transmit_Data_addr,data,1);
+		write_cmx865a(Transmit_Data_addr,data,1);
 		//rt_kprintf("cmx865a_init tx data %x\r\n",data);
 		read_cmx865a(Receive_Data_addr,&data,1);
 		rt_kprintf("cmx865a_init rx data %x\r\n\r\n",data);
@@ -428,12 +428,12 @@ void cmx865a_init(void)
 	phone_state=0;
 	init_spi();
 	write_cmx865a(G_Reset_Command_addr,0,0);
-	rt_thread_delay(5);
+	//rt_thread_delay(5);
 //	return;
 	write_cmx865a(G_Control_Command_addr, Reset_CMX865|PowerUp,2);
 	rt_thread_delay(50);
 	write_cmx865a(G_Control_Command_addr, NORMAL,2);
-	rt_thread_delay(5);
+	//rt_thread_delay(5);
 	read_cmx865a(Status_addr,&data,2);
 	if(data&0x00ff)
 	{
