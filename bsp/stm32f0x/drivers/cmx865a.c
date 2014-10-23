@@ -10,8 +10,10 @@ unsigned char DTMF_TX_Num= 0;
 unsigned char CMX865_RX_Flag;
 unsigned char CID_RX_buff[max_buff];
 unsigned char CID_RX_count= 0;
-unsigned	int	temp_int;
+unsigned	int	temp_int=6;
 unsigned char  CID_State=0;
+#define DTMF_MODE 0
+#define key_0 'D'
 enum CID_recive_state
 {
 	Waite,
@@ -257,151 +259,150 @@ void SPI1_IRQHandler(void)
 #endif
 void cmx865a_isr(void)
 {
-rt_kprintf("cmx865a_isr intr\r\n");
-//test_cmx865a();
-
-#if 0
 	unsigned int  i,tmp; 
-		unsigned char  j; 
-		static unsigned char  k=0; 
-		static unsigned char  fsk_long=0; 
-		read_cmx865a(Status_addr,&i,2);
-		if(CMX865_RX_Flag)
+	unsigned char  j; 
+	static unsigned char  k=0; 
+	static unsigned char  fsk_long=0; 
+	read_cmx865a(Status_addr,&i,2);
+	rt_kprintf("cmx865a_isr intr %x\r\n",i);
+	if(DTMF_MODE)
+	{
+		if(i&0x0020)//??DTMF
 		{
-			if(i&0x0020)//??DTMF
+			j=i&0x000f;
+			/*if((j==M_or_P_key_value)||(j==Permit_Applay))
 			{
-				j=i&0x000f;
-				if((j==M_or_P_key_value)||(j==Permit_Applay))
-				{
-					Rx_P_or_M=j;
-				}
-				else
-				{
-					if(CID_RX_count<max_buff)
-					{
-						if(j==key_0)
-						{
-							CID_RX_buff[CID_RX_count++]=0;
-						}
-						else if((j>0)&&(j<10))
-						{
-							CID_RX_buff[CID_RX_count++]=j;
-						}
-					}
-				}
-                    #if CID_Test
-				Tx_char(j);
-                    #endif
+				Rx_P_or_M=j;
 			}
 			else
-			{
-				read_cmx865a(Receive_Data_addr,&tmp,2);
-				//Tx_char(Read_CMX865_AddrAndByte(Receive_Data_addr));
-			}
+			{*/
+				if(CID_RX_count<max_buff)
+				{
+					if(j==key_0)
+					{
+						CID_RX_buff[CID_RX_count++]=0;
+					}
+					else if((j>0)&&(j<10))
+					{
+						CID_RX_buff[CID_RX_count++]=j;
+						rt_kprintf("Got DTMF Num %d %c\r\n",j,j);
+					}
+				}
+			//}
+#if CID_Test
+			Tx_char(j);
+#endif
 		}
 		else
 		{
-			if(i&0x0040)//??FSK
-			{
-				read_cmx865a(Receive_Data_addr,&j,2);
-				   if((j>='0')&&(j<='9'))
-				   {
-					    if(j==Permit_Num_Buff[CID_State])
-					    {
-							CID_State++;
-							if(CID_State==Permit_Num_Buff[max_buff])
-							{
-								 // phone_state|=CID_Received;
-							}
-					    }
-					    else
-					    {
-							CID_State=0;
-					    }
-				   }
-				   else
-				    {
-					    CID_State=0;
-				    }
-                    #if 0
-				switch(CID_state)
-				{
-					case Waite:
-					{
-						if(j==0x55)
-						{
-							k++;
-							if(k>2)
-							{
-								k=0;
-								CID_state=Recived_55;
-								//Tx_char(1);
-							}
-						}
-						else
-						{
-							k=0;
-						}
-						break;
-					}
-					case Recived_55:
-					{
-						if(j==0x02)
-						{
-							CID_state=Recived_02;
-							//Tx_char(2);
-						}
-						else if(j==0x04)
-						{
-							CID_state=Recived_02;
-						}
-						break;
-					}
-					case Recived_02:
-					{
-						if(j<0x10)
-						{
-							fsk_long=j;
-						}
-						else
-						{
-							fsk_long=max_buff;
-						}
-						//Tx_char(fsk_long);
-						CID_RX_count=0;
-						CID_state=Recived_long;
-						break;
-					}	
-					case Recived_long:
-					{
-						if(CID_RX_count<fsk_long)
-						{
-							CID_RX_buff[CID_RX_count++]=j-'0';
-							/*
-							if(CID_RX_count==max_buff)
-							{
-								CID_RX_count=max_buff-1;
-							}
-							*/
-						}
-						else
-						{
-							phone_state|=CID_Received;
-							//Tx_char(255);
-							CID_state=Waite;
-						}
-						break;
-					}	
-					default :
-						break;
-				}
-                     #endif
-			#if CID_Test
-				Tx_char(j);
-                    #endif
-			}
+		read_cmx865a(Receive_Data_addr,&tmp,2);
+		//Tx_char(Read_CMX865_AddrAndByte(Receive_Data_addr));
 		}
+	}
+	else
+	{
+		if(i&0x0040)//??FSK
+		{
+			read_cmx865a(Receive_Data_addr,&j,2);
+			/*if((j>='0')&&(j<='9'))
+			{
+				if(j==Permit_Num_Buff[CID_State])
+				{
+					CID_State++;
+					if(CID_State==Permit_Num_Buff[max_buff])
+					{
+					// phone_state|=CID_Received;
+					}
+				}
+				else
+				{
+					CID_State=0;
+				}
+			}
+			else
+			{
+				CID_State=0;
+			}*/
+			rt_kprintf("Got FSK Num %d %c\r\n",j,j);
+#if 0
+	switch(CID_state)
+	{
+	case Waite:
+	{
+	if(j==0x55)
+	{
+	k++;
+	if(k>2)
+	{
+	k=0;
+	CID_state=Recived_55;
+	//Tx_char(1);
+	}
+	}
+	else
+	{
+	k=0;
+	}
+	break;
+	}
+	case Recived_55:
+	{
+	if(j==0x02)
+	{
+	CID_state=Recived_02;
+	//Tx_char(2);
+	}
+	else if(j==0x04)
+	{
+	CID_state=Recived_02;
+	}
+	break;
+	}
+	case Recived_02:
+	{
+	if(j<0x10)
+	{
+	fsk_long=j;
+	}
+	else
+	{
+	fsk_long=max_buff;
+	}
+	//Tx_char(fsk_long);
+	CID_RX_count=0;
+	CID_state=Recived_long;
+	break;
+	}	
+	case Recived_long:
+	{
+	if(CID_RX_count<fsk_long)
+	{
+	CID_RX_buff[CID_RX_count++]=j-'0';
+	/*
+	if(CID_RX_count==max_buff)
+	{
+	CID_RX_count=max_buff-1;
+	}
+	*/
+	}
+	else
+	{
+	phone_state|=CID_Received;
+	//Tx_char(255);
+	CID_state=Waite;
+	}
+	break;
+	}	
+	default :
+	break;
+	}
 #endif
+#if CID_Test
+	Tx_char(j);
+#endif
+		}
+	}
+
 }
 
 void test_cmx865a()
@@ -428,12 +429,11 @@ void cmx865a_init(void)
 	phone_state=0;
 	init_spi();
 	write_cmx865a(G_Reset_Command_addr,0,0);
-	//rt_thread_delay(5);
-//	return;
+	rt_thread_delay(5);
 	write_cmx865a(G_Control_Command_addr, Reset_CMX865|PowerUp,2);
 	rt_thread_delay(50);
 	write_cmx865a(G_Control_Command_addr, NORMAL,2);
-	//rt_thread_delay(5);
+
 	read_cmx865a(Status_addr,&data,2);
 	if(data&0x00ff)
 	{
@@ -444,10 +444,10 @@ void cmx865a_init(void)
 	else
 	{	
 	//	if(phone_state|DC_state)
-		{
+	//	{
 			//temp_int = CMX865_Rx_Gain; 
 			temp_int=temp_int<<9;
-			if (1)
+			if (DTMF_MODE)
 			{
 				write_cmx865a(Receive_Mode_addr, Received_DTMF|temp_int,2);//????
 			//	phone_state |= CID_Way;//??DTMF??
@@ -464,7 +464,7 @@ void cmx865a_init(void)
 		//{
 		//	write_cmx865a(G_Reset_Command_addr,0,0);
 		//	write_cmx865a(G_Control_Command_addr, Reset_CMX865,1);
-		}		
+	//	}		
 	}	
 	return	1;
 }
