@@ -38,7 +38,7 @@ int rt_hw_led_init(void)
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_9;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
-	GPIO_ResetBits(GPIOA, GPIO_Pin_9);
+    GPIO_ResetBits(GPIOA, GPIO_Pin_9);
     return 0;
 }
 

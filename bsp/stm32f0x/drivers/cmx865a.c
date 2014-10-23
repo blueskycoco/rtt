@@ -410,13 +410,13 @@ void test_cmx865a()
 
 	//while(1){
 		read_cmx865a(Status_addr,&data,2);
-		rt_kprintf("cmx865a_init status %x\r\n",data);
+		rt_kprintf("3 cmx865a_init status %x\r\n",data);
 		rt_thread_delay(5);
 		data=0;
 		write_cmx865a(Transmit_Data_addr,data,1);
 		//rt_kprintf("cmx865a_init tx data %x\r\n",data);
 		read_cmx865a(Receive_Data_addr,&data,1);
-		rt_kprintf("cmx865a_init rx data %x\r\n\r\n",data);
+		rt_kprintf("3 cmx865a_init rx data %x\r\n\r\n",data);
 		
 	//	rt_thread_delay(100);
 	//	}
