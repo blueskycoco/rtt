@@ -24,7 +24,7 @@ void udpecho_entry(void *parameter)
 		netconn_connect(conn, addr, port);
 
 		/* reset address, and send to client */
-		buf->addr = (ipX_addr_t)*IP_ADDR_ANY;
+		buf->addr = *IP_ADDR_ANY;
 		netconn_send(conn, buf);
 
         /* release buffer */

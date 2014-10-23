@@ -67,9 +67,11 @@
 #include <lwip/snmp.h>
 #include "lwip/tcpip.h"
 #include "netif/etharp.h"
-//#include "netif/ppp_oe.h"
+#ifndef RT_USING_LWIP_HEAD
+#include "netif/ppp_oe.h"
+#else
 #include "netif/ppp/pppoe.h"
-
+#endif
 
 /**
  * Sanity Check:  This interface driver will NOT work if the following defines
