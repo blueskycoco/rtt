@@ -12,11 +12,11 @@ unsigned char CID_RX_buff[max_buff];
 unsigned char CID_RX_count= 0;
 unsigned	int	temp_int=6;
 unsigned char  CID_State=0;
-#define DTMF_MODE 0
+#define DTMF_MODE 1
 #define key_0 'D'
 enum CID_recive_state
 {
-	Waite,
+	 Waite,
        Recived_55,
        Recived_02,
        Recived_long,
@@ -33,21 +33,21 @@ void init_irq()
 
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1;
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1|GPIO_Pin_10;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
-	SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource1);
-	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_1_IRQn;
+	SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource1|EXTI_PinSource10);
+	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_1_IRQn|EXTI4_15_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
-	EXTI_InitStructure.EXTI_Line = EXTI_Line1;
+	EXTI_InitStructure.EXTI_Line = EXTI_Line1|EXTI_Line10;
 	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
 	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
 	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
 	EXTI_Init(&EXTI_InitStructure);
-	EXTI_ClearITPendingBit(EXTI_Line1);
+	EXTI_ClearITPendingBit(EXTI_Line1|EXTI_Line10);
 }
 void init_spi()
 {
@@ -257,6 +257,19 @@ void SPI1_IRQHandler(void)
   }
 }
 #endif
+void button_isr(void)
+{
+	rt_kprintf("button_isr intr\r\n");
+	
+	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x8,2);
+	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x6,2);
+	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x5,2);
+	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x4,2);
+	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x3,2);
+	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x5,2);
+	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x3,2);
+	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x1,2);
+}
 void cmx865a_isr(void)
 {
 	unsigned int  i,tmp; 
@@ -289,14 +302,10 @@ void cmx865a_isr(void)
 					}
 				}
 			//}
-#if CID_Test
-			Tx_char(j);
-#endif
 		}
 		else
 		{
-		read_cmx865a(Receive_Data_addr,&tmp,2);
-		//Tx_char(Read_CMX865_AddrAndByte(Receive_Data_addr));
+			read_cmx865a(Receive_Data_addr,&tmp,2);
 		}
 	}
 	else
@@ -327,78 +336,71 @@ void cmx865a_isr(void)
 #if 0
 	switch(CID_state)
 	{
-	case Waite:
-	{
-	if(j==0x55)
-	{
-	k++;
-	if(k>2)
-	{
-	k=0;
-	CID_state=Recived_55;
-	//Tx_char(1);
+		case Waite:
+		{
+			if(j==0x55)
+			{
+				k++;
+				if(k>2)
+				{
+					k=0;
+					CID_state=Recived_55;
+				}
+			}
+			else
+			{
+				k=0;
+			}
+			break;
+		}
+		case Recived_55:
+		{
+			if(j==0x02)
+			{
+				CID_state=Recived_02;
+			}
+			else if(j==0x04)
+			{
+				CID_state=Recived_02;
+			}
+			break;
+		}
+		case Recived_02:
+		{
+			if(j<0x10)
+			{
+				fsk_long=j;
+			}
+			else
+			{
+				fsk_long=max_buff;
+			}
+			CID_RX_count=0;
+			CID_state=Recived_long;
+			break;
+		}	
+		case Recived_long:
+		{
+			if(CID_RX_count<fsk_long)
+			{
+				CID_RX_buff[CID_RX_count++]=j-'0';
+				/*
+				if(CID_RX_count==max_buff)
+				{
+				CID_RX_count=max_buff-1;
+				}
+				*/
+			}
+			else
+			{
+				phone_state|=CID_Received;
+				CID_state=Waite;
+			}
+			break;
+		}	
+		default :
+		break;
 	}
-	}
-	else
-	{
-	k=0;
-	}
-	break;
-	}
-	case Recived_55:
-	{
-	if(j==0x02)
-	{
-	CID_state=Recived_02;
-	//Tx_char(2);
-	}
-	else if(j==0x04)
-	{
-	CID_state=Recived_02;
-	}
-	break;
-	}
-	case Recived_02:
-	{
-	if(j<0x10)
-	{
-	fsk_long=j;
-	}
-	else
-	{
-	fsk_long=max_buff;
-	}
-	//Tx_char(fsk_long);
-	CID_RX_count=0;
-	CID_state=Recived_long;
-	break;
-	}	
-	case Recived_long:
-	{
-	if(CID_RX_count<fsk_long)
-	{
-	CID_RX_buff[CID_RX_count++]=j-'0';
-	/*
-	if(CID_RX_count==max_buff)
-	{
-	CID_RX_count=max_buff-1;
-	}
-	*/
-	}
-	else
-	{
-	phone_state|=CID_Received;
-	//Tx_char(255);
-	CID_state=Waite;
-	}
-	break;
-	}	
-	default :
-	break;
-	}
-#endif
-#if CID_Test
-	Tx_char(j);
 #endif
 		}
 	}

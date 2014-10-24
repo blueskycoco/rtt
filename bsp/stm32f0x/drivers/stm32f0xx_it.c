@@ -81,6 +81,20 @@ void EXTI0_1_IRQHandler(void)
 	/* leave interrupt */
 	rt_interrupt_leave();
 }
+void EXTI4_15_IRQHandler(void)
+{
+	extern void button_isr(void);
+	/* enter interrupt */
+	rt_interrupt_enter();
+	if(EXTI_GetITStatus(EXTI_Line10))
+	{	 
+		button_isr();	
+		EXTI_ClearITPendingBit(EXTI_Line10);
+	}
+	/* leave interrupt */
+	rt_interrupt_leave();
+}
+
 #endif
 /******************************************************************************/
 /*                 STM32F0xx Peripherals Interrupt Handlers                   */
