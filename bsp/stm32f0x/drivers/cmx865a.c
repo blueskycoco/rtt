@@ -12,8 +12,9 @@ unsigned char CID_RX_buff[max_buff];
 unsigned char CID_RX_count= 0;
 unsigned	int	temp_int=6;
 unsigned char  CID_State=0;
-#define DTMF_MODE 1
+#define DTMF_MODE 0
 #define key_0 'D'
+#define CID_Received 1
 enum CID_recive_state
 {
 	 Waite,
@@ -35,19 +36,22 @@ void init_irq()
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
 	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1|GPIO_Pin_10;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	//GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1;
+	//GPIO_Init(GPIOF, &GPIO_InitStructure);
 
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
-	SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource1|EXTI_PinSource10);
-	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_1_IRQn|EXTI4_15_IRQn;
+	SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource1);
+	//SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOF, EXTI_PinSource1);
+	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_1_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPriority = 1;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
-	EXTI_InitStructure.EXTI_Line = EXTI_Line1|EXTI_Line10;
+	EXTI_InitStructure.EXTI_Line = EXTI_Line1;
 	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
 	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
 	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
 	EXTI_Init(&EXTI_InitStructure);
-	EXTI_ClearITPendingBit(EXTI_Line1|EXTI_Line10);
+	EXTI_ClearITPendingBit(EXTI_Line1);
 }
 void init_spi()
 {
@@ -60,7 +64,7 @@ void init_spi()
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
 	#endif
 	/* Enable SCK, MOSI, MISO and NSS GPIO clocks */
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA|RCC_AHBPeriph_GPIOF, ENABLE);
 
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource5, GPIO_AF_0);//sck
 	GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_0);//miso
@@ -89,6 +93,8 @@ void init_spi()
 	#endif
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
+	GPIO_Init(GPIOF, &GPIO_InitStructure);
 
 	/* SPI NSS pin configuration */
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
@@ -259,7 +265,7 @@ void SPI1_IRQHandler(void)
 #endif
 void button_isr(void)
 {
-	rt_kprintf("button_isr intr\r\n");
+	/*rt_kprintf("button_isr intr\r\n");
 	
 	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x8,2);
 	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x6,2);
@@ -268,7 +274,7 @@ void button_isr(void)
 	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x3,2);
 	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x5,2);
 	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x3,2);
-	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x1,2);
+	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x1,2);*/
 }
 void cmx865a_isr(void)
 {
@@ -277,7 +283,9 @@ void cmx865a_isr(void)
 	static unsigned char  k=0; 
 	static unsigned char  fsk_long=0; 
 	read_cmx865a(Status_addr,&i,2);
-	rt_kprintf("cmx865a_isr intr %x\r\n",i);
+	//rt_kprintf("cmx865a_isr intr %x\r\n",i);
+	//if(GPIO_ReadInputDataBit(GPIOF,GPIO_Pin_1)==Bit_RESET)
+	//GPIO_SetBits(GPIOA, GPIO_Pin_9);
 	if(DTMF_MODE)
 	{
 		if(i&0x0020)//??DTMF
@@ -313,9 +321,9 @@ void cmx865a_isr(void)
 		if(i&0x0040)//??FSK
 		{
 			read_cmx865a(Receive_Data_addr,&j,2);
-			/*if((j>='0')&&(j<='9'))
+			if((j>='0')&&(j<='9'))
 			{
-				if(j==Permit_Num_Buff[CID_State])
+				/*if(j==Permit_Num_Buff[CID_State])
 				{
 					CID_State++;
 					if(CID_State==Permit_Num_Buff[max_buff])
@@ -326,14 +334,16 @@ void cmx865a_isr(void)
 				else
 				{
 					CID_State=0;
-				}
+				}*/
 			}
 			else
 			{
 				CID_State=0;
-			}*/
-			rt_kprintf("Got FSK Num %d %c\r\n",j,j);
-#if 0
+			}
+		//	rt_kprintf("==> %d %x\r\n",j,j);
+		//	if(j>='0'&&j<='9')
+			//	rt_kprintf(">>%c\r\n",j);
+#if 1
 	switch(CID_state)
 	{
 		case Waite:
@@ -390,11 +400,13 @@ void cmx865a_isr(void)
 				CID_RX_count=max_buff-1;
 				}
 				*/
+				rt_kprintf("Got FSK Num %d %c\r\n",j,j);
 			}
 			else
 			{
 				phone_state|=CID_Received;
 				CID_state=Waite;
+				rt_kprintf("finish receive phone num\r\n");
 			}
 			break;
 		}	
@@ -410,17 +422,21 @@ void cmx865a_isr(void)
 void test_cmx865a()
 {
 	rt_uint16_t data;
-
+	static int flag=1;
 	//while(1){
 		read_cmx865a(Status_addr,&data,2);
-		rt_kprintf("3 cmx865a_init status %x\r\n",data);
+		rt_kprintf("4 cmx865a_init status %x\r\n",data);
 		rt_thread_delay(5);
 		data=0;
-		write_cmx865a(Transmit_Data_addr,data,1);
+		//write_cmx865a(Transmit_Data_addr,data,1);
 		//rt_kprintf("cmx865a_init tx data %x\r\n",data);
 		read_cmx865a(Receive_Data_addr,&data,1);
-		rt_kprintf("3 cmx865a_init rx data %x\r\n\r\n",data);
-		
+		rt_kprintf("4 cmx865a_init rx data %x\r\n\r\n",data);
+		//if(GPIO_ReadInputDataBit(GPIOF,GPIO_Pin_1)==Bit_RESET && flag){
+		//	GPIO_SetBits(GPIOA, GPIO_Pin_9);
+		//	rt_kprintf("New call in\r\n");
+		//	flag=0;
+		//	}
 	//	rt_thread_delay(100);
 	//	}
 

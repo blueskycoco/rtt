@@ -54,7 +54,7 @@ static void rt_init_thread_entry(void* parameter)
 #ifdef RT_USING_FINSH
 			rt_kprintf("led on, count : %d\r\n",count);
 #endif
-	test_cmx865a();
+	//test_cmx865a();
 			count++;
 			rt_hw_led1_off();
 			rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
