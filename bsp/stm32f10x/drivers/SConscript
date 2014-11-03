@@ -4,27 +4,31 @@ from building import *
 
 cwd     = os.path.join(str(Dir('#')), 'drivers')
 
-# add the general drvers.
+# add the general drivers.
 src = Split("""
 board.c
 stm32f10x_it.c
 led.c
 usart.c
+LM096.c
+cc1101.c
+cc1101_hw.c
+power.c
 """)
 
-# add Ethernet drvers.
+# add Ethernet drivers.
 if GetDepend('RT_USING_LWIP'):
     src += ['dm9000a.c']
 
-# add Ethernet drvers.
+# add Ethernet drivers.
 if GetDepend('RT_USING_DFS'):
     src += ['sdcard.c']
 
-# add Ethernet drvers.
+# add Ethernet drivers.
 if GetDepend('RT_USING_RTC'):
     src += ['rtc.c']
 
-# add Ethernet drvers.
+# add Ethernet drivers.
 if GetDepend('RT_USING_RTGUI'):
     src += ['touch.c']
     if rtconfig.RT_USING_LCD_TYPE == 'ILI932X':

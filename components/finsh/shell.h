@@ -33,7 +33,17 @@
 #include <rtthread.h>
 #include "finsh.h"
 
-#define FINSH_USING_HISTORY
+/* For historical reasons, users don't define FINSH_USING_HISTORY in rtconfig.h
+ * but expect the history feature. So you sould define FINSH_USING_HISTORY to 0
+ * to disable it from the rtconfig.h. */
+#ifdef FINSH_USING_HISTORY
+#    if FINSH_USING_HISTORY == 0
+#        undef FINSH_USING_HISTORY
+#    endif
+#else
+#    define FINSH_USING_HISTORY
+#endif
+
 #ifndef FINSH_THREAD_PRIORITY
 #define FINSH_THREAD_PRIORITY 20
 #endif
@@ -43,7 +53,7 @@
 #define FINSH_CMD_SIZE		80
 
 #define FINSH_OPTION_ECHO	0x01
-#if defined(RT_USING_DFS) && defined(DFS_USING_WORKDIR)
+#if defined(FINSH_USING_MSH) || (defined(RT_USING_DFS) && defined(DFS_USING_WORKDIR))
 #define FINSH_PROMPT		finsh_get_prompt()
 const char* finsh_get_prompt(void);
 #else
@@ -77,7 +87,9 @@ struct finsh_shell
 	char cmd_history[FINSH_HISTORY_LINES][FINSH_CMD_SIZE];
 #endif
 
+#ifndef FINSH_USING_MSH_ONLY
 	struct finsh_parser parser;
+#endif
 
 	char line[FINSH_CMD_SIZE];
 	rt_uint8_t line_position;

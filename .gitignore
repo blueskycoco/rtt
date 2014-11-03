@@ -1,3 +1,6 @@
+bsp/tm4c129x/tm4c129x.*
+bsp/tm4c129x/checkin.sh
+bsp/stm32f10x/make.sh
 *.pyc
 *.map
 *.dblite
@@ -12,3 +15,12 @@
 build
 xcode-rtthread
 bsp/stm32f0x/rtconfig.py
+*~
+*.o
+*.obj
+*.bak
+*.dep
+*.lib
+*.a
+*.i
+*.d
