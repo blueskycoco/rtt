@@ -484,6 +484,6 @@ void cmx865a_init(void)
 		//	write_cmx865a(G_Control_Command_addr, Reset_CMX865,1);
 	//	}		
 	}	
-	return	1;
+	return ;
 }
 INIT_DEVICE_EXPORT(cmx865a_init);

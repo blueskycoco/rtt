@@ -30,7 +30,7 @@
 static void rt_init_thread_entry(void* parameter)
 {
   rt_thread_t system_thread;
-
+  rt_uint8_t buf[256];
   /* Initialization RT-Thread Components */
 #ifdef RT_USING_COMPONENTS_INIT
   rt_components_init();
@@ -41,7 +41,7 @@ static void rt_init_thread_entry(void* parameter)
   finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif  /* RT_USING_FINSH */
   rt_hw_led1_off();
-		cmx865a_init();
+		//cmx865a_init();
 
 	
 		unsigned int count=0;
@@ -54,6 +54,9 @@ static void rt_init_thread_entry(void* parameter)
 #ifdef RT_USING_FINSH
 			rt_kprintf("led on, count : %d\r\n",count);
 #endif
+	rt_sprintf(buf,"led on, count : %d\r\n",count);
+	ST7585_Write_String(0,0,buf);
+	
 	//test_cmx865a();
 			count++;
 			rt_hw_led1_off();
