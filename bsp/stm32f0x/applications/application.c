@@ -54,7 +54,7 @@ static void rt_init_thread_entry(void* parameter)
 #ifdef RT_USING_FINSH
 			rt_kprintf("led on, count : %d\r\n",count);
 #endif
-	rt_sprintf(buf,"led on, count : %d\r\n",count);
+	rt_sprintf(buf,"led on,count:%d\r\n",count);
 	ST7585_Write_String(0,0,buf);
 	
 	//test_cmx865a();
@@ -66,6 +66,9 @@ static void rt_init_thread_entry(void* parameter)
 #ifdef RT_USING_FINSH
 			rt_kprintf("led off\r\n");
 #endif
+			rt_sprintf(buf,"led off,count:%d\r\n",count);
+			ST7585_Write_String(0,0,buf);
+
 			rt_hw_led1_on();
 			rt_thread_delay( RT_TICK_PER_SECOND/2 );
 		}
