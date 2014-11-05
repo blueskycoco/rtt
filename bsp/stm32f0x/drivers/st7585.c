@@ -336,6 +336,11 @@ void ST7585_Write_String(rt_uint8_t X,rt_uint8_t Y,rt_uint8_t *S)
 	{
 		ST7585_Write_Char(X,Y,*S++);
 		X=X+6;
+		if(X>=96)
+		{
+			X=0;
+			Y--;
+		}
 	}
 }
 static void delay_ms(rt_uint32_t ms)
@@ -343,6 +348,69 @@ static void delay_ms(rt_uint32_t ms)
     rt_uint32_t len;
     for (;ms > 0; ms --)
         for (len = 0; len < 100; len++ );
+}
+void Draw_bat(unsigned char level)
+{
+#if 0
+		ST7585_Set_XY(95,8);
+        ST7585_Write(0x00,0);		
+		ST7585_Set_XY(94,8);
+        ST7585_Write(0x00,0);		
+		ST7585_Set_XY(93,8);
+        ST7585_Write(0x00,0);
+		ST7585_Set_XY(80,8);  
+        ST7585_Write(0xFF,0);
+		if(level==1)
+		{
+        	ST7585_Set_XY(94,8);
+        	ST7585_Write(0xFF,0);
+		}
+		else if(level==2)
+		{                
+        	ST7585_Set_XY(94,8);
+        	ST7585_Write(0xFF,0);
+			ST7585_Set_XY(95,8);
+        	ST7585_Write(0xFF,0);
+		}
+		else
+		{	
+        	ST7585_Set_XY(93,8);
+        	ST7585_Write(0xFF,0);
+			ST7585_Set_XY(95,8);
+        	ST7585_Write(0xFF,0);
+			ST7585_Set_XY(94,8);
+        	ST7585_Write(0xFF,0);
+		}
+		#else
+		
+		ST7585_Set_XY(95,8);
+        ST7585_Write(0x00,0);		
+		ST7585_Set_XY(94,8);
+        ST7585_Write(0x00,0);		
+		ST7585_Set_XY(93,8);
+        ST7585_Write(0x00,0);
+		ST7585_Set_XY(80,8);				 //bat icon
+		ST7585_Write(0xFF,0);
+
+		if(level==0)
+				return;
+
+		ST7585_Set_XY(94,8);
+		ST7585_Write(0xFF,0);
+
+		if(level==1)
+				return;
+				
+		ST7585_Set_XY(95,8);
+		ST7585_Write(0xFF,0);
+
+		if(level==2)
+				return;
+				
+		ST7585_Set_XY(93,8);
+		ST7585_Write(0xFF,0);
+
+		#endif
 }
 
 int ST7585_Init(void)

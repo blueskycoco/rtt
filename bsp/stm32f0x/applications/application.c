@@ -55,7 +55,8 @@ static void rt_init_thread_entry(void* parameter)
 		rt_kprintf("led on, count : %d\r\n",count);
 //#endif
 		rt_sprintf(buf,"led on ,count:%d",count);
-		ST7585_Write_String(0,0,buf);
+		ST7585_Write_String(0,5,buf);
+		Draw_bat(0);
 
 		//test_cmx865a();
 		count++;
@@ -67,7 +68,8 @@ static void rt_init_thread_entry(void* parameter)
 		rt_kprintf("led off\r\n");
 //#endif
 		rt_sprintf(buf,"led off,count:%d",count);
-		ST7585_Write_String(0,0,buf);
+		ST7585_Write_String(0,5,buf);
+		Draw_bat(3);
 
 		rt_hw_led1_on();
 		rt_thread_delay( RT_TICK_PER_SECOND/2 );
