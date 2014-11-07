@@ -1063,7 +1063,7 @@ BOOL burn(pe p)
     }
     return TRUE;
 }
-
+/*
 BOOL auth(pge p,callback_t cb)
 {
     BOOL ucReturn;
@@ -1121,4 +1121,4 @@ BOOL read_userzone(pge p)
     }
     return TRUE;
 }
-
+*/

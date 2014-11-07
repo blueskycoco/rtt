@@ -732,12 +732,62 @@ BOOL auth(pge p,callback_t cb)
 	cb();
     return TRUE;
 }
+BOOL cm_WriteConfigZone(unsigned char ucDevAddr, unsigned char ucCryptoAddr, unsigned char* pucBuffer, unsigned char ucCount,unsigned char ucAntiTearing)
+{
+
+    int i;
+	unsigned char tmp;
+    if(needAuth)
+    {
+        clock_gpaXtimes(0x00, 5);
+        clock_gpaXtimes(ucCryptoAddr,1);
+        clock_gpaXtimes(0x00,5);
+        clock_gpaXtimes(ucCount,1);
+
+        for(i=0;i<ucCount;i++)
+        {
+            clock_gpaXtimes(0x00,5);
+			tmp=pucBuffer[i];
+            //we need encrypt password zone
+            if((ucCryptoAddr+i) <= (AT88SC_R7+2) && (ucCryptoAddr+i)>=AT88SC_PACW0)
+                pucBuffer[i] = pucBuffer[i] ^ Gpa_byte;
+			
+            clock_gpaXtimes(tmp,1);	
+        }
+    }
+
+    if(cm_Write((ucDevAddr<<4)|0x04, 0x00, ucCryptoAddr,ucCount,pucBuffer)!=ucCount)
+        return FALSE;
+    cm_AckPolling((ucDevAddr<<4)|0x02);
+    return TRUE;
+
+}
+
 BOOL read_userzone(pge p)
 {
     BOOL ucReturn;
     unsigned char i;	
+    
+    unsigned char ucData[240];
     cm_PowerOn();
     
+    ucData[0] = 0x77;
+    ucData[1] = 0x33;
+    ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_MTZ, ucData, 2, FALSE);
+    if (ucReturn != TRUE) {
+        AT88DBG("Write Config Zone MTZ failed\n");
+        return FALSE;
+    }
+    // Read back data
+    ucData[0] = 0x00;
+    ucData[1] = 0x00;
+    ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_MTZ, ucData, 2);
+    if (ucReturn != TRUE || ucData[0]!=0x77 || ucData[1]!=0x33) {
+        AT88DBG("Read Config Zone MTZ failed\n");
+        return FALSE;
+    }   
+    AT88DBG("Read Config Zone MTZ %x %x\n",ucData[0],ucData[1]);
+    return FALSE;
     ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, p->use_g, p->g);
     if (ucReturn != TRUE){
         return FALSE;

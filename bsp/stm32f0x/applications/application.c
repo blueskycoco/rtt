@@ -28,6 +28,7 @@
 
 #include "led.h"
 #include "s1.h"
+
 void cb()
 {
 	rt_kprintf("\r\nCall back called\r\n");
@@ -68,6 +69,9 @@ void r(unsigned char zone)
 	{
 		p.g[i]=i;
 	}
+	//p.g[1]=0xdd;
+	//p.g[2]=0x42;
+	//p.g[3]=0x97;
 	p.use_g=zone;
 	p.use_pw=zone;
 	p.zone_index=zone;
@@ -85,7 +89,47 @@ void r(unsigned char zone)
 		AT88DBG("read user zone failed "); 	
 	}
 }
-
+/*
+void b(unsigned char zone,unsigned char flag)
+{
+	pe p;
+	int i;
+	int fd,length;
+	memset(&p,0xff,sizeof(pe));
+	for(i=0;i<32;i++)
+	{
+		p.user_zone[zone][i]=i;
+	}
+	p.ar[zone][0]=0x17;//normal auth,encrypted
+	p.ar[zone][1]=(zone<<6)|(zone&0x3);//use g[zone],pw[zone]
+	for(i=0;i<7;i++)
+	{
+		p.ci[zone][i]=i;
+		if(i!=3)
+			p.pw[zone][i]=i;
+	}
+	
+	p.flag=flag;
+	if(flag)
+	{
+		for(i=0;i<8;i++)
+			p.auth_g[i]=i;
+		for(i=0;i<3;i++)
+			p.auth_pw[i]=i;
+	}
+	for(i=0;i<8;i++)
+	{
+		p.g[zone][i]=i;
+	}
+	for(i=0;i<7;i++)
+	{
+		p.id[i]=0xdd;//assign id
+	}
+	p.fuse=FALSE;
+	
+	burn(p);
+}
+*/
 static void rt_init_thread_entry(void* parameter)
 {
 	rt_thread_t system_thread;
@@ -106,21 +150,24 @@ static void rt_init_thread_entry(void* parameter)
 	unsigned int count=1000;
 	rt_memset(buf,'\0',256);
 	rt_hw_led_init();
-	//rt_kprintf("led on, count : %d\r\n",count);
+	rt_kprintf("led on, count : %d\r\n",count);
 	//rt_sprintf(buf,"%s","- RT -    Thread Operating System");
 		
 	//	ST7585_Write_String(0,5,"- RT -    ");
 	//ST7585_Write_String(0,4,"Thread Operating System");
-		Draw_bat(3);
+	//	Draw_bat(3);
+	r(0);
 	while (1)
 	{
-		/* led1 on */
-//#ifdef RT_USING_FINSH
-		rt_kprintf("led on , count : %d\r\n",count);
-//#endif
 		
-		rt_sprintf(buf,"led on , count : %d",count);
-		ST7585_Write_String(0,5,buf);
+		/* led1 on */
+#ifdef RT_USING_FINSH
+		rt_kprintf("led on , count : %d\r\n",count);
+#endif
+	
+		
+	//	rt_sprintf(buf,"led on , count : %d",count);
+	//	ST7585_Write_String(0,5,buf);
 
 		//test_cmx865a();
 		count++;
@@ -128,11 +175,11 @@ static void rt_init_thread_entry(void* parameter)
 		rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
 
 		/* led1 off */
-//#ifdef RT_USING_FINSH
+#ifdef RT_USING_FINSH
 		rt_kprintf("led off\r\n");
-//#endif
-		rt_sprintf(buf,"led off, count : %d",count);
-		ST7585_Write_String(0,5,buf);
+#endif
+	//	rt_sprintf(buf,"led off, count : %d",count);
+	//	ST7585_Write_String(0,5,buf);
 
 		rt_hw_led1_on();
 		rt_thread_delay( RT_TICK_PER_SECOND/2 );
@@ -146,7 +193,7 @@ int rt_application_init()
 #if (RT_THREAD_PRIORITY_MAX == 32)
   init_thread = rt_thread_create("init",
 	  rt_init_thread_entry, RT_NULL,
-	  512, 8, 20);
+	  1024, 8, 20);
 #else
   init_thread = rt_thread_create("init",
 	  rt_init_thread_entry, RT_NULL,
