@@ -143,7 +143,7 @@ void rt_hw_board_init()
 	SysTick_Config(SystemCoreClock / RT_TICK_PER_SECOND);
 
 	/* Initial usart deriver, and set console device */
-	//uart_config();
+	uart_config();
     	//rt_hw_batt_init();
 #ifdef RT_USING_CONSOLE
 //rt_console_set_device(RT_CONSOLE_DEVICE_NAME);

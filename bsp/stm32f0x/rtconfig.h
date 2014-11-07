@@ -37,7 +37,7 @@
 /* #define RT_USING_MUTEX */
 
 /* Using Event */
-#define RT_USING_EVENT
+/*#define RT_USING_EVENT*/
 
 /* Using MailBox */
 /* #define RT_USING_MAILBOX */
@@ -57,7 +57,7 @@
 #define RT_USING_TINY_SIZE
 
 // <bool name="RT_USING_COMPONENTS_INIT" description="Using RT-Thread components initialization" default="true" />
-#define RT_USING_COMPONENTS_INIT
+/*#define RT_USING_COMPONENTS_INIT*/
 
 /* SECTION: Device System */
 /* Using Device System */

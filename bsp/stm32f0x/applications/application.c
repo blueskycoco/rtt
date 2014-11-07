@@ -29,67 +29,6 @@
 #include "led.h"
 #include "s1.h"
 
-void cb()
-{
-	rt_kprintf("\r\nCall back called\r\n");
-}
-
-void a(unsigned char zone)
-{
-	ge p;
-	int i;
-	memset(&p,0xff,sizeof(ge));
-	for(i=0;i<32;i++)
-	{
-		p.user_zone[i]=i;
-	}
-	for(i=0;i<3;i++)
-	{
-		p.pw[i]=i;
-	}
-	for(i=0;i<8;i++)
-	{
-		p.g[i]=i;
-	}
-	p.use_g=zone;
-	p.use_pw=zone;
-	p.zone_index=zone;
-	auth(&p,(callback_t *)cb);
-}
-void r(unsigned char zone)
-{
-	ge p;
-	int i;
-	memset(&p,0xff,sizeof(ge));
-	for(i=0;i<3;i++)
-	{
-		p.pw[i]=i;
-	}
-	for(i=0;i<8;i++)
-	{
-		p.g[i]=i;
-	}
-	//p.g[1]=0xdd;
-	//p.g[2]=0x42;
-	//p.g[3]=0x97;
-	p.use_g=zone;
-	p.use_pw=zone;
-	p.zone_index=zone;
-	if(read_userzone(&p))
-	{
-		for(i=0;i<32;i++)
-		{
-			if(i%8==0 && i!=0)
-				AT88DBG("\n");
-			AT88DBG("%4X ",p.user_zone[i]);		
-		}
-	}
-	else
-	{
-		AT88DBG("read user zone failed "); 	
-	}
-}
-/*
 void b(unsigned char zone,unsigned char flag)
 {
 	pe p;
@@ -129,7 +68,37 @@ void b(unsigned char zone,unsigned char flag)
 	
 	burn(p);
 }
-*/
+void r(unsigned char zone)
+{
+	ge p;
+	int i;
+	memset(&p,0xff,sizeof(ge));
+	for(i=0;i<3;i++)
+	{
+		p.pw[i]=i;
+	}
+	for(i=0;i<8;i++)
+	{
+		p.g[i]=i;
+	}
+	p.use_g=zone;
+	p.use_pw=zone;
+	p.zone_index=zone;
+	if(read_userzone(&p))
+	{
+		for(i=0;i<32;i++)
+		{
+			if(i%8==0 && i!=0)
+				AT88DBG("\n");
+			AT88DBG("%4X ",p.user_zone[i]);		
+		}
+	}
+	else
+	{
+		AT88DBG("read user zone failed "); 	
+	}
+}
+
 static void rt_init_thread_entry(void* parameter)
 {
 	rt_thread_t system_thread;
@@ -150,13 +119,14 @@ static void rt_init_thread_entry(void* parameter)
 	unsigned int count=1000;
 	rt_memset(buf,'\0',256);
 	rt_hw_led_init();
-	rt_kprintf("led on, count : %d\r\n",count);
+//	rt_kprintf("led on, count : %d\r\n",count);
 	//rt_sprintf(buf,"%s","- RT -    Thread Operating System");
 		
 	//	ST7585_Write_String(0,5,"- RT -    ");
 	//ST7585_Write_String(0,4,"Thread Operating System");
 	//	Draw_bat(3);
-	r(0);
+	//b(0,1);
+r(0);
 	while (1)
 	{
 		
@@ -193,7 +163,7 @@ int rt_application_init()
 #if (RT_THREAD_PRIORITY_MAX == 32)
   init_thread = rt_thread_create("init",
 	  rt_init_thread_entry, RT_NULL,
-	  1024, 8, 20);
+	  2048, 8, 20);
 #else
   init_thread = rt_thread_create("init",
 	  rt_init_thread_entry, RT_NULL,
