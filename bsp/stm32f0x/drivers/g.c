@@ -3,26 +3,33 @@
  */
  #include "s1.h"
  #include <rthw.h>
- #include <s3c44b0.h>
+#include <stm32f0xx.h>
+
  /*config scl,sda as gpio mode and dir out*/
  #define DELAY 10
+ GPIO_InitTypeDef  GPIO_InitStructure;
  void i2c_init(void)
 {
-	PCONE = PCONE & ~(0x3<<14);
-	PCONE = PCONE | (0x1<<14);
-	PCONF = PCONF & ~(0x7<<16);
-	PCONF = PCONF | (0x1<<16);
-	PUPF = PUPF & ~(0x1<<7);//scl
-	PUPE = PUPE & ~(0x1<<7);//sda
+	 
+	 /* Enable the GPIO_LED Clock */
+	 RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA|RCC_AHBPeriph_GPIOB, ENABLE);
+	 
+	 /* Configure the GPIO_LED pin */
+	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+	 GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	 GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	 GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9|GPIO_Pin_10;
+	 GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 /*scl set hi or low*/
 void i2c_scl_set(unsigned char level)
 {
     volatile unsigned long delay = 0;
     if(level)
-        PDATF = PDATF | (0x1<<7);
+        GPIO_SetBits(GPIOA, GPIO_Pin_10);
     else
-        PDATF = PDATF & ~(0x1<<7);
+        GPIO_ResetBits(GPIOA, GPIO_Pin_10);
     for (delay = 0; delay < DELAY; )
     {
         delay++;
@@ -33,9 +40,9 @@ void i2c_sda_set(unsigned char level)
 {
     volatile unsigned long delay = 0;
     if(level)
-        PDATE = PDATE | (0x1<<7);
+        GPIO_SetBits(GPIOA, GPIO_Pin_9);
     else
-        PDATE = PDATE & ~(0x1<<7);
+        GPIO_ResetBits(GPIOA, GPIO_Pin_9);
     for (delay = 0; delay < DELAY; )
     {
         delay++;
@@ -44,13 +51,15 @@ void i2c_sda_set(unsigned char level)
 /*return sda level */
 unsigned char i2c_sda_get(void)
 {
-		return (PDATE & (0x1<<7))?1:0;
+		return GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_9);
 }
 /*config sda dir input*/
 void i2c_sda_input(void)
 {
     volatile unsigned long delay = 0;
-    PCONE = PCONE & ~(0x3<<14);
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_9;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
     for (delay = 0; delay < DELAY; )
     {
         delay++;
@@ -59,8 +68,9 @@ void i2c_sda_input(void)
 /*config sda dir output*/
 void i2c_sda_output(void)
 {
-	PCONE = PCONE & ~(0x3<<14);
-	PCONE = PCONE | (0x1<<14);
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
 }
 /*sleep function*/
 void sleep_ms(unsigned long n)

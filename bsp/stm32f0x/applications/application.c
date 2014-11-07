@@ -27,6 +27,65 @@
 #endif  /* RT_USING_COMPONENTS_INIT */
 
 #include "led.h"
+#include "s1.h"
+void cb()
+{
+	rt_kprintf("\r\nCall back called\r\n");
+}
+
+void a(unsigned char zone)
+{
+	ge p;
+	int i;
+	memset(&p,0xff,sizeof(ge));
+	for(i=0;i<32;i++)
+	{
+		p.user_zone[i]=i;
+	}
+	for(i=0;i<3;i++)
+	{
+		p.pw[i]=i;
+	}
+	for(i=0;i<8;i++)
+	{
+		p.g[i]=i;
+	}
+	p.use_g=zone;
+	p.use_pw=zone;
+	p.zone_index=zone;
+	auth(&p,(callback_t *)cb);
+}
+void r(unsigned char zone)
+{
+	ge p;
+	int i;
+	memset(&p,0xff,sizeof(ge));
+	for(i=0;i<3;i++)
+	{
+		p.pw[i]=i;
+	}
+	for(i=0;i<8;i++)
+	{
+		p.g[i]=i;
+	}
+	p.use_g=zone;
+	p.use_pw=zone;
+	p.zone_index=zone;
+	if(read_userzone(&p))
+	{
+		for(i=0;i<32;i++)
+		{
+			if(i%8==0 && i!=0)
+				AT88DBG("\n");
+			AT88DBG("%4X ",p.user_zone[i]);		
+		}
+	}
+	else
+	{
+		AT88DBG("read user zone failed "); 	
+	}
+}
+
 static void rt_init_thread_entry(void* parameter)
 {
 	rt_thread_t system_thread;

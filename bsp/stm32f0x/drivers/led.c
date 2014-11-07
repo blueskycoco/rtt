@@ -41,7 +41,8 @@ int rt_hw_led_init(void)
     GPIO_ResetBits(GPIOA, GPIO_Pin_9);
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
-    
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
     return 0;
 }
 
