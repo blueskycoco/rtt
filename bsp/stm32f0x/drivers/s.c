@@ -837,7 +837,7 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
 
 	return TRUE;
 }
-#if 1
+#if 0
 BOOL burn(pe p)
 {
 	unsigned char ucData[240];
@@ -1083,7 +1083,6 @@ BOOL userzone_proc(pge p,BOOL read)
 {
 	BOOL ucReturn;
 	unsigned char ucData[240];
-	unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
 
 	unsigned char i,index=0;	
 	cm_PowerOn();

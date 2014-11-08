@@ -28,7 +28,7 @@
 
 #include "led.h"
 #include "s1.h"
-#if 0
+#if 1
 int one_page_max=0;//one page size
 int one_userzone_max=0;//one user zone size
 int userzone_num=0;//userzone num
@@ -275,13 +275,13 @@ static void rt_init_thread_entry(void* parameter)
 	//	ST7585_Write_String(0,5,"- RT -    ");
 	//ST7585_Write_String(0,4,"Thread Operating System");
 	//	Draw_bat(3);
-	#if 1
-	b(0,0);
+	#if 0
+	//b(1,1);
 		
 
-	b(1,0);
-	b(2,0);
-	b(3,0);
+	//b(1,0);
+	//b(2,0);
+	//b(3,0);
 //r(0);
 #else
 	at88 at88;
