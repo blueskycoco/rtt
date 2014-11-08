@@ -837,7 +837,7 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
 
 	return TRUE;
 }
-#if 0
+#if 1
 BOOL burn(pe p)
 {
 	unsigned char ucData[240];
