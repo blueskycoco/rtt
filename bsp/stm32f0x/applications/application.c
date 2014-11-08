@@ -67,7 +67,7 @@ BOOL WriteReg(at88* value)
 	param.page_size=one_page_max;	
 	local_size=value->size;
 	local_addr=value->addr;
-	for(param.zone_index=user_zone_begin;param.zone_index<=user_zone_end;param.zone_index++)
+	for(param.zone_index=user_zone_begin;param.zone_index<user_zone_end;param.zone_index++)
 	{		
 		param.addr=local_addr%one_userzone_max;
 		if((param.addr+local_size)<=one_userzone_max)
@@ -100,7 +100,7 @@ BOOL ReadReg(at88* value)
 	param.page_size=one_page_max;
 	local_size=value->size;
 	local_addr=value->addr;
-	for(param.zone_index=user_zone_begin;param.zone_index<=user_zone_end;param.zone_index++)
+	for(param.zone_index=user_zone_begin;param.zone_index<user_zone_end;param.zone_index++)
 	{		
 		param.addr=local_addr%one_userzone_max;
 		if((param.addr+local_size)<=one_userzone_max)
@@ -250,7 +250,7 @@ void b(unsigned char zone,unsigned char flag)
 static void rt_init_thread_entry(void* parameter)
 {
 	rt_thread_t system_thread;
-	rt_uint8_t buf[32];
+	rt_uint8_t buf[128];
 	int i;
 
 	/* Initialization RT-Thread Components */
@@ -276,15 +276,21 @@ static void rt_init_thread_entry(void* parameter)
 	//ST7585_Write_String(0,4,"Thread Operating System");
 	//	Draw_bat(3);
 	#if 0
-	b(0,1);
+	b(1,1);
+		
+
+	b(1,0);
+	b(2,0);
+	b(3,0);
 //r(0);
 #else
 	at88 at88;
 
 	Virtual_Alloc();
 	at88.data=buf;//(unsigned char *)malloc(32);
-	memset(at88.data,0,32);
-	
+	memset(at88.data,123,128);
+	//for(i=0;i<128;i++)
+	//	at88.data[i]=i;
 	for(i=0;i<3;i++)
 	{
 		at88.pw[i]=i;
@@ -295,8 +301,8 @@ static void rt_init_thread_entry(void* parameter)
 	}
 	#if 1
 	
-	at88.addr=3;
-	at88.size=20;
+	at88.addr=0;
+	at88.size=128;
 	ReadReg(&at88);
 	
 	AT88DBG("\nRead user zone data again:\n");
@@ -308,11 +314,8 @@ static void rt_init_thread_entry(void* parameter)
 	}
 
 	#else
-	at88.addr=19;
-	at88.size=3;
-	at88.data[0]=3;
-	at88.data[1]=6;
-	at88.data[2]=9;
+	at88.addr=0;
+	at88.size=128;
 	WriteReg(&at88);
 	#endif
 	#endif

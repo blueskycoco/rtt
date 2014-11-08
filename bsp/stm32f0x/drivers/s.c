@@ -228,7 +228,7 @@ unsigned int cm_Write(unsigned char Command, unsigned char Addr1, unsigned char 
 		i2c_SendData(Command);
 		if (!i2c_ReceiveAck())
 		{
-			AT88DBG("<cm_Write>NACK received after Command.\r\n");
+			AT88DBG("<cm_Write>NACK received after Command. %x\r\n",Command);
 			i2c_SendStop();
 			sleep_ms(20UL);
 			continue;
@@ -284,7 +284,7 @@ unsigned int cm_Write(unsigned char Command, unsigned char Addr1, unsigned char 
 
 	}
 
-	AT88DBG("<cm_Write>(0x%x) failed, too many NACKs.\r\n", Command);
+	AT88DBG("<cm_Write>(0x%x) failed, too many NACKs.\r\n", Addr2);
 	return 0;
 }
 void cm_AckPolling(unsigned char Command)
@@ -1004,7 +1004,7 @@ BOOL burn(pe p)
 	}
 	return TRUE;
 }
-#endif
+#else
 /*
    BOOL auth(pge p,callback_t cb)
    {
@@ -1039,11 +1039,13 @@ cb();
 return TRUE;
 }
 */
-#if 1
+
 BOOL get_config(unsigned char *buf)
 {
-	BOOL ucReturn;
-
+	BOOL ucReturn;	
+	unsigned char ucData[240];
+	unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
+	int i;
 	cm_PowerOn();
 	ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, buf, 24);
 	if (ucReturn != TRUE) 
@@ -1051,6 +1053,29 @@ BOOL get_config(unsigned char *buf)
 		AT88DBG("cm_ReadConfigZone failed\n");
 		return FALSE;
 	}
+	
+	/*unlock config area
+	ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, Def_SecureCode,7, 0);
+	if (ucReturn != TRUE)  
+	{
+		AT88DBG("cm_VerifyPassword failed\n");
+		return FALSE;
+	}
+
+	ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, ucData, 0xf0);
+	if (ucReturn != TRUE) 
+	{
+		AT88DBG("cm_ReadConfigZone failed\n");
+		return FALSE;
+	}
+	AT88DBG("\nRead all config data again:\n");
+	for(i=0;i<0xf0;i++)
+	{
+		if(i%8==0 && i!=0)
+			AT88DBG("\n");
+		AT88DBG("%4X ",ucData[i]);		
+	}
+	*/
 	return ucReturn;
 }
 
