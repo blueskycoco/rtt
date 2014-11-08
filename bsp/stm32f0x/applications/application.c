@@ -293,8 +293,19 @@ static void rt_init_thread_entry(void* parameter)
 	{
 		at88.g[i]=i;
 	}
-	ReadReg(&at88);
+	//ReadReg(&at88);
 	
+	at88.addr=19;
+	at88.size=3;
+	at88.data[19]=1;
+	at88.data[20]=2;
+	at88.data[21]=3;
+	WriteReg(&at88);
+	at88.data[19]=0xff;
+	at88.data[20]=0xff;
+	at88.data[21]=0xff;
+	ReadReg(&at88);
+
 	AT88DBG("\nRead user zone data again:\n");
 	for(i=0;i<at88.size;i++)
 	{
@@ -302,6 +313,7 @@ static void rt_init_thread_entry(void* parameter)
 			AT88DBG("\n");
 		AT88DBG("%4X ",at88.data[i]); 	
 	}
+
 	#endif
 	#if 1
 	while (1)
