@@ -53,7 +53,7 @@ typedef struct {
 BOOL WriteReg(at88* value)
 {
 	BOOL rc = FALSE;
-	int index=0;
+	int index=0,local_size,local_addr;
 	ge param;
 	/*transfer addr to userzone 0 byte to 32768 byte*/
 	if((value->addr+value->size)>one_userzone_max*userzone_num)
@@ -64,20 +64,22 @@ BOOL WriteReg(at88* value)
 	memcpy(param.pw,value->pw,3);	
 	param.use_g=0;
 	param.use_pw=0;
-	param.page_size=one_page_max;
+	param.page_size=one_page_max;	
+	local_size=value->size;
+	local_addr=value->addr;
 	for(param.zone_index=user_zone_begin;param.zone_index<=user_zone_end;param.zone_index++)
 	{		
-		param.addr=value->addr%one_userzone_max;
-		if((param.addr+value->size)<=one_userzone_max)
-			param.len=value->size;
+		param.addr=local_addr%one_userzone_max;
+		if((param.addr+local_size)<=one_userzone_max)
+			param.len=local_size;
 		else
 			param.len=one_userzone_max-param.addr;
 			
 		//memcpy(param.user_zone,value->data+index,param.len);
 		param.user_zone=value->data+index;
 		userzone_proc(&param,0);
-		value->size=value->size-param.len;		
-		value->addr=value->addr+param.len;
+		local_size=local_size-param.len;		
+		local_addr=local_addr+param.len;
 		index=index+param.len;
 	}
 }
@@ -283,7 +285,7 @@ static void rt_init_thread_entry(void* parameter)
 	at88.data=buf;//(unsigned char *)malloc(32);
 	memset(at88.data,0,32);
 	at88.addr=3;
-	at88.size=17;
+	at88.size=20;
 	
 	for(i=0;i<3;i++)
 	{
@@ -293,8 +295,9 @@ static void rt_init_thread_entry(void* parameter)
 	{
 		at88.g[i]=i;
 	}
-	//ReadReg(&at88);
-	
+	#if 0
+	ReadReg(&at88);
+	#else
 	at88.addr=19;
 	at88.size=3;
 	at88.data[19]=1;
@@ -304,8 +307,8 @@ static void rt_init_thread_entry(void* parameter)
 	at88.data[19]=0xff;
 	at88.data[20]=0xff;
 	at88.data[21]=0xff;
-	ReadReg(&at88);
-
+	//ReadReg(&at88);
+	#endif
 	AT88DBG("\nRead user zone data again:\n");
 	for(i=0;i<at88.size;i++)
 	{

@@ -1090,7 +1090,7 @@ BOOL userzone_proc(pge p,BOOL read)
 		return FALSE;
 		}
 	}
-	/*else
+	else
 	{
 		for(i=0;i<p->len/p->page_size;i++)
 		{
@@ -1112,7 +1112,7 @@ BOOL userzone_proc(pge p,BOOL read)
 			}
 		}
 
-	}*/
+	}
 	/*unlock config area
 	ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, Def_SecureCode,7, 0);
 	if (ucReturn != TRUE)  
