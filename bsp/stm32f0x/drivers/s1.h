@@ -95,26 +95,32 @@ void i2c_sda_input(void);
 void i2c_sda_output(void);
 void sleep_ms(unsigned long n);
 typedef void (*callback_t)(void);
+#define USER_ZONE_SIZE 32
 typedef struct {
-	unsigned char user_zone[4][32];
-	unsigned char ar[4][2];
-	unsigned char ci[4][7];
-	unsigned char g[4][8];
-	unsigned char pw[8][7];
+	unsigned char user_zone[USER_ZONE_SIZE];
+	unsigned char ar[2];
+	unsigned char ci[7];
+	unsigned char g[8];
+	unsigned char pw[7];
 	unsigned char id[7];
 	unsigned char fuse;
 	unsigned char flag;//0 no need auth , 1 need auth
 	unsigned char auth_g[8];
 	unsigned char auth_pw[3];
+	unsigned char zone_index;
 }pe,*ppe;
 
+
 typedef struct {
-	unsigned char user_zone[32];
+	unsigned char *user_zone;
 	unsigned char g[8];
 	unsigned char pw[3];
 	unsigned char use_g;
 	unsigned char use_pw;
 	unsigned char zone_index;
+	int len;
+	int addr;
+	int page_size;
 }ge,*pge;
 
 BOOL auth(pge p,callback_t cb);

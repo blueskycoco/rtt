@@ -837,7 +837,7 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
 
 	return TRUE;
 }
-
+#if 1
 BOOL burn(pe p)
 {
 	unsigned char ucData[240];
@@ -867,19 +867,12 @@ BOOL burn(pe p)
 		AT88DBG("Read Config Zone MTZ failed\n");
 		return FALSE;
 	}   
-
+	zone=p.zone_index;
 	memset(ucData,0xff,240*sizeof(unsigned char));	
 	if(p.flag)
 	{//3 burn chip second time,need auth
 		AT88DBG("to VeriyCrypto\n");
-		for(i=0;i<4;i++)
-		{
-			if(memcmp(p.user_zone[i],ucData,32)!=0)
-			{
-				zone =i;
-				break;
-			}
-		}
+		
 		ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, zone,p.auth_g);
 		if (ucReturn != TRUE){
 			AT88DBG("cm_VerifyCrypto failed1\n");
@@ -892,22 +885,16 @@ BOOL burn(pe p)
 		}
 	}
 	//4 write user zone
-	for(i=0;i<4;i++)
-	{
-		if(memcmp(p.user_zone[i],ucData,32)!=0)
-		{
-			cm_SetUserZone(DEFAULT_ADDRESS, i, FALSE);
-			ucReturn = cm_WriteUserZone(DEFAULT_ADDRESS, 0, p.user_zone[i], 16);
-			if(ucReturn != TRUE){
-				AT88DBG("cm_WriteUserZone Zone failed 1\n");
-				return FALSE;
-			}
-			ucReturn = cm_WriteUserZone(DEFAULT_ADDRESS, 0x10, (unsigned char *)(p.user_zone[i]+16), 16);
-			if(ucReturn != TRUE){
-				AT88DBG("cm_WriteUserZone Zone failed 2\n");
-				return FALSE;
-			}
-		}
+	cm_SetUserZone(DEFAULT_ADDRESS, zone, FALSE);
+	ucReturn = cm_WriteUserZone(DEFAULT_ADDRESS, 0, p.user_zone, 16);
+	if(ucReturn != TRUE){
+		AT88DBG("cm_WriteUserZone Zone failed 1\n");
+		return FALSE;
+	}
+	ucReturn = cm_WriteUserZone(DEFAULT_ADDRESS, 0x10, (unsigned char *)(p.user_zone+16), 16);
+	if(ucReturn != TRUE){
+		AT88DBG("cm_WriteUserZone Zone failed 2\n");
+		return FALSE;
 	}
 	cm_ReadFuse(DEFAULT_ADDRESS,&fuse);
 	AT88DBG("fuse , %x",fuse);
@@ -940,86 +927,38 @@ BOOL burn(pe p)
 		AT88DBG("cm_ReadConfigZone failed\n");
 		return FALSE;
 	}
-	/*AT88DBG("\nRead all config data fist time\n");
+	AT88DBG("\nRead all config data fist time\n");
 	for(i=0;i<0xf0;i++)
 	{
 		if(i%8==0 && i!=0)
 			AT88DBG("\n");
 		AT88DBG("%4X ",ucData[i]);		
-	}*/
+	}
 
 	memset(ucData,0xff,240*sizeof(unsigned char));	
 	//6 write pw
-	for(i=0;i<8;i++)
-	{
-		if(memcmp(p.pw[i],ucData,7)!=0)
-		{
-			if(i==0)
-				addr=AT88SC_W0;
-			else if(i==1)
-				addr=AT88SC_W1;
-			else if(i==2)
-				addr=AT88SC_W2;
-			else if(i==3)
-				addr=AT88SC_W3;
-			else if(i==4)
-				addr=AT88SC_W4;
-			else if(i==5)
-				addr=AT88SC_W5;
-			else if(i==6)
-				addr=AT88SC_W6;
-			else if(i==7)
-				addr=AT88SC_W7;
-			ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, addr, p.pw[i], 7, FALSE);
-			if(ucReturn != TRUE) {
-				AT88DBG("cm_WriteConfigZone PW failed \n");
-				return FALSE;
-			}
-		}
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W0, p.pw, 7, FALSE);
+	if(ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone PW failed \n");
+		return FALSE;
 	}
 	//7 write G
-	for(i=0;i<4;i++)
-	{
-		if(memcmp(p.g[i],ucData,8)!=0)
-		{
-			ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_G0+i*8, p.g[i], 8, FALSE);
-			if (ucReturn != TRUE) {
-				AT88DBG("cm_WriteConfigZone G Failed\n");
-				return FALSE;
-			}
-		}
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_G0, p.g, 8, FALSE);
+	if (ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone G Failed\n");
+		return FALSE;
 	}
 	//8 write Ci
-	for(i=0;i<4;i++)
-	{
-		if(memcmp(p.ci[i],ucData,7)!=0)
-		{
-			if(i==0)
-				addr=AT88SC_CI0;
-			else if(i==1)
-				addr=AT88SC_CI1;
-			else if(i==2)
-				addr=AT88SC_CI2;
-			else if(i==3)
-				addr=AT88SC_CI3;
-			ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, addr, p.ci[i], 7, FALSE);
-			if (ucReturn != TRUE) {
-				AT88DBG("cm_WriteConfigZone Ci Failed\n");
-				return FALSE;
-			}
-		}
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_CI0, p.ci, 7, FALSE);
+	if (ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone Ci Failed\n");
+		return FALSE;
 	}
 	//9 write ar
-	for(i=0;i<4;i++)
-	{
-		if(memcmp(p.ar[i],ucData,2)!=0)
-		{
-			ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_AR0+i*2, p.ar[i], 2, FALSE);
-			if (ucReturn != TRUE) {
-				AT88DBG("cm_WriteConfigZone AR Failed\n");
-				return FALSE;
-			}
-		}
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_AR0, p.ar, 2, FALSE);
+	if (ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone AR Failed\n");
+		return FALSE;
 	}
 	//10 write id
 	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_INN, p.id, 7, FALSE);
@@ -1065,6 +1004,7 @@ BOOL burn(pe p)
 	}
 	return TRUE;
 }
+#endif
 /*
    BOOL auth(pge p,callback_t cb)
    {
@@ -1099,53 +1039,103 @@ cb();
 return TRUE;
 }
 */
-
-BOOL read_userzone(pge p)
+#if 1
+BOOL get_config(unsigned char *buf)
 {
-BOOL ucReturn;
-unsigned char ucData[240];
-unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
+	BOOL ucReturn;
 
-unsigned char i;	
-cm_PowerOn();
+	cm_PowerOn();
+	ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, buf, 24);
+	if (ucReturn != TRUE) 
+	{
+		AT88DBG("cm_ReadConfigZone failed\n");
+		return FALSE;
+	}
+	return ucReturn;
+}
 
-ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, p->use_g, p->g);
-if (ucReturn != TRUE){
-AT88DBG("cm_VerifyCrypto failed1\n");
-return FALSE;
-}
-ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 0);
-if (ucReturn != TRUE)  {
-AT88DBG("cm_VerifyPassword failed\n");
-return FALSE;
-}
-cm_SetUserZone(DEFAULT_ADDRESS, p->zone_index, FALSE);
-memset(p->user_zone,0xff,32*sizeof(unsigned char));
-ucReturn = cm_ReadUserZone(DEFAULT_ADDRESS, 0, p->user_zone, 32);
-if (ucReturn != TRUE){
-AT88DBG("At88sc_Read failed %d\n",p->zone_index);
-return FALSE;
-}
-ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, Def_SecureCode,7, 0);
-	if (ucReturn != TRUE)  {
+BOOL userzone_proc(pge p,BOOL read)
+{
+	BOOL ucReturn;
+	unsigned char ucData[240];
+	unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
+
+	unsigned char i,index=0;	
+	cm_PowerOn();
+	/*rt_kprintf("user_zone %x\r\ng %x %x %x %x %x %x %x %x\r\npw %x %x %x\r\npage_size %x\r\nzone_index %x\r\n",
+		p->user_zone,p->g[0],p->g[1],p->g[2],p->g[3],p->g[4],p->g[5],p->g[6],p->g[7],
+		p->pw[0],p->pw[1],p->pw[2],p->page_size,p->zone_index);*/
+//return TRUE;
+	ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, p->use_g, p->g);
+	if (ucReturn != TRUE)
+	{
+		AT88DBG("cm_VerifyCrypto failed1\n");
+		return FALSE;
+	}
+	ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 0);
+	if (ucReturn != TRUE)  
+	{
+		AT88DBG("cm_VerifyPassword failed\n");
+		return FALSE;
+	}
+	
+	cm_SetUserZone(DEFAULT_ADDRESS, p->zone_index, FALSE);
+	if(read)
+	{
+		//memset(p->user_zone,0xff,32*sizeof(unsigned char));
+		ucReturn = cm_ReadUserZone(DEFAULT_ADDRESS, p->addr, p->user_zone, p->len);
+		if (ucReturn != TRUE)
+		{
+		AT88DBG("cm_ReadUserZone failed %d\n",p->zone_index);
+		return FALSE;
+		}
+	}
+	/*else
+	{
+		for(i=0;i<p->len/p->page_size;i++)
+		{
+			ucReturn = cm_WriteUserZone(DEFAULT_ADDRESS, p->addr+index,(unsigned char *)(p->user_zone+index), p->page_size);
+			if(ucReturn != TRUE)
+			{
+				AT88DBG("cm_WriteUserZone Zone failed 1\n");
+				return FALSE;
+			}
+			index=index+p->page_size;
+		}
+		if((p->len%p->page_size)!=0)
+		{
+			ucReturn = cm_WriteUserZone(DEFAULT_ADDRESS, p->addr+index, (unsigned char *)(p->user_zone+index), p->len-index);
+			if(ucReturn != TRUE)
+			{
+				AT88DBG("cm_WriteUserZone Zone failed 2\n");
+				return FALSE;
+			}
+		}
+
+	}*/
+	/*unlock config area
+	ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, Def_SecureCode,7, 0);
+	if (ucReturn != TRUE)  
+	{
 		AT88DBG("cm_VerifyPassword failed\n");
 		return FALSE;
 	}
 
-ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, ucData, 0xf0);
-	if (ucReturn != TRUE) {
+	ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, ucData, 0xf0);
+	if (ucReturn != TRUE) 
+	{
 		AT88DBG("cm_ReadConfigZone failed\n");
 		return FALSE;
 	}
-	AT88DBG("\nRead all config data again\n");
+	AT88DBG("\nRead all config data again:\n");
 	for(i=0;i<0xf0;i++)
 	{
 		if(i%8==0 && i!=0)
 			AT88DBG("\n");
 		AT88DBG("%4X ",ucData[i]);		
 	}
-	AT88DBG("\nRead user zone data again\n");
+*/
 
 return TRUE;
 }
-
+#endif
