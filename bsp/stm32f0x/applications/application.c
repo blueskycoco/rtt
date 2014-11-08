@@ -204,7 +204,7 @@ BOOL Virtual_Alloc()
 	}
 	return TRUE;
 }
-#endif
+#else
 void b(unsigned char zone,unsigned char flag)
 {
 	pe p;
@@ -245,7 +245,7 @@ void b(unsigned char zone,unsigned char flag)
 	
 	burn(p);
 }
-
+#endif
 
 static void rt_init_thread_entry(void* parameter)
 {
@@ -262,11 +262,11 @@ static void rt_init_thread_entry(void* parameter)
 #ifdef  RT_USING_FINSH
 	finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif  /* RT_USING_FINSH */
-	rt_hw_led1_off();
+	//rt_hw_led1_off();
 	//cmx865a_init();
 
 
-	unsigned int count=1000;
+	//unsigned int count=1000;
 	//rt_memset(buf,'\0',256);
 	rt_hw_led_init();
 //	rt_kprintf("led on, count : %d\r\n",count);
@@ -284,8 +284,6 @@ static void rt_init_thread_entry(void* parameter)
 	Virtual_Alloc();
 	at88.data=buf;//(unsigned char *)malloc(32);
 	memset(at88.data,0,32);
-	at88.addr=3;
-	at88.size=20;
 	
 	for(i=0;i<3;i++)
 	{
@@ -295,20 +293,12 @@ static void rt_init_thread_entry(void* parameter)
 	{
 		at88.g[i]=i;
 	}
-	#if 0
+	#if 1
+	
+	at88.addr=3;
+	at88.size=20;
 	ReadReg(&at88);
-	#else
-	at88.addr=19;
-	at88.size=3;
-	at88.data[19]=1;
-	at88.data[20]=2;
-	at88.data[21]=3;
-	WriteReg(&at88);
-	at88.data[19]=0xff;
-	at88.data[20]=0xff;
-	at88.data[21]=0xff;
-	//ReadReg(&at88);
-	#endif
+	
 	AT88DBG("\nRead user zone data again:\n");
 	for(i=0;i<at88.size;i++)
 	{
@@ -317,8 +307,18 @@ static void rt_init_thread_entry(void* parameter)
 		AT88DBG("%4X ",at88.data[i]); 	
 	}
 
+	#else
+	at88.addr=19;
+	at88.size=3;
+	at88.data[0]=3;
+	at88.data[1]=6;
+	at88.data[2]=9;
+	WriteReg(&at88);
 	#endif
-	#if 1
+	#endif
+	#if 0
+	while(1);
+	#else
 	while (1)
 	{
 		
@@ -332,7 +332,7 @@ static void rt_init_thread_entry(void* parameter)
 	//	ST7585_Write_String(0,5,buf);
 
 		//test_cmx865a();
-		count++;
+	//	count++;
 		rt_hw_led1_off();
 		rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
 
