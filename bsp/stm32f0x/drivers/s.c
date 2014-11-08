@@ -869,33 +869,6 @@ BOOL burn(pe p)
 	}   
 	zone=p.zone_index;
 	memset(ucData,0xff,240*sizeof(unsigned char));	
-	if(p.flag)
-	{//3 burn chip second time,need auth
-		AT88DBG("to VeriyCrypto\n");
-		
-		ucReturn = cm_VerifyCrypto(DEFAULT_ADDRESS, zone,p.auth_g);
-		if (ucReturn != TRUE){
-			AT88DBG("cm_VerifyCrypto failed1\n");
-			return FALSE;
-		}	
-		ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p.auth_pw,zone, 0);
-		if (ucReturn != TRUE)  {
-			AT88DBG("cm_VerifyPassword failed\n");
-			return FALSE;
-		}
-	}
-	//4 write user zone
-	cm_SetUserZone(DEFAULT_ADDRESS, zone, FALSE);
-	ucReturn = cm_WriteUserZone(DEFAULT_ADDRESS, 0, p.user_zone, 16);
-	if(ucReturn != TRUE){
-		AT88DBG("cm_WriteUserZone Zone failed 1\n");
-		return FALSE;
-	}
-	ucReturn = cm_WriteUserZone(DEFAULT_ADDRESS, 0x10, (unsigned char *)(p.user_zone+16), 16);
-	if(ucReturn != TRUE){
-		AT88DBG("cm_WriteUserZone Zone failed 2\n");
-		return FALSE;
-	}
 	cm_ReadFuse(DEFAULT_ADDRESS,&fuse);
 	AT88DBG("fuse , %x",fuse);
 	if((fuse&0x7)==0x0)
@@ -954,12 +927,16 @@ BOOL burn(pe p)
 		AT88DBG("cm_WriteConfigZone Ci Failed\n");
 		return FALSE;
 	}
-	//9 write ar
-	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_AR0, p.ar, 2, FALSE);
-	if (ucReturn != TRUE) {
-		AT88DBG("cm_WriteConfigZone AR Failed\n");
-		return FALSE;
-	}
+    for(i=0;i<4;i++)
+    {
+        
+        ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_AR0+i*2, p.ar[i], 2, FALSE);
+        if (ucReturn != TRUE) {
+            AT88DBG("cm_WriteConfigZone AR Failed\n");
+            return FALSE;
+        }
+        
+    }
 	//10 write id
 	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_INN, p.id, 7, FALSE);
 	if (ucReturn != TRUE) {
