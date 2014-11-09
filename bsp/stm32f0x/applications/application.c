@@ -28,7 +28,7 @@
 
 #include "led.h"
 #include "s1.h"
-#if 1
+#if !BURN
 int one_page_max=0;//one page size
 int one_userzone_max=0;//one user zone size
 int userzone_num=0;//userzone num
@@ -275,14 +275,14 @@ static void rt_init_thread_entry(void* parameter)
 	//	ST7585_Write_String(0,5,"- RT -    ");
 	//ST7585_Write_String(0,4,"Thread Operating System");
 	//	Draw_bat(3);
-	#if 0
-	//b(1,1);
+	#if BURN
+	b(0,0);
 		
 
 	//b(1,0);
 	//b(2,0);
 	//b(3,0);
-//r(0);
+	//r(0);
 #else
 	at88 at88;
 
@@ -303,7 +303,7 @@ static void rt_init_thread_entry(void* parameter)
 	
 	at88.addr=0;
 	at88.size=128;
-	ReadReg(&at88);
+	//ReadReg(&at88);
 	
 	AT88DBG("\nRead user zone data again:\n");
 	for(i=0;i<at88.size;i++)

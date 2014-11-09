@@ -96,6 +96,7 @@ void i2c_sda_output(void);
 void sleep_ms(unsigned long n);
 typedef void (*callback_t)(void);
 #define USER_ZONE_SIZE 32
+#define BURN 0
 typedef struct {
 	unsigned char user_zone[USER_ZONE_SIZE];
 	unsigned char ar[2];

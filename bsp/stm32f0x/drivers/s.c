@@ -837,7 +837,7 @@ BOOL cm_VerifyCrypto(unsigned char ucDevAddr, unsigned char ucKeySet, unsigned c
 
 	return TRUE;
 }
-#if 0
+#if BURN
 BOOL burn(pe p)
 {
 	unsigned char ucData[240];
@@ -930,7 +930,7 @@ BOOL burn(pe p)
     for(i=0;i<4;i++)
     {
         
-        ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_AR0+i*2, p.ar[i], 2, FALSE);
+        ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_AR0+i*2, p.ar, 2, FALSE);
         if (ucReturn != TRUE) {
             AT88DBG("cm_WriteConfigZone AR Failed\n");
             return FALSE;
@@ -1023,6 +1023,7 @@ BOOL get_config(unsigned char *buf)
 	unsigned char ucData[240];
 	unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
 	int i;
+	unsigned char fuse;	
 	cm_PowerOn();
 	ucReturn = cm_ReadConfigZone(DEFAULT_ADDRESS, AT88SC_ATR, buf, 24);
 	if (ucReturn != TRUE) 
@@ -1030,8 +1031,12 @@ BOOL get_config(unsigned char *buf)
 		AT88DBG("cm_ReadConfigZone failed\n");
 		return FALSE;
 	}
+	#if 1
+	cm_ReadFuse(DEFAULT_ADDRESS,&fuse);
+	AT88DBG("fuse , %x",fuse);
 	
-	/*unlock config area
+	
+	/*unlock config area*/
 	ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, Def_SecureCode,7, 0);
 	if (ucReturn != TRUE)  
 	{
@@ -1052,7 +1057,29 @@ BOOL get_config(unsigned char *buf)
 			AT88DBG("\n");
 		AT88DBG("%4X ",ucData[i]);		
 	}
-	*/
+	if(FALSE)
+	{//10 fuse chip or not
+		//set fuse
+		//unsigned char fuse;
+		//update Def_SecureCode before fuse
+		unsigned char pw[7]={0x32,0x56,0x9a,0xff,0xff,0xff,0xff};
+		//ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W7, pw, 7, FALSE);
+		if (ucReturn != TRUE) {
+			AT88DBG("cm_WriteConfigZone Def_SecureCode Failed\n");
+			return FALSE;
+		}
+		cm_ReadFuse(DEFAULT_ADDRESS,&fuse);
+		AT88DBG("Before fuse , %x",fuse);
+		fuse=0x06;
+		cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
+		fuse=0x04;
+		cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
+		fuse=0x00;
+		cm_WriteFuse(DEFAULT_ADDRESS,&fuse);
+		cm_ReadFuse(DEFAULT_ADDRESS,&fuse);
+		AT88DBG("after fuse , %x",fuse);
+	}
+	#endif
 	return ucReturn;
 }
 
