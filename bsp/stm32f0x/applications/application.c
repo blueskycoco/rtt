@@ -288,9 +288,9 @@ static void rt_init_thread_entry(void* parameter)
 
 	Virtual_Alloc();
 	at88.data=buf;//(unsigned char *)malloc(32);
-	memset(at88.data,123,128);
-	//for(i=0;i<128;i++)
-	//	at88.data[i]=i;
+	//memset(at88.data,123,128);
+	for(i=0;i<128;i++)
+		at88.data[i]=i;
 	for(i=0;i<3;i++)
 	{
 		at88.pw[i]=i;
