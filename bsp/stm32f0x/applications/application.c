@@ -28,7 +28,7 @@
 
 #include "led.h"
 #include "s1.h"
-#if !BURN
+
 int one_page_max=0;//one page size
 int one_userzone_max=0;//one user zone size
 int userzone_num=0;//userzone num
@@ -42,6 +42,92 @@ unsigned char chip_at88sc3216c[10]={0x3b,0xb3,0x11,0x00,0x00,0x00,0x00,0x32,0x32
 unsigned char chip_at88sc6416c[10]={0x3b,0xb3,0x11,0x00,0x00,0x00,0x00,0x64,0x64,0x40};
 unsigned char chip_at88sc12816c[10]={0x3b,0xb3,0x11,0x00,0x00,0x00,0x01,0x28,0x28,0x60};
 unsigned char chip_at88sc25616c[10]={0x3b,0xb3,0x11,0x00,0x00,0x00,0x02,0x56,0x58,0x60};
+BOOL Virtual_Alloc()
+{
+	//memset(chip_info,0xff,24);
+	if(get_config(chip_info))
+	{
+		if(memcmp(chip_info,chip_at88sc0104c,10)==0)
+		{
+			one_page_max=16;
+			one_userzone_max=32;
+			userzone_num=4;
+			rt_kprintf("\r\nat88sc0104c found\r\n");
+		}
+		else if(memcmp(chip_info,chip_at88sc0204c,10)==0)
+		{
+			one_page_max=16;	
+			one_userzone_max=64;
+			userzone_num=4;
+			rt_kprintf("\r\nat88sc0204c found\r\n");
+		}		
+		else if(memcmp(chip_info,chip_at88sc0404c,10)==0)
+		{
+			one_page_max=16;	
+			one_userzone_max=128;
+			userzone_num=4;
+			rt_kprintf("\r\nat88sc0404c found\r\n");
+		}		
+		else if(memcmp(chip_info,chip_at88sc0808c,10)==0)
+		{
+			one_page_max=16;	
+			one_userzone_max=128;
+			userzone_num=8;
+			rt_kprintf("\r\nat88sc0808c found\r\n");
+		}		
+		else if(memcmp(chip_info,chip_at88sc1616c,10)==0)
+		{
+			one_page_max=16;	
+			one_userzone_max=128;
+			userzone_num=16;
+			rt_kprintf("\r\nat88sc1616c found\r\n");
+		}		
+		else if(memcmp(chip_info,chip_at88sc3216c,10)==0)
+		{
+			one_page_max=64;	
+			one_userzone_max=256;
+			userzone_num=16;
+			rt_kprintf("\r\nat88sc3216c found\r\n");
+		}		
+		else if(memcmp(chip_info,chip_at88sc6416c,10)==0)
+		{
+			one_page_max=64;	
+			one_userzone_max=512;
+			userzone_num=16;
+			rt_kprintf("\r\nat88sc6416c found\r\n");
+		}		
+		else if(memcmp(chip_info,chip_at88sc12816c,10)==0)
+		{
+			one_page_max=128;	
+			one_userzone_max=1024;
+			userzone_num=16;
+			rt_kprintf("\r\nat88sc12816c found\r\n");
+		}		
+		else if(memcmp(chip_info,chip_at88sc25616c,10)==0)
+		{
+			one_page_max=128;	
+			one_userzone_max=2048;
+			userzone_num=16;
+			rt_kprintf("\r\nat88sc25616c found\r\n");
+		}		
+		else
+		{
+			rt_kprintf("\r\nUnKnown at88sc chip\r\n");
+			return FALSE;
+		}
+		
+	}
+	else
+	{
+		rt_kprintf("\r\nat88sc bus error\r\n");
+	
+		return FALSE;
+	}
+	return TRUE;
+}
+
+#if !BURN
+
 typedef struct {
 	unsigned char *data;
 	unsigned char g[8];
@@ -121,103 +207,24 @@ BOOL ReadReg(at88* value)
 return TRUE;
 }
 
-BOOL Virtual_Alloc()
-{
-	memset(chip_info,0xff,24);
-	if(get_config(chip_info))
-	{
-		if(memcmp(chip_info,chip_at88sc0104c,10)==0)
-		{
-			one_page_max=16;
-			one_userzone_max=32;
-			userzone_num=4;
-			rt_kprintf("at88sc0104c found\r\n");
-		}
-		else if(memcmp(chip_info,chip_at88sc0204c,10)==0)
-		{
-			one_page_max=16;	
-			one_userzone_max=64;
-			userzone_num=4;
-			rt_kprintf("at88sc0204c found\r\n");
-		}		
-		else if(memcmp(chip_info,chip_at88sc0404c,10)==0)
-		{
-			one_page_max=16;	
-			one_userzone_max=128;
-			userzone_num=4;
-			rt_kprintf("at88sc0404c found\r\n");
-		}		
-		else if(memcmp(chip_info,chip_at88sc0808c,10)==0)
-		{
-			one_page_max=16;	
-			one_userzone_max=128;
-			userzone_num=8;
-			rt_kprintf("at88sc0808c found\r\n");
-		}		
-		else if(memcmp(chip_info,chip_at88sc1616c,10)==0)
-		{
-			one_page_max=16;	
-			one_userzone_max=128;
-			userzone_num=16;
-			rt_kprintf("at88sc1616c found\r\n");
-		}		
-		else if(memcmp(chip_info,chip_at88sc3216c,10)==0)
-		{
-			one_page_max=64;	
-			one_userzone_max=256;
-			userzone_num=16;
-			rt_kprintf("at88sc3216c found\r\n");
-		}		
-		else if(memcmp(chip_info,chip_at88sc6416c,10)==0)
-		{
-			one_page_max=64;	
-			one_userzone_max=512;
-			userzone_num=16;
-			rt_kprintf("at88sc6416c found\r\n");
-		}		
-		else if(memcmp(chip_info,chip_at88sc12816c,10)==0)
-		{
-			one_page_max=128;	
-			one_userzone_max=1024;
-			userzone_num=16;
-			rt_kprintf("at88sc12816c found\r\n");
-		}		
-		else if(memcmp(chip_info,chip_at88sc25616c,10)==0)
-		{
-			one_page_max=128;	
-			one_userzone_max=2048;
-			userzone_num=16;
-			rt_kprintf("at88sc25616c found\r\n");
-		}		
-		else
-		{
-			rt_kprintf("UnKnown at88sc chip\r\n");
-			return FALSE;
-		}
-		
-	}
-	else
-	{
-		rt_kprintf("at88sc bus error\r\n");
-	
-		return FALSE;
-	}
-	return TRUE;
-}
+
 #else
-void b(unsigned char zone,unsigned char flag)
+void b(unsigned char fuse)
 {
 	pe p;
 	int i;
 	int fd,length;
 	memset(&p,0xff,sizeof(pe));
-	for(i=0;i<USER_ZONE_SIZE;i++)
-	{
-		p.user_zone[i]=i;
-	}
-	p.zone_index=zone;
+	p.New_SecureCode[0]=0x32;
+	p.New_SecureCode[1]=0xb2;
+	p.New_SecureCode[2]=0x3f;
+	p.New_SecureCode[3]=0xff;
+	p.New_SecureCode[4]=0x4b;
+	p.New_SecureCode[5]=0x1c;
+	p.New_SecureCode[6]=0x8a;
 	p.ar[0]=0x17;//normal auth,encrypted
 	p.ar[1]=0x00;//(zone<<6)|(zone&0x3);//use g[zone],pw[zone]
+	p.num_ar=userzone_num;
 	for(i=0;i<7;i++)
 	{
 		p.ci[i]=i;
@@ -225,14 +232,6 @@ void b(unsigned char zone,unsigned char flag)
 			p.pw[i]=i;
 	}
 	
-	p.flag=flag;
-	if(flag)
-	{
-		for(i=0;i<8;i++)
-			p.auth_g[i]=i;
-		for(i=0;i<3;i++)
-			p.auth_pw[i]=i;
-	}
 	for(i=0;i<8;i++)
 	{
 		p.g[i]=i;
@@ -241,7 +240,7 @@ void b(unsigned char zone,unsigned char flag)
 	{
 		p.id[i]=0xee;//assign id
 	}
-	p.fuse=FALSE;
+	p.fuse=fuse;
 	
 	burn(p);
 }
@@ -275,18 +274,11 @@ static void rt_init_thread_entry(void* parameter)
 	//	ST7585_Write_String(0,5,"- RT -    ");
 	//ST7585_Write_String(0,4,"Thread Operating System");
 	//	Draw_bat(3);
-	#if BURN
-	b(0,0);
-		
-
-	//b(1,0);
-	//b(2,0);
-	//b(3,0);
-	//r(0);
+	Virtual_Alloc();
+#if BURN
+	b(0);
 #else
 	at88 at88;
-
-	Virtual_Alloc();
 	at88.data=buf;//(unsigned char *)malloc(32);
 	//memset(at88.data,123,128);
 	for(i=0;i<128;i++)
@@ -299,11 +291,11 @@ static void rt_init_thread_entry(void* parameter)
 	{
 		at88.g[i]=i;
 	}
-	#if 1
+	#if READ
 	
 	at88.addr=0;
 	at88.size=128;
-	//ReadReg(&at88);
+	ReadReg(&at88);
 	
 	AT88DBG("\nRead user zone data again:\n");
 	for(i=0;i<at88.size;i++)
@@ -318,10 +310,7 @@ static void rt_init_thread_entry(void* parameter)
 	at88.size=128;
 	WriteReg(&at88);
 	#endif
-	#endif
-	#if 0
-	while(1);
-	#else
+#endif
 	while (1)
 	{
 		
@@ -349,7 +338,7 @@ static void rt_init_thread_entry(void* parameter)
 		rt_hw_led1_on();
 		rt_thread_delay( RT_TICK_PER_SECOND/2 );
 	}
-#endif
+
 }
 
 int rt_application_init()

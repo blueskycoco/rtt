@@ -97,18 +97,16 @@ void sleep_ms(unsigned long n);
 typedef void (*callback_t)(void);
 #define USER_ZONE_SIZE 32
 #define BURN 0
+#define READ 1
 typedef struct {
-	unsigned char user_zone[USER_ZONE_SIZE];
+	unsigned char New_SecureCode[7];
 	unsigned char ar[2];
 	unsigned char ci[7];
 	unsigned char g[8];
 	unsigned char pw[7];
 	unsigned char id[7];
 	unsigned char fuse;
-	unsigned char flag;//0 no need auth , 1 need auth
-	unsigned char auth_g[8];
-	unsigned char auth_pw[3];
-	unsigned char zone_index;
+	unsigned char num_ar;
 }pe,*ppe;
 
 
