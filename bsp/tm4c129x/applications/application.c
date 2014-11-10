@@ -49,6 +49,8 @@ void rt_init_thread_entry(void *parameter)
     rt_hw_tiva_eth_init();
 #endif
 	netio_init();
+	app_uart_init();
+
 }
 
 int rt_application_init(void)

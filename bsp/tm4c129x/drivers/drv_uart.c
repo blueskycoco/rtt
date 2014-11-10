@@ -179,6 +179,36 @@ void UART0_IRQHandler(void)
     rt_interrupt_leave();
 }
 #endif
+#if defined(RT_USING_UART1)
+/* UART0 device driver structure */
+struct rt_serial_device serial1;
+hw_uart_t uart1 =
+{
+    UART1_BASE,
+};
+
+void UART1_IRQHandler(void)
+{
+	uint32_t intsrc;
+    hw_uart_t *uart = &uart1;
+
+    /* enter interrupt */
+    rt_interrupt_enter();
+
+    /* Determine the interrupt source */
+    intsrc = MAP_UARTIntStatus(uart->hw_base, true);
+
+    // Receive Data Available or Character time-out
+    if (intsrc & (UART_INT_RX | UART_INT_RT))
+    {
+        MAP_UARTIntClear(uart->hw_base, intsrc);
+        rt_hw_serial_isr(&serial1, RT_SERIAL_EVENT_RX_IND);
+    }
+		
+    /* leave interrupt */
+    rt_interrupt_leave();
+}
+#endif
 
 int rt_hw_uart_init(void)
 {
@@ -218,6 +248,32 @@ int rt_hw_uart_init(void)
                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
                           uart);
 #endif
+#ifdef RT_USING_UART1
+	    uart = &uart1;
+	    serial1.ops	 = &hw_uart_ops;
+	    serial1.config = config;
+	
+	    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+	    MAP_GPIOPinConfigure(GPIO_PB0_U1RX);
+	    MAP_GPIOPinConfigure(GPIO_PB1_U1TX);
+		
+	    MAP_GPIOPinTypeUART(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+	    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART1);
+	
+	    /* preemption = 1, sub-priority = 1 */
+	    //IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
+	
+	    /* Enable Interrupt for UART channel */
+		  UARTIntRegister(uart->hw_base, UART1_IRQHandler);
+		  MAP_IntEnable(INT_UART1);
+		  MAP_UARTEnable(uart->hw_base);
+	
+	    /* register UART0 device */
+	    rt_hw_serial_register(&serial1, "uart1",
+					  RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
+					  uart);
+#endif
+
 	return 0;
 }
 //INIT_BOARD_EXPORT(rt_hw_uart_init);
