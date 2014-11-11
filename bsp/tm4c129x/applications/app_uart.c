@@ -1,5 +1,6 @@
 #include "app_reg.h"
 struct rt_semaphore rx_sem;
+static rt_mutex_t mutex = RT_NULL;
 rt_device_t uart_dev = RT_NULL;
 void uart_thread_entry(void* parameter);
 static struct rt_thread uart_thread;
@@ -34,31 +35,201 @@ int app_uart_init()
         uart_thread_entry, RT_NULL,
         &uart_thread_stack[0], sizeof(uart_thread_stack),
         20, 10);
-
-    if (result == RT_EOK)
-        rt_thread_startup(&uart_thread);
+	g_lwip_app=(plwip_app)rt_malloc(sizeof(lwip_app));
+	/*write g_lwip_app register default val*/
+	
+	mutex = rt_mutex_create("mutex", RT_IPC_FLAG_FIFO);
+	if (mutex == RT_NULL)
+	{
+	  rt_kprintf("create mutex failed\n");
+	  return 0;
+	}
+	if (result == RT_EOK)
+	  rt_thread_startup(&uart_thread);
     return 1;
 }
+rt_bool_t cs_low()
+{
+	return ((MAP_GPIOPinRead(GPIO_PORTN_BASE, GPIO_PIN_0)&(0x1<<GPIO_PIN_7))==0)?RT_TRUE:RT_FALSE);
+}
+void set_default_reg()
+{
+	rt_err_t result;
+	result = rt_mutex_take(mutex, RT_WAITING_FOREVER);
+	g_lwip_app->common->mr=0x00;
+	g_lwip_app->common->gar0=0x00;
+	g_lwip_app->common->gar1=0x00;
+	g_lwip_app->common->gar2=0x00;
+	g_lwip_app->common->gar3=0x00;
+	g_lwip_app->common->subr0=0x00;
+	g_lwip_app->common->subr1=0x00;
+	g_lwip_app->common->subr2=0x00;
+	g_lwip_app->common->subr3=0x00;	
+	g_lwip_app->common->shar0=0x00;
+	g_lwip_app->common->shar1=0x00;
+	g_lwip_app->common->shar2=0x00;
+	g_lwip_app->common->shar3=0x00;
+	g_lwip_app->common->shar4=0x00;
+	g_lwip_app->common->shar5=0x00;	
+	g_lwip_app->common->sipr0=0x00;
+	g_lwip_app->common->sipr1=0x00;
+	g_lwip_app->common->sipr2=0x00;
+	g_lwip_app->common->sipr3=0x00;
+	g_lwip_app->common->ir=0x00;
+	g_lwip_app->common->imr=0x00;
+	rt_mutex_release(mutex);
+}
+rt_uint8_t rw_reg(rt_uint16_t addr,rt_uint8_t data,rt_bool_t rw)
+{
+	rt_uint8_t ret=0x0;
+	rt_err_t result;
+	result = rt_mutex_take(mutex, RT_WAITING_FOREVER);
+	if(addr>=COMMON_REG_MR && addr<=COMMON_REG_TMSR)
+	{
+		if(rw)/*write*/
+			*(rt_uint8_t *)(g_lwip_app->common+addr)=data;
+		else
+			ret=*(rt_uint8_t *)(g_lwip_app->common+addr);
+	}
+	else if(addr>=COMMON_REG_UIPR0 && addr<=COMMON_REG_UPORT1)
+	{
+		if(rw)/*write*/
+			*(rt_uint8_t *)(g_lwip_app->common+addr-0x10)=data;
+		else
+			ret=*(rt_uint8_t *)(g_lwip_app->common+addr-0x10);
+	}
+	else if(addr>=SOCKET_REG_S0_MR && addr<=SOCKET_REG_S0_TTL)
+	{
+		if(rw)/*write*/
+			*(rt_uint8_t *)(g_lwip_app->socket[0]+addr)=data;
+		else
+			ret=*(rt_uint8_t *)(g_lwip_app->socket[0]+addr);
+	}
+	else if(addr>=SOCKET_REG_S0_TX_FSR0 && addr<=SOCKET_REG_S0_RX_WR1)
+	{
+		if(rw)/*write*/
+			*(rt_uint8_t *)(g_lwip_app->socket[0]+addr-0x40B)=data;
+		else
+			ret=*(rt_uint8_t *)(g_lwip_app->socket[0]+addr-0x40B);
+	}
+	else if(addr>=SOCKET_REG_S1_MR && addr<=SOCKET_REG_S1_TTL)
+	{
+		if(rw)/*write*/
+			*(rt_uint8_t *)(g_lwip_app->socket[1]+addr)=data;
+		else
+			ret=*(rt_uint8_t *)(g_lwip_app->socket[1]+addr);
+	}
+	else if(addr>=SOCKET_REG_S1_TX_FSR0 && addr<=SOCKET_REG_S1_RX_WR1)
+	{
+		if(rw)/*write*/
+			*(rt_uint8_t *)(g_lwip_app->socket[1]+addr-0x50B)=data;
+		else
+			ret=*(rt_uint8_t *)(g_lwip_app->socket[1]+addr-0x50B);
+	}
+	else if(addr>=SOCKET_REG_S2_MR && addr<=SOCKET_REG_S2_TTL)
+	{
+		if(rw)/*write*/
+			*(rt_uint8_t *)(g_lwip_app->socket[2]+addr)=data;
+		else
+			ret=*(rt_uint8_t *)(g_lwip_app->socket[2]+addr);
+	}
+	else if(addr>=SOCKET_REG_S2_TX_FSR0 && addr<=SOCKET_REG_S2_RX_WR1)
+	{
+		if(rw)/*write*/
+			*(rt_uint8_t *)(g_lwip_app->socket[2]+addr-0x60B)=data;
+		else
+			ret=*(rt_uint8_t *)(g_lwip_app->socket[2]+addr-0x60B);
+	}
+	else if(addr>=SOCKET_REG_S3_MR && addr<=SOCKET_REG_S3_TTL)
+	{
+		if(rw)/*write*/
+			*(rt_uint8_t *)(g_lwip_app->socket[3]+addr)=data;
+		else
+			ret=*(rt_uint8_t *)(g_lwip_app->socket[3]+addr);
+	}
+	else if(addr>=SOCKET_REG_S3_TX_FSR0 && addr<=SOCKET_REG_S3_RX_WR1)
+	{
+		if(rw)/*write*/
+			*(rt_uint8_t *)(g_lwip_app->socket[3]+addr-0x70B)=data;
+		else
+			ret=*(rt_uint8_t *)(g_lwip_app->socket[3]+addr-0x70B);
+	}
+	else
+		rt_kprintf("invalid addr in rw_reg\n");
+	rt_mutex_release(mutex);
+	return ret;
+}
+enum STATE_OP{
+	GET_OPERATION,
+	GET_ADDR_0,
+	GET_ADDR_1,
+	GET_DATA
+};
 void uart_thread_entry(void* parameter)
 {
-    char ch;
-
+    char ch,rw=0;/*0 is r , 1 is w*/
+    rt_uint16_t addr=0x0000;
+    rt_uint8_t send_reg;
+    STATE_OP state=SLEEP;
     while (1)
     {
         /* wait receive */
         if (rt_sem_take(&rx_sem, RT_WAITING_FOREVER) != RT_EOK) continue;
 
         /* read one character from device */
-        while (rt_device_read(uart_dev, 0, &ch, 1) == 1)
+        while ((rt_device_read(uart_dev, 0, &ch, 1) == 1) && cs_low())
         {
-            /*
-             * handle control key
-             * up key  : 0x1b 0x5b 0x41
-             * down key: 0x1b 0x5b 0x42
-             * right key:0x1b 0x5b 0x43
-             * left key: 0x1b 0x5b 0x44
-             */
-             	rt_kprintf("%c",ch);
+
+		rt_kprintf("%c",ch);
+		switch (state)
+			{
+				case GET_OPERATION:/*Write or Read process*/					
+					{
+						if(ch==0x0f)
+						{
+							rw=0;
+							state=GET_ADDR_0;
+						}
+						else if(ch==0xf0)
+						{
+							rw=1;
+							state=GET_ADDR_0;
+						}
+						else
+							rt_kprintf("not vaild op code %x\n",ch);
+					}
+					break;
+				case GET_ADDR_0:
+					{
+						addr=ch;
+						state=GET_ADDR_1;
+					}
+					break;
+				case GET_ADDR_1:	
+					{
+						addr=(addr<<8)|ch;
+						if(rw==0)
+						{
+							/*find the read and send*/
+							send_reg=read_reg(addr,0,0);
+							rt_device_write(uart_dev,0,&send_reg,1);
+							state=GET_OPERATION;							
+							rt_kprintf("r Addr 0x%2x,Data 0x%x\n",addr,send_reg);
+						}
+						else
+						{
+							state=GET_DATA;
+						}
+					}
+					break;
+				case GET_DATA:	
+					{		
+						send_reg=read_reg(addr,ch,1);
+						rt_device_write(uart_dev,0,&send_reg,1);
+						rt_kprintf("w Addr 0x%2x,Data 0x%x\n",addr,ch);
+						state=GET_OPERATION;						
+					}
+					break;
              #if 0
             if (ch == 0x1b)
             {
@@ -272,4 +443,4 @@ void uart_thread_entry(void* parameter)
         } /* end of device read */
     }
 }
-
+}

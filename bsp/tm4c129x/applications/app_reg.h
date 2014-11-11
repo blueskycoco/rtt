@@ -252,8 +252,8 @@ typedef struct {
 }tm4c_lwip_socket_reg,*ptm4c_lwip_socket_reg;
 
 typedef struct{
-	tm4c_lwip_socket_reg socket[4];
-	tm4c_lwip_common_reg common;
+	tm4c_lwip_socket_reg *socket[4];
+	tm4c_lwip_common_reg *common;
 }lwip_app,*plwip_app;
 ALIGN(RT_ALIGN_SIZE)
-lwip_app g_lwip_app;
+plwip_app g_lwip_app;
