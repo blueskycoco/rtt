@@ -1,74 +1,172 @@
 #include <rtthread.h>
 #include <board.h>
 #include <components.h>
+#define COMMON_REG_MODE					0x0000
+#define COMMON_REG_GWIP0				0x0001
+#define COMMON_REG_GWIP1				0x0002
+#define COMMON_REG_GWIP2				0x0003
+#define COMMON_REG_GWIP3				0x0004
+#define COMMON_REG_SUB_MSK0				0x0005
+#define COMMON_REG_SUB_MSK1				0x0006
+#define COMMON_REG_SUB_MSK2				0x0007
+#define COMMON_REG_SUB_MSK3				0x0008
+#define COMMON_REG_L_MAC0				0x0009
+#define COMMON_REG_L_MAC1				0x000A
+#define COMMON_REG_L_MAC2				0x000B
+#define COMMON_REG_L_MAC3				0x000C
+#define COMMON_REG_L_MAC4				0x000D
+#define COMMON_REG_L_MAC5				0x000E
+#define COMMON_REG_L_IP0				0x000F
+#define COMMON_REG_L_IP1				0x0010
+#define COMMON_REG_L_IP2				0x0011
+#define COMMON_REG_L_IP3				0x0012
+#define COMMON_REG_INT_IR				0x0015
+#define COMMON_REG_INT_IMR				0x0016
+#define COMMON_REG_RTY_VAL0				0x0017
+#define COMMON_REG_RTY_VAL1				0x0018
+#define COMMON_REG_RTY_CNT				0x0019
+#define COMMON_REG_RX_MEM_SZ			0x001A
+#define COMMON_REG_TX_MEM_SZ			0x001B
+#define COMMON_REG_UN_REACH_IP0			0x002A
+#define COMMON_REG_UN_REACH_IP1			0x002B
+#define COMMON_REG_UN_REACH_IP2			0x002C
+#define COMMON_REG_UN_REACH_IP3			0x002D
+#define COMMON_REG_UN_REACH_PORT0		0x002E
+#define COMMON_REG_UN_REACH_PORT1		0x002F
+typedef struct {
+	rt_uint8_t mode;			/*0x0000*/
+	rt_uint8_t gwip0;			/*0x0001*/
+	rt_uint8_t gwip1;			/*0x0002*/
+	rt_uint8_t gwip2;			/*0x0003*/
+	rt_uint8_t gwip3;			/*0x0004*/
+	rt_uint8_t sub_msk0;		/*0x0005*/
+	rt_uint8_t sub_msk1;		/*0x0006*/
+	rt_uint8_t sub_msk2;		/*0x0007*/
+	rt_uint8_t sub_msk3;		/*0x0008*/
+	rt_uint8_t local_mac0;		/*0x0009*/
+	rt_uint8_t local_mac1;		/*0x000A*/
+	rt_uint8_t local_mac2;		/*0x000B*/
+	rt_uint8_t local_mac3;		/*0x000C*/
+	rt_uint8_t local_mac4;		/*0x000D*/
+	rt_uint8_t local_mac5;		/*0x000E*/
+	rt_uint8_t local_ip0;		/*0x000F*/
+	rt_uint8_t local_ip1;		/*0x0010*/
+	rt_uint8_t local_ip2;		/*0x0011*/
+	rt_uint8_t local_ip3;		/*0x0012*/
+	rt_uint8_t int_Ir;			/*0x0015*/
+	rt_uint8_t int_Imr;			/*0x0016*/
+	rt_uint8_t rty_val0;		/*0x0017*/
+	rt_uint8_t rty_val1;		/*0x0018*/
+	rt_uint8_t rty_cnt;			/*0x0019*/
+	rt_uint8_t rx_mem_size;		/*0x001A*/
+	rt_uint8_t tx_mem_size;		/*0x001B*/
+	rt_uint8_t un_reach_ip0;	/*0x002A*/
+	rt_uint8_t un_reach_ip1;	/*0x002B*/
+	rt_uint8_t un_reach_ip2;	/*0x002C*/
+	rt_uint8_t un_reach_ip3;	/*0x002D*/
+	rt_uint8_t un_reach_port0;	/*0x002E*/
+	rt_uint8_t un_reach_port1;	/*0x002F*/
+}tm4c_lwip_common_reg,*ptm4c_lwip_common_reg;
+#define SOCKET_BASE						0x0400
+#define SOCKET0_REG_MODE				(SOCKET_BASE+0x0000)
+#define SOCKET0_REG_CMD					(SOCKET_BASE+0x0001)
+#define SOCKET0_REG_IR					(SOCKET_BASE+0x0002)
+#define SOCKET0_REG_SR					(SOCKET_BASE+0x0003)
+#define SOCKET0_REG_S_PROT0				(SOCKET_BASE+0x0004)
+#define SOCKET0_REG_S_PROT1				(SOCKET_BASE+0x0005)
+#define SOCKET0_REG_D_MAC0				(SOCKET_BASE+0x0007)
+#define SOCKET0_REG_D_MAC1				(SOCKET_BASE+0x0008)
+#define SOCKET0_REG_D_MAC2				(SOCKET_BASE+0x0009)
+#define SOCKET0_REG_D_MAC3				(SOCKET_BASE+0x000A)
+#define SOCKET0_REG_D_MAC4				(SOCKET_BASE+0x000B)
+#define SOCKET0_REG_D_MAC5				(SOCKET_BASE+0x000C)
+#define SOCKET0_REG_D_IP0				(SOCKET_BASE+0x000D)
+#define SOCKET0_REG_D_IP1				(SOCKET_BASE+0x000E)
+#define SOCKET0_REG_D_IP2				(SOCKET_BASE+0x000F)
+#define SOCKET0_REG_D_IP3				(SOCKET_BASE+0x0010)
+#define SOCKET0_REG_D_PORT0				(SOCKET_BASE+0x0011)
+#define SOCKET0_REG_D_PORT1				(SOCKET_BASE+0x0012)
+#define SOCKET0_REG_MAX_SEQ_SZ0			(SOCKET_BASE+0x0013)
+#define SOCKET0_REG_MAX_SEQ_SZ1			(SOCKET_BASE+0x0014)
+#define SOCKET0_REG_IP_PROTO			(SOCKET_BASE+0x0015)
+#define SOCKET0_REG_TYPE_SERVICE		(SOCKET_BASE+0x0016)
+#define SOCKET0_REG_IP_TIME_LIVE		(SOCKET_BASE+0x0020)
+#define SOCKET0_REG_TX_FREE_SIZE		(SOCKET_BASE+0x0021)
+#define SOCKET0_REG_TX_READ_INDEX0		(SOCKET_BASE+0x0022)
+#define SOCKET0_REG_TX_READ_INDEX1		(SOCKET_BASE+0x0023)
+#define SOCKET0_REG_TX_WRITE_INDEX0		(SOCKET_BASE+0x0024)
+#define SOCKET0_REG_TX_WRITE_INDEX1		(SOCKET_BASE+0x0025)
+#define SOCKET0_REG_RX_SIZE0			(SOCKET_BASE+0x0026)
+#define SOCKET0_REG_RX_SIZE1			(SOCKET_BASE+0x0027)
+#define SOCKET0_REG_RX_READ_INDEX0		(SOCKET_BASE+0x0028)
+#define SOCKET0_REG_RX_READ_INDEX1		(SOCKET_BASE+0x0029)
+
+#define SOCKET1_REG_MODE				(SOCKET_BASE+0x0001)
+#define SOCKET1_REG_CMD					(SOCKET_BASE+0x0002)
+#define SOCKET1_REG_IR					(SOCKET_BASE+0x0003)
+#define SOCKET1_REG_SR					(SOCKET_BASE+0x0004)
+#define SOCKET1_REG_S_PROT0				(SOCKET_BASE+0x0005)
+#define SOCKET1_REG_S_PROT1				(SOCKET_BASE+0x0006)
+#define SOCKET1_REG_D_MAC0				(SOCKET_BASE+0x0007)
+#define SOCKET1_REG_D_MAC1				(SOCKET_BASE+0x0008)
+#define SOCKET1_REG_D_MAC2				(SOCKET_BASE+0x0009)
+#define SOCKET1_REG_D_MAC3				(SOCKET_BASE+0x000A)
+#define SOCKET1_REG_D_MAC4				(SOCKET_BASE+0x000B)
+#define SOCKET1_REG_D_MAC5				(SOCKET_BASE+0x000C)
+#define SOCKET1_REG_D_IP0				(SOCKET_BASE+0x000D)
+#define SOCKET1_REG_D_IP1				(SOCKET_BASE+0x000E)
+#define SOCKET1_REG_D_IP2				(SOCKET_BASE+0x000F)
+#define SOCKET1_REG_D_IP3				(SOCKET_BASE+0x0010)
+#define SOCKET1_REG_D_PORT0				(SOCKET_BASE+0x0011)
+#define SOCKET1_REG_D_PORT1				(SOCKET_BASE+0x0012)
+#define SOCKET1_REG_MAX_SEQ_SZ0			(SOCKET_BASE+0x0013)
+#define SOCKET1_REG_MAX_SEQ_SZ1			(SOCKET_BASE+0x0014)
+#define SOCKET1_REG_IP_PROTO			(SOCKET_BASE+0x0015)
+#define SOCKET1_REG_TYPE_SERVICE		(SOCKET_BASE+0x0016)
+#define SOCKET1_REG_IP_TIME_LIVE		(SOCKET_BASE+0x0020)
+#define SOCKET1_REG_TX_FREE_SIZE		(SOCKET_BASE+0x0021)
+#define SOCKET1_REG_TX_READ_INDEX0		(SOCKET_BASE+0x0022)
+#define SOCKET1_REG_TX_READ_INDEX1		(SOCKET_BASE+0x0023)
+#define SOCKET1_REG_TX_WRITE_INDEX0		(SOCKET_BASE+0x0024)
+#define SOCKET1_REG_TX_WRITE_INDEX1		(SOCKET_BASE+0x0025)
+#define SOCKET1_REG_RX_SIZE0			(SOCKET_BASE+0x0026)
+#define SOCKET1_REG_RX_SIZE1			(SOCKET_BASE+0x0027)
+#define SOCKET1_REG_RX_READ_INDEX0		(SOCKET_BASE+0x0028)
+#define SOCKET1_REG_RX_READ_INDEX1		(SOCKET_BASE+0x0029)
 
 typedef struct {
-	rt_uint8_t mode;			/*0x00*/
-	rt_uint8_t gwip0;			/*0x01 to 0x04*/
-	rt_uint8_t gwip1;
-	rt_uint8_t gwip2;
-	rt_uint8_t gwip3;
-	rt_uint8_t sub_msk0;	/*0x05 to 0x08*/;
-	rt_uint8_t sub_msk1;
-	rt_uint8_t sub_msk2;
-	rt_uint8_t sub_msk3;
-	rt_uint8_t local_mac0;	/*0x09 to 0x0e*/
-	rt_uint8_t local_mac1;
-	rt_uint8_t local_mac2;
-	rt_uint8_t local_mac3;
-	rt_uint8_t local_mac4;
-	rt_uint8_t local_mac5;
-	rt_uint8_t local_ip0;	/*0x0f to 0x12*/
-	rt_uint8_t local_ip1;
-	rt_uint8_t local_ip2;
-	rt_uint8_t local_ip3;
-	rt_uint8_t int_Ir;	/*0x15*/
-	rt_uint8_t int_Imr;	/*0x16*/
-	rt_uint8_t rty_val0;	/*0x17*/
-	rt_uint8_t rty_val1;	/*0x18*/
-	rt_uint8_t rty_cnt;	/*0x19*/
-	rt_uint8_t rx_mem_size;	/*0x1a*/
-	rt_uint8_t tx_mem_size;	/*0x1b*/
-	rt_uint8_t un_reach_ip0;/*0x2a*/
-	rt_uint8_t un_reach_ip1;/*0x2b*/
-	rt_uint8_t un_reach_ip2;/*0x2c*/
-	rt_uint8_t un_reach_ip3;/*0x2d*/
-	rt_uint8_t un_reach_port0;/*0x2e*/
-	rt_uint8_t un_reach_port1;	/*0x2f*/
-}tm4c_lwip_common_reg,*ptm4c_lwip_common_reg;
-typedef struct {
-	rt_uint8_t mode;		/*0x00*/
-	rt_uint8_t cmd;		/*0x01 to 0x04*/
-	rt_uint8_t ir;
-	rt_uint8_t sr;
-	rt_uint8_t s_port0;
-	rt_uint8_t s_port1;	/*0x05 to 0x08*/;
-	rt_uint8_t d_mac0;
-	rt_uint8_t d_mac1;
-	rt_uint8_t d_mac2;
-	rt_uint8_t d_mac3;	/*0x09 to 0x0e*/
-	rt_uint8_t d_mac4;
-	rt_uint8_t d_mac5;
-	rt_uint8_t d_ip0;
-	rt_uint8_t d_ip1;
-	rt_uint8_t d_ip2;
-	rt_uint8_t d_ip3;	/*0x0f to 0x12*/
-	rt_uint8_t d_port0;
-	rt_uint8_t d_port1;
-	rt_uint8_t max_seg_size0;
-	rt_uint8_t max_seg_size1;	/*0x15*/
-	rt_uint8_t ip_proto;	/*0x16*/
-	rt_uint8_t type_sevice;	/*0x17*/
-	rt_uint8_t ip_time_live;	/*0x18*/
-	rt_uint8_t tx_free_size;	/*0x19*/
-	rt_uint8_t tx_read_index0;	/*0x1a*/
-	rt_uint8_t tx_read_index1;	/*0x1b*/
-	rt_uint8_t tx_write_index0;/*0x2a*/
-	rt_uint8_t tx_write_index1;/*0x2b*/
-	rt_uint8_t rx_size0;/*0x2c*/
-	rt_uint8_t rx_size1;/*0x2d*/
-	rt_uint8_t rx_read_index0;/*0x2e*/
-	rt_uint8_t rx_read_index1;/*0x2f*/
+	rt_uint8_t mode;			/*0x0401*/
+	rt_uint8_t cmd;				/*0x0402*/
+	rt_uint8_t ir;				/*0x0403*/
+	rt_uint8_t sr;				/*0x0404*/
+	rt_uint8_t s_port0;			/*0x0405*/
+	rt_uint8_t s_port1;			/*0x0406*/
+	rt_uint8_t d_mac0;			/*0x0407*/
+	rt_uint8_t d_mac1;			/*0x0408*/
+	rt_uint8_t d_mac2;			/*0x0409*/
+	rt_uint8_t d_mac3;			/*0x040A*/
+	rt_uint8_t d_mac4;			/*0x040B*/
+	rt_uint8_t d_mac5;			/*0x040C*/
+	rt_uint8_t d_ip0;			/*0x040D*/
+	rt_uint8_t d_ip1;			/*0x040E*/
+	rt_uint8_t d_ip2;			/*0x040F*/
+	rt_uint8_t d_ip3;			/*0x0410*/
+	rt_uint8_t d_port0;			/*0x0411*/
+	rt_uint8_t d_port1;			/*0x0412*/
+	rt_uint8_t max_seg_size0;	/*0x0413*/
+	rt_uint8_t max_seg_size1;	/*0x0414*/
+	rt_uint8_t ip_proto;		/*0x0415*/	
+	rt_uint8_t type_sevice;		/*0x0416*/
+	rt_uint8_t ip_time_live;	/*0x0420*/
+	rt_uint8_t tx_free_size;	/*0x0421*/
+	rt_uint8_t tx_read_index0;	/*0x0422*/
+	rt_uint8_t tx_read_index1;	/*0x0423*/
+	rt_uint8_t tx_write_index0;	/*0x0424*/
+	rt_uint8_t tx_write_index1;	/*0x0425*/
+	rt_uint8_t rx_size0;		/*0x0426*/
+	rt_uint8_t rx_size1;		/*0x0427*/
+	rt_uint8_t rx_read_index0;	/*0x0428*/
+	rt_uint8_t rx_read_index1;	/*0x0429*/
 }tm4c_lwip_socket_reg,*ptm4c_lwip_socket_reg;
 
 typedef struct{
