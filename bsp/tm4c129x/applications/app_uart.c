@@ -141,6 +141,11 @@ rt_uint8_t rw_reg(rt_uint16_t addr,rt_uint8_t data,rt_bool_t rw)
 		{
 			if(addr!=COMMON_REG_IR)
 				*(rt_uint8_t *)(g_lwip_app->common+addr)=data;
+			else
+			{
+				//clear conflict , unreach
+				*(rt_uint8_t *)(g_lwip_app->common+addr)&=~(data&0xc0);
+			}
 		}
 		else
 			ret=*(rt_uint8_t *)(g_lwip_app->common+addr);
@@ -158,15 +163,22 @@ rt_uint8_t rw_reg(rt_uint16_t addr,rt_uint8_t data,rt_bool_t rw)
 	else if(addr>=SOCKET_REG_S0_MR && addr<=SOCKET_REG_S0_TTL)
 	{
 		if(rw)/*write*/
+		{
 			if(addr!=SOCKET_REG_S0_IR&&addr!=SOCKET_REG_S0_SR)
-			*(rt_uint8_t *)(g_lwip_app->socket[0]+addr)=data;
+				*(rt_uint8_t *)(g_lwip_app->socket[0]+addr)=data;
+			else
+			{
+				if(addr==SOCKET_REG_S0_IR)
+					*(rt_uint8_t *)(g_lwip_app->socket[0]+addr)&=~(data&0x1f);
+			}
+		}
 		else
 			ret=*(rt_uint8_t *)(g_lwip_app->socket[0]+addr);
 	}
 	else if(addr>=SOCKET_REG_S0_TX_FSR0 && addr<=SOCKET_REG_S0_RX_WR1)
 	{
 		if(rw)/*write*/
-			if(addr!=SOCKET_REG_S0_TX_FSR0&&addr!=SOCKET_REG_S0_TX_FSR1&&addr!=SOCKET_REG_S0_TX_RD0&&addr!=SOCKET_REG_S0_TX_RD1&&\
+			if(addr!=SOCKET_REG_S0_TX_FSR0&&addr!=SOCKET_REG_S0_TX_FSR1&&addr!=SOCKET_REG_S0_TX_RD0&&addr!=SOCKET_REG_S0_TX_RD1)
 				addr!=SOCKET_REG_S0_RX_RSR0&&addr!=SOCKET_REG_S0_RX_RSR1)
 			*(rt_uint8_t *)(g_lwip_app->socket[0]+addr-0x40B)=data;
 		else
@@ -175,15 +187,22 @@ rt_uint8_t rw_reg(rt_uint16_t addr,rt_uint8_t data,rt_bool_t rw)
 	else if(addr>=SOCKET_REG_S1_MR && addr<=SOCKET_REG_S1_TTL)
 	{
 		if(rw)/*write*/
+		{
 			if(addr!=SOCKET_REG_S1_IR&&addr!=SOCKET_REG_S1_SR)
-			*(rt_uint8_t *)(g_lwip_app->socket[1]+addr)=data;
+				*(rt_uint8_t *)(g_lwip_app->socket[1]+addr)=data;
+			else
+			{
+				if(addr==SOCKET_REG_S1_IR)
+					*(rt_uint8_t *)(g_lwip_app->socket[1]+addr)&=~(data&0x1f);
+			}
+		}
 		else
 			ret=*(rt_uint8_t *)(g_lwip_app->socket[1]+addr);
 	}
 	else if(addr>=SOCKET_REG_S1_TX_FSR0 && addr<=SOCKET_REG_S1_RX_WR1)
 	{
 		if(rw)/*write*/
-			if(addr!=SOCKET_REG_S1_TX_FSR0&&addr!=SOCKET_REG_S1_TX_FSR1&&addr!=SOCKET_REG_S1_TX_RD0&&addr!=SOCKET_REG_S1_TX_RD1&&\
+			if(addr!=SOCKET_REG_S1_TX_FSR0&&addr!=SOCKET_REG_S1_TX_FSR1&&addr!=SOCKET_REG_S1_TX_RD0&&addr!=SOCKET_REG_S1_TX_RD1)
 				addr!=SOCKET_REG_S1_RX_RSR0&&addr!=SOCKET_REG_S1_RX_RSR1)
 			*(rt_uint8_t *)(g_lwip_app->socket[1]+addr-0x50B)=data;
 		else
@@ -192,15 +211,22 @@ rt_uint8_t rw_reg(rt_uint16_t addr,rt_uint8_t data,rt_bool_t rw)
 	else if(addr>=SOCKET_REG_S2_MR && addr<=SOCKET_REG_S2_TTL)
 	{
 		if(rw)/*write*/
+		{
 			if(addr!=SOCKET_REG_S2_IR&&addr!=SOCKET_REG_S2_SR)
-			*(rt_uint8_t *)(g_lwip_app->socket[2]+addr)=data;
+				*(rt_uint8_t *)(g_lwip_app->socket[2]+addr)=data;
+			else
+			{
+				if(addr==SOCKET_REG_S2_IR)
+					*(rt_uint8_t *)(g_lwip_app->socket[2]+addr)&=~(data&0x1f);
+			}
+		}
 		else
 			ret=*(rt_uint8_t *)(g_lwip_app->socket[2]+addr);
 	}
 	else if(addr>=SOCKET_REG_S2_TX_FSR0 && addr<=SOCKET_REG_S2_RX_WR1)
 	{
 		if(rw)/*write*/
-			if(addr!=SOCKET_REG_S2_TX_FSR0&&addr!=SOCKET_REG_S2_TX_FSR1&&addr!=SOCKET_REG_S2_TX_RD0&&addr!=SOCKET_REG_S2_TX_RD1&&\
+			if(addr!=SOCKET_REG_S2_TX_FSR0&&addr!=SOCKET_REG_S2_TX_FSR1&&addr!=SOCKET_REG_S2_TX_RD0&&addr!=SOCKET_REG_S2_TX_RD1)
 				addr!=SOCKET_REG_S2_RX_RSR0&&addr!=SOCKET_REG_S2_RX_RSR1)
 			*(rt_uint8_t *)(g_lwip_app->socket[2]+addr-0x60B)=data;
 		else
@@ -209,15 +235,22 @@ rt_uint8_t rw_reg(rt_uint16_t addr,rt_uint8_t data,rt_bool_t rw)
 	else if(addr>=SOCKET_REG_S3_MR && addr<=SOCKET_REG_S3_TTL)
 	{
 		if(rw)/*write*/
+		{
 			if(addr!=SOCKET_REG_S3_IR&&addr!=SOCKET_REG_S3_SR)
-			*(rt_uint8_t *)(g_lwip_app->socket[3]+addr)=data;
+				*(rt_uint8_t *)(g_lwip_app->socket[3]+addr)=data;
+			else
+			{
+				if(addr==SOCKET_REG_S3_IR)
+					*(rt_uint8_t *)(g_lwip_app->socket[3]+addr)&=~(data&0x1f);
+			}
+		}
 		else
 			ret=*(rt_uint8_t *)(g_lwip_app->socket[3]+addr);
 	}
 	else if(addr>=SOCKET_REG_S3_TX_FSR0 && addr<=SOCKET_REG_S3_RX_WR1)
 	{
 		if(rw)/*write*/
-			if(addr!=SOCKET_REG_S3_TX_FSR0&&addr!=SOCKET_REG_S3_TX_FSR1&&addr!=SOCKET_REG_S3_TX_RD0&&addr!=SOCKET_REG_S3_TX_RD1&&\
+			if(addr!=SOCKET_REG_S3_TX_FSR0&&addr!=SOCKET_REG_S3_TX_FSR1&&addr!=SOCKET_REG_S3_TX_RD0&&addr!=SOCKET_REG_S3_TX_RD1)
 				addr!=SOCKET_REG_S3_RX_RSR0&&addr!=SOCKET_REG_S3_RX_RSR1)
 			*(rt_uint8_t *)(g_lwip_app->socket[3]+addr-0x70B)=data;
 		else
@@ -249,7 +282,7 @@ void uart_thread_entry(void* parameter)
         while ((rt_device_read(uart_dev, 0, &ch, 1) == 1) && cs_low())
         {
 
-		rt_kprintf("%c",ch);
+		rt_kprintf("==>%c",ch);
 		switch (state)
 			{
 				case GET_OPERATION:/*Write or Read process*/					
@@ -280,7 +313,7 @@ void uart_thread_entry(void* parameter)
 						if(rw==0)
 						{
 							/*find the read and send*/
-							send_reg=read_reg(addr,0,0);
+							send_reg=rw_reg(addr,0,0);
 							rt_device_write(uart_dev,0,&send_reg,1);
 							state=GET_OPERATION;							
 							rt_kprintf("r Addr 0x%2x,Data 0x%x\n",addr,send_reg);
@@ -293,222 +326,12 @@ void uart_thread_entry(void* parameter)
 					break;
 				case GET_DATA:	
 					{		
-						send_reg=read_reg(addr,ch,1);
+						send_reg=rw_reg(addr,ch,1);
 						rt_device_write(uart_dev,0,&send_reg,1);
 						rt_kprintf("w Addr 0x%2x,Data 0x%x\n",addr,ch);
 						state=GET_OPERATION;						
 					}
-					break;
-             #if 0
-            if (ch == 0x1b)
-            {
-                shell->stat = WAIT_SPEC_KEY;
-                continue;
-            }
-            else if (shell->stat == WAIT_SPEC_KEY)
-            {
-                if (ch == 0x5b)
-                {
-                    shell->stat = WAIT_FUNC_KEY;
-                    continue;
-                }
-
-                shell->stat = WAIT_NORMAL;
-            }
-            else if (shell->stat == WAIT_FUNC_KEY)
-            {
-                shell->stat = WAIT_NORMAL;
-
-                if (ch == 0x41) /* up key */
-                {
-#ifdef FINSH_USING_HISTORY
-                    /* prev history */
-                    if (shell->current_history > 0)
-                        shell->current_history --;
-                    else
-                    {
-                        shell->current_history = 0;
-                        continue;
-                    }
-
-                    /* copy the history command */
-                    memcpy(shell->line, &shell->cmd_history[shell->current_history][0],
-                           FINSH_CMD_SIZE);
-                    shell->line_curpos = shell->line_position = strlen(shell->line);
-                    shell_handle_history(shell);
-#endif
-                    continue;
-                }
-                else if (ch == 0x42) /* down key */
-                {
-#ifdef FINSH_USING_HISTORY
-                    /* next history */
-                    if (shell->current_history < shell->history_count - 1)
-                        shell->current_history ++;
-                    else
-                    {
-                        /* set to the end of history */
-                        if (shell->history_count != 0)
-                            shell->current_history = shell->history_count - 1;
-                        else
-                            continue;
-                    }
-
-                    memcpy(shell->line, &shell->cmd_history[shell->current_history][0],
-                           FINSH_CMD_SIZE);
-                    shell->line_curpos = shell->line_position = strlen(shell->line);
-                    shell_handle_history(shell);
-#endif
-                    continue;
-                }
-                else if (ch == 0x44) /* left key */
-                {
-                    if (shell->line_curpos)
-                    {
-                        rt_kprintf("\b");
-                        shell->line_curpos --;
-                    }
-
-                    continue;
-                }
-                else if (ch == 0x43) /* right key */
-                {
-                    if (shell->line_curpos < shell->line_position)
-                    {
-                        rt_kprintf("%c", shell->line[shell->line_curpos]);
-                        shell->line_curpos ++;
-                    }
-
-                    continue;
-                }
-
-            }
-
-            /* handle CR key */
-            if (ch == '\r')
-            {
-                char next;
-
-                if (rt_device_read(shell->device, 0, &next, 1) == 1)
-                    ch = next;
-                else ch = '\r';
-            }
-            /* handle tab key */
-            else if (ch == '\t')
-            {
-                int i;
-                /* move the cursor to the beginning of line */
-                for (i = 0; i < shell->line_curpos; i++)
-                    rt_kprintf("\b");
-
-                /* auto complete */
-                shell_auto_complete(&shell->line[0]);
-                /* re-calculate position */
-                shell->line_curpos = shell->line_position = strlen(shell->line);
-
-                continue;
-            }
-            /* handle backspace key */
-            else if (ch == 0x7f || ch == 0x08)
-            {
-                /* note that shell->line_curpos >= 0 */
-                if (shell->line_curpos == 0)
-                    continue;
-
-                shell->line_position--;
-                shell->line_curpos--;
-
-                if (shell->line_position > shell->line_curpos)
-                {
-                    int i;
-
-                    rt_memmove(&shell->line[shell->line_curpos],
-                               &shell->line[shell->line_curpos + 1],
-                               shell->line_position - shell->line_curpos);
-                    shell->line[shell->line_position] = 0;
-
-                    rt_kprintf("\b%s  \b", &shell->line[shell->line_curpos]);
-
-                    /* move the cursor to the origin position */
-                    for (i = shell->line_curpos; i <= shell->line_position; i++)
-                        rt_kprintf("\b");
-                }
-                else
-                {
-                    rt_kprintf("\b \b");
-                    shell->line[shell->line_position] = 0;
-                }
-
-                continue;
-            }
-
-            /* handle end of line, break */
-            if (ch == '\r' || ch == '\n')
-            {
-                #ifdef FINSH_USING_HISTORY
-                shell_push_history(shell);
-                #endif
-
-                #ifdef FINSH_USING_MSH
-                if (msh_is_used() == RT_TRUE)
-                {
-                    rt_kprintf("\n");
-                    msh_exec(shell->line, shell->line_position);
-                }
-                else
-                #endif
-                {
-                #ifndef FINSH_USING_MSH_ONLY                
-                    /* add ';' and run the command line */
-                    shell->line[shell->line_position] = ';';
-
-                    if (shell->line_position != 0) finsh_run_line(&shell->parser, shell->line);
-                    else rt_kprintf("\n");
-                #endif                  
-                }
-
-                rt_kprintf(FINSH_PROMPT);
-                memset(shell->line, 0, sizeof(shell->line));
-                shell->line_curpos = shell->line_position = 0;
-                break;
-            }
-
-            /* it's a large line, discard it */
-            if (shell->line_position >= FINSH_CMD_SIZE)
-                shell->line_position = 0;
-
-            /* normal character */
-            if (shell->line_curpos < shell->line_position)
-            {
-                int i;
-
-                rt_memmove(&shell->line[shell->line_curpos + 1],
-                           &shell->line[shell->line_curpos],
-                           shell->line_position - shell->line_curpos);
-                shell->line[shell->line_curpos] = ch;
-                if (shell->echo_mode)
-                    rt_kprintf("%s", &shell->line[shell->line_curpos]);
-
-                /* move the cursor to new position */
-                for (i = shell->line_curpos; i < shell->line_position; i++)
-                    rt_kprintf("\b");
-            }
-            else
-            {
-                shell->line[shell->line_position] = ch;
-                rt_kprintf("%c", ch);
-            }
-
-            ch = 0;
-            shell->line_position ++;
-            shell->line_curpos++;
-			if (shell->line_position >= 80) 
-			{
-				/* clear command line */
-				shell->line_position = 0;
-				shell->line_curpos = 0;
-			}
-			#endif
+					break;             
         } /* end of device read */
     }
 }
