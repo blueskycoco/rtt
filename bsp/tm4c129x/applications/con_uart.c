@@ -273,12 +273,14 @@ void uart_thread_entry(void* parameter)
 	char ch,rw=0;/*0 is r , 1 is w*/
 	
 	rt_device_t dev=(rt_device_t)parameter;
+	struct rt_semaphore local_rx_sem;
+	int i=which_uart_dev(uart_dev,dev);
 	while (1)
 	{
 		/* wait receive */
-		if (rt_sem_take(&rx_sem, RT_WAITING_FOREVER) != RT_EOK) continue;
+		if (rt_sem_take(&rx_sem[i], RT_WAITING_FOREVER) != RT_EOK) continue;
 		if(ind_low(dev))
-		{/*socket data transfer,use dma*/
+		{	/*socket data transfer,use dma*/
 			while((rt_device_read(dev, 0, &ch, 1) == 1))
 			{
 				uart_rw_socket(dev,ch);
@@ -295,35 +297,14 @@ void uart_thread_entry(void* parameter)
 	}
 }
 
-static rt_err_t uart_rx0_ind(rt_device_t dev, rt_size_t size)
+static rt_err_t uart_rx_ind(rt_device_t dev, rt_size_t size)
 {
     /* release semaphore to let finsh thread rx data */
-    rt_sem_release(&rx_sem[0]);
+	int i=which_uart_dev(uart_dev,dev);
+    rt_sem_release(&rx_sem[i]);
 
     return RT_EOK;
 }
-static rt_err_t uart_rx1_ind(rt_device_t dev, rt_size_t size)
-{
-    /* release semaphore to let finsh thread rx data */
-    rt_sem_release(&rx_sem[1]);
-
-    return RT_EOK;
-}
-static rt_err_t uart_rx2_ind(rt_device_t dev, rt_size_t size)
-{
-    /* release semaphore to let finsh thread rx data */
-    rt_sem_release(&rx_sem[2]);
-
-    return RT_EOK;
-}
-static rt_err_t uart_rx3_ind(rt_device_t dev, rt_size_t size)
-{
-    /* release semaphore to let finsh thread rx data */
-    rt_sem_release(&rx_sem[3]);
-
-    return RT_EOK;
-}
-
 /*init uart1,2,3,4 for 4 socket*/
 int uart_init()
 {
@@ -337,7 +318,7 @@ int uart_init()
 	}
 	if (rt_device_open(uart_dev[0], RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)
 	{
-		rt_device_set_rx_indicate(uart_dev[0], uart_rx0_ind);
+		rt_device_set_rx_indicate(uart_dev[0], uart_rx_ind);
 	}
 	rt_sem_init(&rx_sem[0], "uart1_rx", 0, 0);
 	result = rt_thread_init(&uart_thread[0],
@@ -354,7 +335,7 @@ int uart_init()
 	}
 	if (rt_device_open(uart_dev[1], RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)
 	{
-		rt_device_set_rx_indicate(uart_dev[1], uart_rx1_ind);
+		rt_device_set_rx_indicate(uart_dev[1], uart_rx_ind);
 	}
 	rt_sem_init(&rx_sem[1], "uart2_rx", 0, 0);
 	result = rt_thread_init(&uart_thread[1],
@@ -371,7 +352,7 @@ int uart_init()
 	}
 	if (rt_device_open(uart_dev[2], RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)
 	{
-		rt_device_set_rx_indicate(uart_dev[2], uart_rx2_ind);
+		rt_device_set_rx_indicate(uart_dev[2], uart_rx_ind);
 	}
 	rt_sem_init(&rx_sem[0], "uart2_rx", 0, 0);
 	result = rt_thread_init(&uart_thread[2],
@@ -387,7 +368,7 @@ int uart_init()
 	}
 	if (rt_device_open(uart_dev[3], RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)
 	{
-		rt_device_set_rx_indicate(uart_dev[3], uart_rx3_ind);
+		rt_device_set_rx_indicate(uart_dev[3], uart_rx_ind);
 	}
 	rt_sem_init(&rx_sem[3], "uart3_rx", 0, 0);
 	result = rt_thread_init(&uart_thread[3],
