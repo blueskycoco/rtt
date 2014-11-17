@@ -51,34 +51,46 @@ int ring_buffer_init()
 			rt_thread_startup(&ring_buf_thread[i]);
 	}
 }
-int interface_write_buf(int index,unsigned char ch)
+int interface_write_buf(int index,unsigned char* ch,int len)
 {
 	int r_index=g_ringbuf->r_send_index[index];
-	g_ringbuf->socket_buf_send[g_ringbuf->w_send_index[index]] = ch;
-	g_ringbuf->w_send_index[index] += 1;
-	if (g_ringbuf->w_send_index[index] >= BUF_SZ) g_ringbuf->w_send_index[index] = 0;
-
-	/* if the next position is read index, discard this 'read char' */
-	if (g_ringbuf->w_send_index[index] == r_index)
+	int i=0;
+	while(len!=0)
 	{
-	  r_index += 1;
-	  if (r_index >= BUF_SZ) r_index = 0;
+		g_ringbuf->socket_buf_send[g_ringbuf->w_send_index[index]] = ch[i];
+		g_ringbuf->w_send_index[index] += 1;
+		if (g_ringbuf->w_send_index[index] >= BUF_SZ) g_ringbuf->w_send_index[index] = 0;
+
+		/* if the next position is read index, discard this 'read char' */
+		if (g_ringbuf->w_send_index[index] == r_index)
+		{
+		  r_index += 1;
+		  if (r_index >= BUF_SZ) r_index = 0;
+		}
+		len--;
+		i++;
 	}
 	g_ringbuf->r_send_index[index]=r_index;
 	rt_sem_release(&(interface_rx_sem[index]));
 }
-int socket_write_buf(int index,unsigned char ch)
+int socket_write_buf(int index,unsigned char* ch,int len)
 {
 	int r_index=g_ringbuf->r_recv_index[index];
-	g_ringbuf->socket_buf_recv[g_ringbuf->w_recv_index[index]] = ch;
-	g_ringbuf->w_recv_index[index] += 1;
-	if (g_ringbuf->w_recv_index[index] >= BUF_SZ) g_ringbuf->w_recv_index[index] = 0;
-
-	/* if the next position is read index, discard this 'read char' */
-	if (g_ringbuf->w_recv_index[index] == r_index)
+	int i=0;
+	while(len!=0)
 	{
-	  r_index += 1;
-	  if (r_index >= BUF_SZ) r_index = 0;
+		g_ringbuf->socket_buf_recv[g_ringbuf->w_recv_index[index]] = ch[i];
+		g_ringbuf->w_recv_index[index] += 1;
+		if (g_ringbuf->w_recv_index[index] >= BUF_SZ) g_ringbuf->w_recv_index[index] = 0;
+
+		/* if the next position is read index, discard this 'read char' */
+		if (g_ringbuf->w_recv_index[index] == r_index)
+		{
+		  r_index += 1;
+		  if (r_index >= BUF_SZ) r_index = 0;
+		}
+		len--;
+		i++;
 	}
 	g_ringbuf->r_recv_index[index]=r_index;
 	rt_sem_release(&(socket_rx_sem[index]));

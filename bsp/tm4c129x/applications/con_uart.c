@@ -9,7 +9,7 @@ enum STATE_OP{
 };
 struct rt_semaphore rx_sem[4];
 rt_mutex_t mutex = RT_NULL;
-
+rt_uint8_t uart_buf[1024];
 void uart_thread_entry(void* parameter);
 struct rt_thread uart_thread[4];
 //ALIGN(RT_ALIGN_SIZE)
@@ -29,21 +29,25 @@ int which_uart_dev(rt_device_t *dev,rt_device_t dev2)
 /*get config data to global config zone, or get socket data to buffer*/
 int uart_rw_socket(rt_device_t dev,unsigned char ch)
 {	
+	int i=1;
+	uart_buf[0]=ch;
+	while((rt_device_read(dev, 0, &(uart_buf[i]), 1) == 1))
+		i++;
 	if(which_uart_dev(uart_dev,dev)==0)
 	{
-		interface_write_buf(0,ch);
+		interface_write_buf(0,uart_buf,i);
 	}
 	else if(which_uart_dev(uart_dev,dev)==1)
 	{
-		interface_write_buf(1,ch);
+		interface_write_buf(1,uart_buf,i);
 	}
 	else if(which_uart_dev(uart_dev,dev)==2)
 	{
-		interface_write_buf(2,ch);
+		interface_write_buf(2,uart_buf,i);
 	}
 	else if(which_uart_dev(uart_dev,dev)==3)
 	{
-		interface_write_buf(3,ch);
+		interface_write_buf(3,uart_buf,i);
 	}
 	return 0;
 }
