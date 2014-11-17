@@ -9,7 +9,7 @@ enum STATE_OP{
 };
 struct rt_semaphore rx_sem[4];
 rt_mutex_t mutex = RT_NULL;
-rt_device_t uart_dev[4] = {RT_NULL,RT_NULL,RT_NULL,RT_NULL};
+
 void uart_thread_entry(void* parameter);
 struct rt_thread uart_thread[4];
 //ALIGN(RT_ALIGN_SIZE)
@@ -18,12 +18,12 @@ int which_uart_dev(rt_device_t *dev,rt_device_t dev2)
 {
 	int i=0;
 	for(i=0;i<4;i++)
-		if(memcmp(dev[i],dev2,sizeof(dev2)==0)
+		if(dev[i]==dev2)
 		{
 			rt_kprintf("Uart %d 's setting\r\n",i);
 			break;
 		}
-		return i;
+	return i;
 }
 
 /*get config data to global config zone, or get socket data to buffer*/

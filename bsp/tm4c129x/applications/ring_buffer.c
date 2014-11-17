@@ -3,7 +3,7 @@ struct rt_semaphore socket_rx_sem[4],interface_rx_sem[4];
 struct rt_thread ring_buf_thread[8];
 static char ring_interface_thread_stack[4][2048];
 static char ring_socket_thread_stack[4][2048];
-
+int length_socket[4],length_interface[4];
 int ring_buffer_init()
 {
 	int i;
@@ -53,37 +53,40 @@ int ring_buffer_init()
 }
 int interface_write_buf(int index,unsigned char ch)
 {
+	int r_index=g_ringbuf->r_send_index[index];
 	g_ringbuf->socket_buf_send[g_ringbuf->w_send_index[index]] = ch;
 	g_ringbuf->w_send_index[index] += 1;
 	if (g_ringbuf->w_send_index[index] >= BUF_SZ) g_ringbuf->w_send_index[index] = 0;
 
 	/* if the next position is read index, discard this 'read char' */
-	if (g_ringbuf->w_send_index[index] == g_ringbuf->r_send_index[index])
+	if (g_ringbuf->w_send_index[index] == r_index)
 	{
-	  g_ringbuf->r_send_index[index] += 1;
-	  if (g_ringbuf->r_send_index[index] >= BUF_SZ) g_ringbuf->r_send_index[index] = 0;
+	  r_index += 1;
+	  if (r_index >= BUF_SZ) r_index = 0;
 	}
+	g_ringbuf->r_send_index[index]=r_index;
 	rt_sem_release(&(interface_rx_sem[index]));
 }
 int socket_write_buf(int index,unsigned char ch)
 {
+	int r_index=g_ringbuf->r_recv_index[index];
 	g_ringbuf->socket_buf_recv[g_ringbuf->w_recv_index[index]] = ch;
 	g_ringbuf->w_recv_index[index] += 1;
 	if (g_ringbuf->w_recv_index[index] >= BUF_SZ) g_ringbuf->w_recv_index[index] = 0;
 
 	/* if the next position is read index, discard this 'read char' */
-	if (g_ringbuf->w_recv_index[index] == g_ringbuf->r_recv_index[index])
+	if (g_ringbuf->w_recv_index[index] == r_index)
 	{
-	  g_ringbuf->r_recv_index[index] += 1;
-	  if (g_ringbuf->r_recv_index[index] >= BUF_SZ) g_ringbuf->r_recv_index[index] = 0;
+	  r_index += 1;
+	  if (r_index >= BUF_SZ) r_index = 0;
 	}
+	g_ringbuf->r_recv_index[index]=r_index;
 	rt_sem_release(&(socket_rx_sem[index]));
 }
 void ring_interface_thread_entry(void* parameter)
 {
-	rt_uint8_t *data;
 	int socket=(int)parameter;
-	int length=0;
+	int length=0,r_index,w_index;
 	
 	while (1)
 	{
@@ -91,60 +94,59 @@ void ring_interface_thread_entry(void* parameter)
 		if (rt_sem_take(&(interface_rx_sem[socket]), RT_WAITING_FOREVER) != RT_EOK) continue;
 		{
 			length=0;
+			r_index=g_ringbuf->r_send_index[socket];
+			w_index=g_ringbuf->w_send_index[socket];
 			while (1)
 			{
 				int ch;
-				if (g_ringbuf->w_send_index[socket] != g_ringbuf->r_send_index[socket])
+				if (w_index != r_index)
 				{
-					ch = g_ringbuf->socket_buf_send[g_ringbuf->r_send_index[socket]];
-					g_ringbuf->r_send_index[socket] += 1;
-					if (g_ringbuf->r_send_index[socket] >= BUF_SZ) g_ringbuf->r_send_index[socket] = 0;
+					r_index += 1;
+					if (r_index >= BUF_SZ) r_index = 0;
 				}
 				else
 				{
 					break;
 				}
 
-				*data = ch & 0xff;
-				data ++; 
 				length++;
 			}
-			socket_send(socket,data,length);
+			socket_send(uart_dev[socket],g_ringbuf->socket_buf_send[g_ringbuf->r_send_index[socket]],length);
+			g_ringbuf->r_send_index[socket]=r_index;
 		}
 
 	}
 }
 void ring_socket_thread_entry(void* parameter)
 {
-	rt_uint8_t *data;
 	int uart_dev=(int)parameter;
-	int length=0;
+	int length=0,r_index=0,w_index;
 	
 	while (1)
 	{
 		/* wait receive */
 		if (rt_sem_take(&(socket_rx_sem[uart_dev]), RT_WAITING_FOREVER) != RT_EOK) continue;
 		{
-			length=0;			
+			length=0;	
+			r_index=g_ringbuf->r_recv_index[uart_dev];
+			w_index=g_ringbuf->w_recv_index[uart_dev];
 			while (1)
 			{
 				int ch;
-				if (g_ringbuf->r_recv_index[uart_dev] != g_ringbuf->w_recv_index[uart_dev])
+				if (r_index != w_index)
 				{
-					ch = g_ringbuf->socket_buf_send[g_ringbuf->r_recv_index[uart_dev]];
-					g_ringbuf->r_recv_index[uart_dev] += 1;
-					if (g_ringbuf->r_recv_index[uart_dev] >= BUF_SZ) g_ringbuf->r_recv_index[uart_dev] = 0;
+					r_index += 1;
+					if (r_index >= BUF_SZ) r_index = 0;
 				}
 				else
 				{
 					break;
 				}
 
-				*data = ch & 0xff;
-				data ++; 
 				length++;
 			}
-			uart_send(uart_dev,data,length);
+			rt_device_write(uart_dev[uart_dev],0,g_ringbuf->socket_buf_recv[g_ringbuf->r_recv_index[uart_dev]],length*sizeof(rt_uint8_t));
+			g_ringbuf->r_recv_index[uart_dev]=r_index;
 		}
 
 	}
