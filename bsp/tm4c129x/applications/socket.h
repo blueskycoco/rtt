@@ -22,11 +22,12 @@ typedef struct {
 typedef struct {
 	rt_uint8_t *socket_buf_send[4];/*every buf use 10k*/
 	rt_uint8_t *socket_buf_recv[4];
-	rt_uint16_t *w_send_index;
-	rt_uint16_t *r_send_index;
-	rt_uint16_t *w_recv_index;
-	rt_uint16_t *r_recv_index;
+	rt_uint16_t w_send_index[4];
+	rt_uint16_t r_send_index[4];	
+	rt_uint16_t w_recv_index[4];
+	rt_uint16_t r_recv_index[4];
 }ringbuf,*pringbuf;
+pringbuf g_ringbuf;
 unsigned char config_local_ip[11]		={0xF5,0x8A,0x00,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip*/
 unsigned char config_local_port[9]		={0xF5,0x8A,0x01,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port*/
 unsigned char config_sub_msk[11]		={0xF5,0x8A,0x02,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*sub msk*/

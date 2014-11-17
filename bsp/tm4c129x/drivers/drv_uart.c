@@ -217,7 +217,7 @@ hw_uart_t uart2 =
     UART2_BASE,
 };
 
-void UART1_IRQHandler(void)
+void UART2_IRQHandler(void)
 {
 	uint32_t intsrc;
     hw_uart_t *uart = &uart2;
@@ -302,141 +302,131 @@ void UART4_IRQHandler(void)
 
 int rt_hw_uart_init(void)
 {
-    hw_uart_t* uart;
-    struct serial_configure config;
+	hw_uart_t* uart;
+	struct serial_configure config;
 
-    config.baud_rate = BAUD_RATE_115200;
-    config.bit_order = BIT_ORDER_LSB;
-    config.data_bits = DATA_BITS_8;
-    config.parity    = PARITY_NONE;
-    config.stop_bits = STOP_BITS_1;
-    config.invert    = NRZ_NORMAL;
-    config.bufsz     = RT_SERIAL_RB_BUFSZ;
-	
+	config.baud_rate = BAUD_RATE_115200;
+	config.bit_order = BIT_ORDER_LSB;
+	config.data_bits = DATA_BITS_8;
+	config.parity    = PARITY_NONE;
+	config.stop_bits = STOP_BITS_1;
+	config.invert    = NRZ_NORMAL;
+	config.bufsz     = RT_SERIAL_RB_BUFSZ;
+
 #ifdef RT_USING_UART0
-    uart = &uart0;
-    serial0.ops    = &hw_uart_ops;
-    serial0.config = config;
+	uart = &uart0;
+	serial0.ops    = &hw_uart_ops;
+	serial0.config = config;
 
-    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-    MAP_GPIOPinConfigure(GPIO_PA0_U0RX);
-    MAP_GPIOPinConfigure(GPIO_PA1_U0TX);
-	
-    MAP_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+	MAP_GPIOPinConfigure(GPIO_PA0_U0RX);
+	MAP_GPIOPinConfigure(GPIO_PA1_U0TX);
 
-    /* preemption = 1, sub-priority = 1 */
-    //IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
+	MAP_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
 
-    /* Enable Interrupt for UART channel */
-	  UARTIntRegister(uart->hw_base, UART0_IRQHandler);
-	  MAP_IntEnable(INT_UART0);
-	  MAP_UARTEnable(uart->hw_base);
+	/* preemption = 1, sub-priority = 1 */
+	//IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
 
-    /* register UART0 device */
-    rt_hw_serial_register(&serial0, "uart0",
-                          RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
-                          uart);
+	/* Enable Interrupt for UART channel */
+	UARTIntRegister(uart->hw_base, UART0_IRQHandler);
+	MAP_IntEnable(INT_UART0);
+	MAP_UARTEnable(uart->hw_base);
+
+	/* register UART0 device */
+	rt_hw_serial_register(&serial0, "uart0",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
 #endif
 #ifdef RT_USING_UART1
-	    uart = &uart1;
-	    serial1.ops	 = &hw_uart_ops;
-	    serial1.config = config;
-	
-	    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
-	    MAP_GPIOPinConfigure(GPIO_PB0_U1RX);
-	    MAP_GPIOPinConfigure(GPIO_PB1_U1TX);
-		
-	    MAP_GPIOPinTypeUART(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-	    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART1);
-	
-	    /* preemption = 1, sub-priority = 1 */
-	    //IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
-	
-	    /* Enable Interrupt for UART channel */
-		  UARTIntRegister(uart->hw_base, UART1_IRQHandler);
-		  MAP_IntEnable(INT_UART1);
-		  MAP_UARTEnable(uart->hw_base);
-	
-	    /* register UART0 device */
-	    rt_hw_serial_register(&serial1, "uart1",
-					  RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
-					  uart);
+	uart = &uart1;
+	serial1.ops	 = &hw_uart_ops;
+	serial1.config = config;
+
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+	MAP_GPIOPinConfigure(GPIO_PB0_U1RX);
+	MAP_GPIOPinConfigure(GPIO_PB1_U1TX);
+
+	MAP_GPIOPinTypeUART(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART1);
+
+	/* preemption = 1, sub-priority = 1 */
+	//IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
+
+	/* Enable Interrupt for UART channel */
+	UARTIntRegister(uart->hw_base, UART1_IRQHandler);
+	MAP_IntEnable(INT_UART1);
+	MAP_UARTEnable(uart->hw_base);
+
+	/* register UART0 device */
+	rt_hw_serial_register(&serial1, "uart1",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
 #endif
 #ifdef RT_USING_UART2
-		    uart = &uart2;
-		    serial2.ops	 = &hw_uart_ops;
-		    serial2.config = config;
-		
-		    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-		    MAP_GPIOPinConfigure(GPIO_PA6_U2RX);
-		    MAP_GPIOPinConfigure(GPIO_PA7_U2TX);
-			
-		    MAP_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_6 | GPIO_PIN_7);
-		    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART2);
-		
-		    /* preemption = 1, sub-priority = 1 */
-		    //IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
-		
-		    /* Enable Interrupt for UART channel */
-			  UARTIntRegister(uart->hw_base, UART2_IRQHandler);
-			  MAP_IntEnable(INT_UART2);
-			  MAP_UARTEnable(uart->hw_base);
-		
-		    /* register UART0 device */
-		    rt_hw_serial_register(&serial2, "uart2",
-						  RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
-						  uart);
+	uart = &uart2;
+	serial2.ops	 = &hw_uart_ops;
+	serial2.config = config;
+
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+	MAP_GPIOPinConfigure(GPIO_PA6_U2RX);
+	MAP_GPIOPinConfigure(GPIO_PA7_U2TX);
+
+	MAP_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_6 | GPIO_PIN_7);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART2);
+
+	/* preemption = 1, sub-priority = 1 */
+	//IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
+
+	/* Enable Interrupt for UART channel */
+	UARTIntRegister(uart->hw_base, UART2_IRQHandler);
+	MAP_IntEnable(INT_UART2);
+	MAP_UARTEnable(uart->hw_base);
+
+	/* register UART0 device */
+	rt_hw_serial_register(&serial2, "uart2",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
 #endif
 #ifdef RT_USING_UART3
-		    uart = &uart3;
-		    serial3.ops	 = &hw_uart_ops;
-		    serial3.config = config;
-		
-		    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-		    MAP_GPIOPinConfigure(GPIO_PA4_U3RX);
-		    MAP_GPIOPinConfigure(GPIO_PA5_U3TX);
-			
-		    MAP_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_4 | GPIO_PIN_5);
-		    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART3);
-		
-		    /* preemption = 1, sub-priority = 1 */
-		    //IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
-		
-		    /* Enable Interrupt for UART channel */
-			  UARTIntRegister(uart->hw_base, UART3_IRQHandler);
-			  MAP_IntEnable(INT_UART3);
-			  MAP_UARTEnable(uart->hw_base);
-		
-		    /* register UART0 device */
-		    rt_hw_serial_register(&serial3, "uart3",
-						  RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
-						  uart);
+	uart = &uart3;
+	serial3.ops	 = &hw_uart_ops;
+	serial3.config = config;
+
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+	MAP_GPIOPinConfigure(GPIO_PA4_U3RX);
+	MAP_GPIOPinConfigure(GPIO_PA5_U3TX);
+
+	MAP_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_4 | GPIO_PIN_5);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART3);
+
+	/* preemption = 1, sub-priority = 1 */
+	//IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
+
+	/* Enable Interrupt for UART channel */
+	UARTIntRegister(uart->hw_base, UART3_IRQHandler);
+	MAP_IntEnable(INT_UART3);
+	MAP_UARTEnable(uart->hw_base);
+
+	/* register UART0 device */
+	rt_hw_serial_register(&serial3, "uart3",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
 #endif
 #ifdef RT_USING_UART4
-		    uart = &uart4;
-		    serial4.ops	 = &hw_uart_ops;
-		    serial4.config = config;
-		
-		    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-		    MAP_GPIOPinConfigure(GPIO_PA2_U4RX);
-		    MAP_GPIOPinConfigure(GPIO_PA3_U4TX);
-			
-		    MAP_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_3);
-		    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
-		
-		    /* preemption = 1, sub-priority = 1 */
-		    //IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
-		
-		    /* Enable Interrupt for UART channel */
-			  UARTIntRegister(uart->hw_base, UART4_IRQHandler);
-			  MAP_IntEnable(INT_UART4);
-			  MAP_UARTEnable(uart->hw_base);
-		
-		    /* register UART0 device */
-		    rt_hw_serial_register(&serial4, "uart4",
-						  RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
-						  uart);
+	uart = &uart4;
+	serial4.ops	 = &hw_uart_ops;
+	serial4.config = config;
+
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+	MAP_GPIOPinConfigure(GPIO_PA2_U4RX);
+	MAP_GPIOPinConfigure(GPIO_PA3_U4TX);
+
+	MAP_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_2 | GPIO_PIN_3);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART4);
+
+	/* preemption = 1, sub-priority = 1 */
+	//IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
+
+	/* Enable Interrupt for UART channel */
+	UARTIntRegister(uart->hw_base, UART4_IRQHandler);
+	MAP_IntEnable(INT_UART4);
+	MAP_UARTEnable(uart->hw_base);
+
+	/* register UART0 device */
+	rt_hw_serial_register(&serial4, "uart4",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
 #endif
 
 	return 0;

@@ -31,19 +31,19 @@ int uart_rw_socket(rt_device_t dev,unsigned char ch)
 {	
 	if(which_uart_dev(uart_dev,dev)==0)
 	{
-
+		interface_write_buf(0,ch);
 	}
 	else if(which_uart_dev(uart_dev,dev)==1)
 	{
-
+		interface_write_buf(1,ch);
 	}
 	else if(which_uart_dev(uart_dev,dev)==2)
 	{
-
+		interface_write_buf(2,ch);
 	}
 	else if(which_uart_dev(uart_dev,dev)==3)
 	{
-
+		interface_write_buf(3,ch);
 	}
 	return 0;
 }
@@ -91,6 +91,8 @@ void uart_rw_config(rt_device_t dev,unsigned char ch)
 				get_config[2+i+3]=(result&0xff00)>>8;
 				get_config[2+i+4]=result&0xff;
 				rt_device_write(dev,0,get_config,sizeof(get_config));
+				for(i=0;i<sizeof(get_config);i++)
+					DBG("==>%x \r\n",get_config[i]);
 			}
 			state=GET_F5;
 		}
@@ -253,7 +255,6 @@ void uart_rw_config(rt_device_t dev,unsigned char ch)
 			state=GET_F5;
 		break;
 	}
-
 }
 rt_bool_t ind_low(rt_device_t dev)
 {
@@ -270,15 +271,14 @@ rt_bool_t ind_low(rt_device_t dev)
 }
 void uart_thread_entry(void* parameter)
 {
-	char ch,rw=0;/*0 is r , 1 is w*/
-	
+	char ch;	
 	rt_device_t dev=(rt_device_t)parameter;
-	struct rt_semaphore local_rx_sem;
 	int i=which_uart_dev(uart_dev,dev);
+	DBG("uart_thread_entry %d Enter\r\n",i);
 	while (1)
 	{
 		/* wait receive */
-		if (rt_sem_take(&rx_sem[i], RT_WAITING_FOREVER) != RT_EOK) continue;
+		if (rt_sem_take(&(rx_sem[i]), RT_WAITING_FOREVER) != RT_EOK) continue;
 		if(ind_low(dev))
 		{	/*socket data transfer,use dma*/
 			while((rt_device_read(dev, 0, &ch, 1) == 1))
@@ -301,7 +301,7 @@ static rt_err_t uart_rx_ind(rt_device_t dev, rt_size_t size)
 {
     /* release semaphore to let finsh thread rx data */
 	int i=which_uart_dev(uart_dev,dev);
-    rt_sem_release(&rx_sem[i]);
+	rt_sem_release(&(rx_sem[i]));
 
     return RT_EOK;
 }
@@ -320,11 +320,11 @@ int uart_init()
 	{
 		rt_device_set_rx_indicate(uart_dev[0], uart_rx_ind);
 	}
-	rt_sem_init(&rx_sem[0], "uart1_rx", 0, 0);
-	result = rt_thread_init(&uart_thread[0],
+	rt_sem_init(&(rx_sem[0]), "uart1_rx", 0, 0);
+	result = rt_thread_init(&(uart_thread[0]),
 					"uart_rx1",
-					uart_thread_entry, (void *)uart_dev[0],
-					&uart_thread_stack[0][0], sizeof(uart_thread_stack[0]),
+					uart_thread_entry, (void *)(uart_dev[0]),
+					&(uart_thread_stack[0][0]), sizeof(uart_thread_stack[0]),
 					20, 10);
 	
 	uart_dev[1] = rt_device_find("uart2");
@@ -337,11 +337,11 @@ int uart_init()
 	{
 		rt_device_set_rx_indicate(uart_dev[1], uart_rx_ind);
 	}
-	rt_sem_init(&rx_sem[1], "uart2_rx", 0, 0);
-	result = rt_thread_init(&uart_thread[1],
+	rt_sem_init(&(rx_sem[1]), "uart2_rx", 0, 0);
+	result = rt_thread_init(&(uart_thread[1]),
 					"uart_rx2",
-					uart_thread_entry, (void *)uart_dev[1],
-					&uart_thread_stack[1][0], sizeof(uart_thread_stack[1]),
+					uart_thread_entry, (void *)(uart_dev[1]),
+					&(uart_thread_stack[1][0]), sizeof(uart_thread_stack[1]),
 					20, 10);
 	
 	uart_dev[2] = rt_device_find("uart3");
@@ -354,11 +354,11 @@ int uart_init()
 	{
 		rt_device_set_rx_indicate(uart_dev[2], uart_rx_ind);
 	}
-	rt_sem_init(&rx_sem[0], "uart2_rx", 0, 0);
-	result = rt_thread_init(&uart_thread[2],
+	rt_sem_init(&(rx_sem[0]), "uart2_rx", 0, 0);
+	result = rt_thread_init(&(uart_thread[2]),
 					"uart_rx2",
-					uart_thread_entry, (void *)uart_dev[2],
-					&uart_thread_stack[2][0], sizeof(uart_thread_stack[2]),
+					uart_thread_entry, (void *)(uart_dev[2]),
+					&(uart_thread_stack[2][0]), sizeof(uart_thread_stack[2]),
 					20, 10);
 	uart_dev[3] = rt_device_find("uart4");
 	if (uart_dev[3] == RT_NULL)
@@ -370,11 +370,11 @@ int uart_init()
 	{
 		rt_device_set_rx_indicate(uart_dev[3], uart_rx_ind);
 	}
-	rt_sem_init(&rx_sem[3], "uart3_rx", 0, 0);
-	result = rt_thread_init(&uart_thread[3],
+	rt_sem_init(&(rx_sem[3]), "uart3_rx", 0, 0);
+	result = rt_thread_init(&(uart_thread[3]),
 					"uart_rx3",
-					uart_thread_entry, (void *)uart_dev[3],
-					&uart_thread_stack[3][0], sizeof(uart_thread_stack[3]),
+					uart_thread_entry, (void *)(uart_dev[3]),
+					&(uart_thread_stack[3][0]), sizeof(uart_thread_stack[3]),
 					20, 10);
 
 	mutex = rt_mutex_create("mutex", RT_IPC_FLAG_FIFO);
