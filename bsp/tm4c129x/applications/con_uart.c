@@ -54,24 +54,30 @@ void uart_rw_config(rt_device_t dev,unsigned char ch)
 	rt_uint8_t i=0;
 	static rt_uint8_t len=0,param;
 	static STATE_OP state=GET_F5;
-
 	switch(state)
 	{
 		case GET_F5:
 		{
 			if(ch==0xf5)
+			{
+				DBG("Dev %d , 0XF5 Got\r\n",which_uart_dev(uart_dev,dev));
 				state=GET_8A_8B;
+			}
 		}
 		break;
 		case GET_8A_8B:
 		{
 			if(ch==0x8a)
+			{
+				DBG("Dev %d , 0X8A Got\r\n",which_uart_dev(uart_dev,dev));
 				state=GET_DATA;
+			}
 			else if(ch==0x8b)
 			{
 				/*send config data out*/
 				unsigned char i,*ptr=(unsigned char *)g_conf;
 				int result=0;
+				DBG("Dev %d , 0X8B Got\r\n",which_uart_dev(uart_dev,dev));
 				get_config[0]=0xf5;
 				get_config[1]=0x8C;
 				result=0xf5+0x8c+0x27+0xfa;
@@ -92,6 +98,7 @@ void uart_rw_config(rt_device_t dev,unsigned char ch)
 		case GET_DATA:
 		{
 			param=ch;
+			DBG("Dev %d , 0x%2x Got\r\n",which_uart_dev(uart_dev,dev),ch);
 			if(ch==0||ch==2||ch==3||ch==5||ch==6||ch==7||ch==8)
 				len=4;
 			else if(ch==1||ch==9||ch==10||ch==11||ch==12)
@@ -108,7 +115,10 @@ void uart_rw_config(rt_device_t dev,unsigned char ch)
 		case GET_26:
 		{
 			if(ch==0x26)
+			{
+				DBG("Dev %d , 0X26 Got\r\n",which_uart_dev(uart_dev,dev));
 				state=GET_FA;
+			}
 			else
 				state=GET_F5;
 		}
@@ -118,6 +128,7 @@ void uart_rw_config(rt_device_t dev,unsigned char ch)
 			if(ch==0xFA)
 			{
 				unsigned char crc1,crc2,*ptr;
+				DBG("Dev %d , 0XFA Got\r\n",which_uart_dev(uart_dev,dev));
 				int result=0xf5+0x8a+param+0x26+0xfa;
 				while((rt_device_read(dev,0,&(crc1),1)==0));
 				while((rt_device_read(dev,0,&(crc2),1)==0));
@@ -232,6 +243,8 @@ void uart_rw_config(rt_device_t dev,unsigned char ch)
 					for(i=0;i<len;i++)
 						ptr[i]=buf[i];
 			}
+				else
+					DBG("Dev %d , crc fault %x!=%x\r\n",which_uart_dev(uart_dev,dev),result,(crc1<<8)|crc2);
 		}
 		state=GET_F5;
 		}
