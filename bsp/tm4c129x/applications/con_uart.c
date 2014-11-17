@@ -1,3 +1,5 @@
+#include "socket.h"
+
 enum STATE_OP{
 	GET_F5,
 	GET_8A_8B,
@@ -64,7 +66,7 @@ void uart_rw_config(rt_device_t dev,unsigned char ch)
 		case GET_8A_8B:
 		{
 			if(ch==0x8a)
-			state=GET_DATA;
+				state=GET_DATA;
 			else if(ch==0x8b)
 			{
 				/*send config data out*/
@@ -115,125 +117,120 @@ void uart_rw_config(rt_device_t dev,unsigned char ch)
 		{
 			if(ch==0xFA)
 			{
-			unsigned char crc1,crc2,*ptr;
-			int result=0xf5+0x8a+param+0x26+0xfa;
-			while((rt_device_read(dev,0,&(crc1),1)==0));
-			while((rt_device_read(dev,0,&(crc2),1)==0));
-			for(i=0;i<len;i++)
-			result=result+buf[i];
-			if(result==(crc1<<8|crc2))
-			{
-			switch(param)
-			{
-			case 0://local ip		
-			ptr=g_conf.local_ip;
-			break;
-			case 1://local port 	
-			ptr=g_conf.local_port;
-			break;
-			case 2://sub msk		
-			ptr=g_conf.sub_msk;
-			break;
-			case 3://gw ip		
-			ptr=g_conf.gw;
-			break;
-			case 4://mac		
-			ptr=g_conf.mac;
-			break;
-			case 5://socket 0 ip		
-			{
-			if(which_uart_dev(uart_dev,dev)==0)
-			ptr=g_conf.remote_ip0;											
-			}
-			break;
-			case 6://socket 1 ip											
-			{
-			if(which_uart_dev(uart_dev,dev)==1)
-			ptr=g_conf.remote_ip1;
-			}
-			break;
-			case 7://socket 2 ip											
-			{
-			if(which_uart_dev(uart_dev,dev)==2)
-			ptr=g_conf.remote_ip2;
-			}
-			break;
-			case 8://socket 3 ip													
-			{
-			if(which_uart_dev(uart_dev,dev)==3)
-			ptr=g_conf.remote_ip3;
-			}
-			break;
-			case 9://socket 0 port										
-			{
-			if(which_uart_dev(uart_dev,dev)==0)
-			ptr=g_conf.remote_port0;
-			}
-			break;
-			case 10://socket 1 port 										
-			{
-			if(which_uart_dev(uart_dev,dev)==1)
-			ptr=g_conf.remote_port1;
-			}
-			break;
-			case 11://socket 2 port 										
-			{
-			if(which_uart_dev(uart_dev,dev)==2)
-			ptr=g_conf.remote_port2;
-			}
-			break;
-			case 12://socket 3 port 											
-			{
-			if(which_uart_dev(uart_dev,dev)==3)
-			ptr=g_conf.remote_port3;
-			}
-			break;									
-			case 13://protol
-			ptr=g_conf.protol+which_uart_dev(uart_dev,dev);
-			break;
-			case 14://server or client mode
-			ptr=g_conf.server_mode+which_uart_dev(uart_dev,dev);
-			break;									
-			case 15://socket uart baud
-			{
+				unsigned char crc1,crc2,*ptr;
+				int result=0xf5+0x8a+param+0x26+0xfa;
+				while((rt_device_read(dev,0,&(crc1),1)==0));
+				while((rt_device_read(dev,0,&(crc2),1)==0));
+				for(i=0;i<len;i++)
+					result=result+buf[i];
+				if(result==(crc1<<8|crc2))
+				{
+					switch(param)
+					{
+						case 0://local ip		
+							ptr=g_conf.local_ip;
+						break;
+						case 1://local port 	
+							ptr=g_conf.local_port;
+						break;
+						case 2://sub msk		
+							ptr=g_conf.sub_msk;
+						break;
+						case 3://gw ip		
+							ptr=g_conf.gw;
+						break;
+						case 4://mac		
+							ptr=g_conf.mac;
+						break;
+						case 5://socket 0 ip		
+						{
+							if(which_uart_dev(uart_dev,dev)==0)
+								ptr=g_conf.remote_ip0;											
+						}
+						break;
+						case 6://socket 1 ip											
+						{
+							if(which_uart_dev(uart_dev,dev)==1)
+								ptr=g_conf.remote_ip1;
+						}
+						break;
+						case 7://socket 2 ip											
+						{
+							if(which_uart_dev(uart_dev,dev)==2)
+								ptr=g_conf.remote_ip2;
+						}
+						break;
+						case 8://socket 3 ip													
+						{
+							if(which_uart_dev(uart_dev,dev)==3)
+								ptr=g_conf.remote_ip3;
+						}
+						break;
+						case 9://socket 0 port										
+						{
+							if(which_uart_dev(uart_dev,dev)==0)
+								ptr=g_conf.remote_port0;
+						}
+						break;
+						case 10://socket 1 port 										
+						{
+							if(which_uart_dev(uart_dev,dev)==1)
+								ptr=g_conf.remote_port1;
+						}
+						break;
+						case 11://socket 2 port 										
+						{
+							if(which_uart_dev(uart_dev,dev)==2)
+								ptr=g_conf.remote_port2;
+						}
+						break;
+						case 12://socket 3 port 											
+						{
+							if(which_uart_dev(uart_dev,dev)==3)
+								ptr=g_conf.remote_port3;
+						}
+						break;									
+						case 13://protol
+							ptr=g_conf.protol+which_uart_dev(uart_dev,dev);
+						break;
+						case 14://server or client mode
+							ptr=g_conf.server_mode+which_uart_dev(uart_dev,dev);
+						break;									
+						case 15://socket uart baud
+						{
 
-			struct serial_configure config;
-			ptr=g_conf.uart_baud+which_uart_dev(uart_dev,dev);
-			for(i=0;i<4;i++)
-			if(memcmp(dev,uart_dev[i],sizeof(dev)==0)
-			{
-			rt_kprintf("uart %d 's baud is setting\r\n");
-			break;
-			}
-			if(buf[i]==0)
-			config.baud_rate = 115200;
-			else if(buf[i]==1)
-			config.baud_rate = 406800;
-			else if(buf[i]==2)
-			config.baud_rate = 921600;
-			else if(buf[i]==3)
-			config.baud_rate = 2000000;
-			else if(buf[i]==4)
-			config.baud_rate = 4000000;
-			else if(buf[i]==5)
-			config.baud_rate = 6000000;
+							struct serial_configure config;
+							ptr=g_conf.uart_baud+which_uart_dev(uart_dev,dev);
+							i=which_uart_dev(uart_dev,dev);
+							if(buf[i]==0)
+								config.baud_rate = 115200;
+							else if(buf[i]==1)
+								config.baud_rate = 406800;
+							else if(buf[i]==2)
+								config.baud_rate = 921600;
+							else if(buf[i]==3)
+								config.baud_rate = 2000000;
+							else if(buf[i]==4)
+								config.baud_rate = 4000000;
+							else if(buf[i]==5)
+								config.baud_rate = 6000000;
 
-			config.bit_order = BIT_ORDER_LSB;
-			config.data_bits = DATA_BITS_8;
-			config.parity	 = PARITY_NONE;
-			config.stop_bits = STOP_BITS_1;
-			config.invert	 = NRZ_NORMAL;
-			config.bufsz	 = RT_SERIAL_RB_BUFSZ;
-			rt_device_control(dev,RT_DEVICE_CTRL_CONFIG,&config);
+							config.bit_order = BIT_ORDER_LSB;
+							config.data_bits = DATA_BITS_8;
+							config.parity	 = PARITY_NONE;
+							config.stop_bits = STOP_BITS_1;
+							config.invert	 = NRZ_NORMAL;
+							config.bufsz	 = RT_SERIAL_RB_BUFSZ;
+							rt_device_control(dev,RT_DEVICE_CTRL_CONFIG,&config);
 
-			}
-			break;
-			default:
-				ptr=NULL;
-			}
-		if(ptr!=NULL)
-			for(i=0;i<len;i++)
-			ptr[i]=buf[i];
+						}
+						break;
+						default:
+							ptr=NULL;
+					}
+				if(ptr!=NULL)
+					for(i=0;i<len;i++)
+						ptr[i]=buf[i];
 			}
 		}
 		state=GET_F5;

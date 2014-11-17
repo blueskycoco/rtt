@@ -1,4 +1,6 @@
-
+#include <rtthread.h>
+#include <board.h>
+#include <components.h>
 typedef struct {
 	rt_uint8_t local_ip[4];
 	rt_uint8_t local_port[2];
