@@ -84,11 +84,12 @@ static err_t socket_tcp_accept(void *arg, struct tcp_pcb *pcb, err_t err)
 	//tcp_sent(pcb, netio_sent);
 	tcp_recv(pcb, socket_tcp_recv);
 	//tcp_poll(pcb, netio_poll, 4); /* every 2 seconds */
+	rt_kprintf("incoming connection got\r\n");
 	return ERR_OK;
 }
-err_t socket_connected(void *arg, struct tcp_pcb *pcb, err_t err)
+err_t socket_tcp_connected(void *arg, struct tcp_pcb *pcb, err_t err)
 {
-	rt_kprintf("socket is connected\r\n");
+	rt_kprintf("socket is connected to target\r\n");
     return ERR_OK;
 }
 
@@ -131,7 +132,7 @@ void socket_thread_entry(void* parameter)
 			port=(g_conf.remote_port3[0]<<8)|g_conf.remote_port3[1];
 		}
 		tcp_recv(pcb[dev], socket_tcp_recv);
-		tcp_connect(pcb[dev],ipaddr,port,socket_connected);
+		tcp_connect(pcb[dev],ipaddr,port,socket_tcp_connected);
 	}
 }
 /*init socket 1,2,3,4*/
