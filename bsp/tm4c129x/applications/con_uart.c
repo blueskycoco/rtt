@@ -1,5 +1,5 @@
-#include "socket.h"
-
+#include "con_socket.h"
+#include "con_uart.h"
 enum STATE_OP{
 	GET_F5,
 	GET_8A_8B,
@@ -9,7 +9,7 @@ enum STATE_OP{
 };
 struct rt_semaphore rx_sem[4];
 rt_mutex_t mutex = RT_NULL;
-rt_uint8_t uart_buf[1024];
+
 void uart_thread_entry(void* parameter);
 struct rt_thread uart_thread[4];
 //ALIGN(RT_ALIGN_SIZE)
@@ -30,6 +30,7 @@ int which_uart_dev(rt_device_t *dev,rt_device_t dev2)
 int uart_rw_socket(rt_device_t dev,unsigned char ch)
 {	
 	int i=1;
+	rt_uint8_t uart_buf[100];
 	uart_buf[0]=ch;
 	while((rt_device_read(dev, 0, &(uart_buf[i]), 1) == 1))
 		i++;

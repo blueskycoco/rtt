@@ -1,3 +1,5 @@
+#include "con_socket.h"
+#include "ring_buffer.h"
 #define BUF_SZ 4096
 struct rt_semaphore socket_rx_sem[4],interface_rx_sem[4];
 struct rt_thread ring_buf_thread[8];
@@ -13,12 +15,12 @@ int ring_buffer_init()
 	RT_ASSERT(g_ringbuf != RT_NULL);
 	for(i=0;i<BUF_SZ*4;i=i+BUF_SZ)
 	{
-		g_ringbuf->socket_buf_send[i] = (rt_uint8_t*) (g_ringbuf + 1 + BUF_SZ);
+		g_ringbuf->socket_buf_send[i] = (rt_uint8_t*) (g_ringbuf + 1 + i);
 		rt_memset(g_ringbuf->socket_buf_send[i], 0, BUF_SZ);
 	}
 	for(i=BUF_SZ*4;i<BUF_SZ*8;i=i+BUF_SZ)
 	{
-		g_ringbuf->socket_buf_recv[i] = (rt_uint8_t*) (g_ringbuf + 1 + BUF_SZ);
+		g_ringbuf->socket_buf_recv[i] = (rt_uint8_t*) (g_ringbuf + 1 + i);
 		rt_memset(g_ringbuf->socket_buf_recv[i], 0, BUF_SZ);
 	}	
 	for(i=0;i<4;i++)
