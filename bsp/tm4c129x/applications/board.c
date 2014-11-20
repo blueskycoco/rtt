@@ -91,7 +91,7 @@ void rt_hw_board_init()
     //IntPrioritySet(FAULT_PENDSV, (1 << 5) - 1);
     
     /*init uart device*/		
-    rt_hw_uart_init();
+    rt_hw_uart_init(1);
     //redirect RTT stdio to CONSOLE device
     rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
     //

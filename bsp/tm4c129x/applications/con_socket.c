@@ -85,11 +85,13 @@ static err_t socket_tcp_accept(void *arg, struct tcp_pcb *pcb, err_t err)
 	tcp_recv(pcb, socket_tcp_recv);
 	//tcp_poll(pcb, netio_poll, 4); /* every 2 seconds */
 	rt_kprintf("incoming connection got\r\n");
+	cnn_out(0,1);
 	return ERR_OK;
 }
 err_t socket_tcp_connected(void *arg, struct tcp_pcb *pcb, err_t err)
 {
 	rt_kprintf("socket is connected to target\r\n");
+	cnn_out(0,1);
     return ERR_OK;
 }
 

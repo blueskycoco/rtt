@@ -300,10 +300,21 @@ void UART4_IRQHandler(void)
 }
 #endif
 
-int rt_hw_uart_init(void)
+int rt_hw_uart_init(int use_uart)
 {
 	hw_uart_t* uart;
 	struct serial_configure config;
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK);
+	MAP_SysCtlDelay(1);
+	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_0);//ind0
+	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_1);//ind1
+	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_2);//ind2
+	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_3);//ind3
+	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_4);//CNN0
+	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_5);//CNN1
+	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTK_BASE, GPIO_PIN_2);//CNN2
+	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTK_BASE, GPIO_PIN_3);//CNN3
 
 	config.baud_rate = BAUD_RATE_115200;
 	config.bit_order = BIT_ORDER_LSB;
@@ -336,6 +347,7 @@ int rt_hw_uart_init(void)
 	/* register UART0 device */
 	rt_hw_serial_register(&serial0, "uart0",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
 #endif
+	if(use_uart){
 #ifdef RT_USING_UART1
 	uart = &uart1;
 	serial1.ops	 = &hw_uart_ops;
@@ -364,11 +376,11 @@ int rt_hw_uart_init(void)
 	serial2.ops	 = &hw_uart_ops;
 	serial2.config = config;
 
-	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-	MAP_GPIOPinConfigure(GPIO_PA6_U2RX);
-	MAP_GPIOPinConfigure(GPIO_PA7_U2TX);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+	MAP_GPIOPinConfigure(GPIO_PD4_U2RX);
+	MAP_GPIOPinConfigure(GPIO_PD5_U2TX);
 
-	MAP_GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_6 | GPIO_PIN_7);
+	MAP_GPIOPinTypeUART(GPIO_PORTD_BASE, GPIO_PIN_4 | GPIO_PIN_5);
 	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART2);
 
 	/* preemption = 1, sub-priority = 1 */
@@ -428,7 +440,7 @@ int rt_hw_uart_init(void)
 	/* register UART0 device */
 	rt_hw_serial_register(&serial4, "uart4",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
 #endif
-
+	}
 	return 0;
 }
 //INIT_BOARD_EXPORT(rt_hw_uart_init);
