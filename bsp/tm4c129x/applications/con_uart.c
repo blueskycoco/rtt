@@ -32,22 +32,7 @@ int uart_rw_socket(rt_device_t dev)
 	rt_uint8_t uart_buf[100],*ptr;
 	ptr=uart_buf;
 	len=rt_device_read(dev, 0, ptr, 100);
-	if(which_uart_dev(uart_dev,dev)==0)
-	{
-		interface_write_buf(0,uart_buf,len);
-	}
-	else if(which_uart_dev(uart_dev,dev)==1)
-	{
-		interface_write_buf(1,uart_buf,len);
-	}
-	else if(which_uart_dev(uart_dev,dev)==2)
-	{
-		interface_write_buf(2,uart_buf,len);
-	}
-	else if(which_uart_dev(uart_dev,dev)==3)
-	{
-		interface_write_buf(3,uart_buf,len);
-	}
+	interface_write_buf(which_uart_dev(uart_dev,dev),uart_buf,len);	
 	return 0;
 }
 
@@ -308,9 +293,50 @@ void cnn_out(int index,int level)
 			break
 		}
 }
+int baud(int type)
+{
+	switch(type)
+		{
+		case 0:
+			return 115200;
+		case 1:
+			return 460800;
+		case 2:
+			return 921600;
+		case 3:
+			return 1000000;
+		case 4:
+			return 2000000;
+		case 5:
+			return 4000000;
+		case 6:
+			return 6000000;
+		}
+	return 0;
+}
+void print_config()
+{
+	DBG("local_ip %d.%d.%d.%d\r\n",g_conf.local_ip[0],g_conf.local_ip[1],g_conf.local_ip[2],g_conf.local_ip[3]);
+	DBG("local_port %d\r\n",g_conf.local_port[0]<<8|g_conf.local_port[1]);
+	DBG("sub_msk %d.%d.%d.%d\r\n",g_conf.sub_msk[0],g_conf.sub_msk[1],g_conf.sub_msk[2],g_conf.sub_msk[3]);
+	DBG("gw %d.%d.%d.%d\r\n",g_conf.gw[0],g_conf.gw[1],g_conf.gw[2],g_conf.gw[3]);
+	DBG("mac %x:%x:%x:%x:%x:%x\r\n",g_conf.mac[0],g_conf.mac[1],g_conf.mac[2],g_conf.mac[3],g_conf.mac[4],g_conf.mac[5]);
+	DBG("remote_ip0 %d.%d.%d.%d\r\n",g_conf.remote_ip0[0],g_conf.remote_ip0[1],g_conf.remote_ip0[2],g_conf.remote_ip0[3]);
+	DBG("remote_ip1 %d.%d.%d.%d\r\n",g_conf.remote_ip1[0],g_conf.remote_ip1[1],g_conf.remote_ip1[2],g_conf.remote_ip1[3]);
+	DBG("remote_ip2 %d.%d.%d.%d\r\n",g_conf.remote_ip2[0],g_conf.remote_ip2[1],g_conf.remote_ip2[2],g_conf.remote_ip2[3]);
+	DBG("remote_ip3 %d.%d.%d.%d\r\n",g_conf.remote_ip3[0],g_conf.remote_ip3[1],g_conf.remote_ip3[2],g_conf.remote_ip3[3]);
+	DBG("remote_port0 %d\r\n",g_conf.remote_port0[0]<<8|g_conf.remote_port0[1]);
+	DBG("remote_port1 %d\r\n",g_conf.remote_port1[0]<<8|g_conf.remote_port1[1]);
+	DBG("remote_port2 %d\r\n",g_conf.remote_port2[0]<<8|g_conf.remote_port2[1]);
+	DBG("remote_port3 %d\r\n",g_conf.remote_port3[0]<<8|g_conf.remote_port3[1]);
+	DBG("protol socket0 %s socket1 %s socket2 %s socket3 %s\r\n",(g_conf.protol[0]==0)?"TCP":"UDP",(g_conf.protol[1]==0)?"TCP":"UDP",(g_conf.protol[2]==0)?"TCP":"UDP",(g_conf.protol[3]==0)?"TCP":"UDP");
+	DBG("mode socket0 %s socket1 %s socket2 %s socket3 %s\r\n",(g_conf.server_mode[0]==0)?"SERVER":"CLIENT",(g_conf.server_mode[1]==0)?"SERVER":"CLIENT",(g_conf.server_mode[2]==0)?"SERVER":"CLIENT",(g_conf.server_mode[3]==0)?"SERVER":"CLIENT");
+	DBG("baud %d.%d.%d.%d\r\n",baud(g_conf.uart_baud[0]),baud(g_conf.uart_baud[1]),baud(g_conf.uart_baud[2]),baud(g_conf.uart_baud[3]));
+}
 void uart_thread_entry(void* parameter)
 {
 	rt_device_t dev=(rt_device_t)parameter;
+	static int flag=0;
 	int i=which_uart_dev(uart_dev,dev);
 	DBG("uart_thread_entry %d Enter\r\n",i);
 	while (1)
@@ -318,11 +344,18 @@ void uart_thread_entry(void* parameter)
 		/* wait receive */
 		if (rt_sem_take(&(rx_sem[i]), RT_WAITING_FOREVER) != RT_EOK) continue;
 		if(ind_low(dev))
-		{	/*socket data transfer,use dma*/
+		{	
+			if(flag==1)
+			{
+				print_config();
+				flag=0;
+			}
+			/*socket data transfer,use dma*/
 			uart_rw_socket(dev);
 		}
 		else
 		{
+			flag=1;
 			/*config data parser*/
 			uart_rw_config(dev);
 		}
