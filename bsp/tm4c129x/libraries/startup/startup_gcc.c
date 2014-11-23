@@ -46,6 +46,10 @@ extern int main(void);
 extern void SysTick_Handler(void);
 extern void PendSV_Handler(void);
 extern void UART0_IRQHandler(void);
+extern void UART1_IRQHandler(void);
+extern void UART2_IRQHandler(void);
+extern void UART3_IRQHandler(void);
+extern void UART4_IRQHandler(void);
 extern void HardFault_Handler(void);
 //*****************************************************************************
 //

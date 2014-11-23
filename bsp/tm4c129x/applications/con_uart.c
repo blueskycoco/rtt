@@ -1,5 +1,37 @@
 #include "con_socket.h"
 #include "con_uart.h"
+#include <rthw.h>
+#include <rtthread.h>
+#include <rtdevice.h>
+
+#include "board.h"
+
+#include "inc/hw_memmap.h"
+#include "driverlib/sysctl.h"
+#include "driverlib/gpio.h"
+#include "driverlib/uart.h"
+#include "driverlib/pin_map.h"
+#include "driverlib/interrupt.h"
+#include "driverlib/rom_map.h"
+unsigned char config_local_ip[11]		={0xF5,0x8A,0x00,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip*/
+unsigned char config_local_port[9]		={0xF5,0x8A,0x01,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port*/
+unsigned char config_sub_msk[11]		={0xF5,0x8A,0x02,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*sub msk*/
+unsigned char config_gw[11]				={0xF5,0x8A,0x03,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*gw*/
+unsigned char config_mac[13]			={0xF5,0x8A,0x04,0xff,0xff,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*mac*/
+unsigned char config_socket0_ip[11]		={0xF5,0x8A,0x05,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 0 ip*/
+unsigned char config_socket1_ip[11]		={0xF5,0x8A,0x06,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 1 ip*/
+unsigned char config_socket2_ip[11]		={0xF5,0x8A,0x07,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 2 ip*/
+unsigned char config_socket3_ip[11]		={0xF5,0x8A,0x08,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 3 ip*/
+unsigned char config_socket0_port[9]	={0xF5,0x8A,0x09,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 0 port*/
+unsigned char config_socket1_port[9]	={0xF5,0x8A,0x0a,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 1 port*/
+unsigned char config_socket2_port[9]	={0xF5,0x8A,0x0b,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 2 port*/
+unsigned char config_socket3_port[9]	={0xF5,0x8A,0x0c,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 3 port*/
+unsigned char config_net_protol[11]		={0xF5,0x8A,0x0d,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*protol*/
+unsigned char config_socket_mode[11]	={0xF5,0x8A,0x0e,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*server mode*/
+unsigned char config_uart_baud[11]		={0xF5,0x8A,0x0f,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
+unsigned char get_config[62];//			={0xF5,0x8B,0x0f,0xff,0xff,0xff,0xff,0x27,0xfa,0x00,0x00};/*get config 0xf5,0x8b,********0x27,0xfa,0x00,0x00*/
+rt_device_t uart_dev[4] = {RT_NULL,RT_NULL,RT_NULL,RT_NULL};
+
 enum STATE_OP{
 	GET_F5,
 	GET_8A_8B,
@@ -42,7 +74,7 @@ void uart_rw_config(rt_device_t dev)
 	rt_uint8_t i=0;
 	char ch;	
 	static rt_uint8_t len=0,param;
-	static STATE_OP state=GET_F5;
+	static enum STATE_OP state=GET_F5;
 	while((rt_device_read(dev, 0, &ch, 1) == 1))
 	{
 		switch(state)
@@ -66,7 +98,7 @@ void uart_rw_config(rt_device_t dev)
 				else if(ch==0x8b)
 				{
 					/*send config data out*/
-					unsigned char i,*ptr=(unsigned char *)g_conf;
+					unsigned char i,*ptr=(unsigned char *)&g_conf;
 					int result=0;
 					DBG("Dev %d , 0X8B Got\r\n",which_uart_dev(uart_dev,dev));
 					get_config[0]=0xf5;
@@ -251,13 +283,13 @@ void uart_rw_config(rt_device_t dev)
 rt_bool_t ind_low(rt_device_t dev)
 {
 	if(which_uart_dev(uart_dev,dev)==0)
-		return ((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_0)&(0x1<<GPIO_PIN_0))==0)?RT_TRUE:RT_FALSE);
+		return (((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_0)&(0x1<<GPIO_PIN_0))==0)?RT_TRUE:RT_FALSE);
 	else if(which_uart_dev(uart_dev,dev)==1)
-		return ((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_1)&(0x1<<GPIO_PIN_1))==0)?RT_TRUE:RT_FALSE);
+		return (((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_1)&(0x1<<GPIO_PIN_1))==0)?RT_TRUE:RT_FALSE);
 	else if(which_uart_dev(uart_dev,dev)==2)
-		return ((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_2)&(0x1<<GPIO_PIN_2))==0)?RT_TRUE:RT_FALSE);
+		return (((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_2)&(0x1<<GPIO_PIN_2))==0)?RT_TRUE:RT_FALSE);
 	else if(which_uart_dev(uart_dev,dev)==3)
-		return ((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_3)&(0x1<<GPIO_PIN_3))==0)?RT_TRUE:RT_FALSE);
+		return (((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_3)&(0x1<<GPIO_PIN_3))==0)?RT_TRUE:RT_FALSE);
 
 	return RT_FALSE;
 }
@@ -290,7 +322,7 @@ void cnn_out(int index,int level)
 				MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_3,0);	
 			break;
 		default:
-			break
+			break;
 		}
 }
 int baud(int type)

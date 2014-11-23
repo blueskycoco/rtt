@@ -1,4 +1,5 @@
 #include "lwip/opt.h"
+#include "lwip/tcp.h"
 #include "con_socket.h"
 struct rt_thread socket_thread[4];
 static char socket_thread_stack[4][2048];
@@ -13,7 +14,6 @@ static err_t socket_tcp_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err
   rt_uint8_t *ptr=buf;
   int len=0;
   struct pbuf *q = p;
-  u16_t len;
 
   if (p != NULL) {
     tcp_recved(pcb, p->tot_len);
@@ -134,7 +134,7 @@ void socket_thread_entry(void* parameter)
 			port=(g_conf.remote_port3[0]<<8)|g_conf.remote_port3[1];
 		}
 		tcp_recv(pcb[dev], socket_tcp_recv);
-		tcp_connect(pcb[dev],ipaddr,port,socket_tcp_connected);
+		tcp_connect(pcb[dev],&ipaddr,port,socket_tcp_connected);
 	}
 }
 /*init socket 1,2,3,4*/
