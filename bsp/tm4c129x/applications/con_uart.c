@@ -51,7 +51,7 @@ int which_uart_dev(rt_device_t *dev,rt_device_t dev2)
 	for(i=0;i<4;i++)
 		if(dev[i]==dev2)
 		{
-			rt_kprintf("Uart %d 's setting\r\n",i);
+			//rt_kprintf("Uart %d 's setting\r\n",i);
 			break;
 		}
 	return i;
