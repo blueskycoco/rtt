@@ -43,7 +43,7 @@ struct rt_semaphore rx_sem[4];
 //rt_mutex_t mutex = RT_NULL;
 void uart_thread_entry(void* parameter);
 struct rt_thread uart_thread[4];
-//ALLIGN(RT_ALIGN_SIZE)
+ALLIGN(RT_ALIGN_SIZE)
 static char uart_thread_stack[4][2048];
 int which_uart_dev(rt_device_t *dev,rt_device_t dev2)
 {
@@ -397,6 +397,7 @@ void uart_thread_entry(void* parameter)
 static rt_err_t uart_rx_ind(rt_device_t dev, rt_size_t size)
 {
     /* release semaphore to let finsh thread rx data */
+	rt_kprintf("uart_rx_ind %d\r\n",size);
     rt_sem_release(&(rx_sem[which_uart_dev(uart_dev,dev)]));
     return RT_EOK;
 }
@@ -407,10 +408,13 @@ int uart_init()
 	rt_err_t result;
 	rt_uint8_t uart[10];
 	int i;
-	for(i=0;i<4;i++)
+	for(i=0;i<1;i++)
 	{
-		rt_sprintf(uart,"uart%d",i);
-		rt_kprintf("==>%s",uart);
+		
+		rt_sprintf(uart,"uart%d_rx",i);
+		rt_sem_init(&(rx_sem[i]), uart, 0, 0);
+		rt_sprintf(uart,"uart%d",i+1);
+		rt_kprintf("==>%s\r\n",uart);
 		uart_dev[i] = rt_device_find(uart);
 		if (uart_dev[i] == RT_NULL)
 		{
@@ -419,12 +423,11 @@ int uart_init()
 		}
 		if (rt_device_open(uart_dev[i], RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)
 		{
+			rt_sprintf(uart,"uart_rx%d",i);
+			result = rt_thread_init(&(uart_thread[i]),uart,uart_thread_entry, (void *)(uart_dev[i]),&(uart_thread_stack[i][0]), sizeof(uart_thread_stack[i]),20, 10);
+			rt_thread_startup(&uart_thread[i]);
 			rt_device_set_rx_indicate(uart_dev[i], uart_rx_ind);
 		}
-		rt_sprintf(uart,"uart%d_rx",i);
-		rt_sem_init(&(rx_sem[i]), uart, 0, 0);
-		rt_sprintf(uart,"uart_rx%d",i);
-		result = rt_thread_init(&(uart_thread[i]),uart,uart_thread_entry, (void *)(uart_dev[i]),&(uart_thread_stack[i][0]), sizeof(uart_thread_stack[i]),20, 10);
 	}	
 /*	mutex = rt_mutex_create("mutex", RT_IPC_FLAG_FIFO);
 	if (mutex == RT_NULL)
@@ -432,13 +435,7 @@ int uart_init()
 		rt_kprintf("create mutex failed\n");
 		return 0;
 	}
-*/	if (result == RT_EOK)
-	{
-		rt_thread_startup(&uart_thread[0]);
-		rt_thread_startup(&uart_thread[1]);
-		rt_thread_startup(&uart_thread[2]);
-		rt_thread_startup(&uart_thread[3]);
-	}
+*/
 	return 1;
 
 }

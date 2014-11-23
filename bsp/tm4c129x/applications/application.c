@@ -50,7 +50,8 @@ void rt_init_thread_entry(void *parameter)
 #endif
 	netio_init();
 	//app_uart_init();
-
+	uart_init();
+	ring_buffer_init();
 }
 
 int rt_application_init(void)
