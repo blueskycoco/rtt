@@ -46,7 +46,7 @@ extern int main(void);
 extern void SysTick_Handler(void);
 extern void PendSV_Handler(void);
 extern void UART0_IRQHandler(void);
-extern void UART1_IRQHandler(void);
+extern void UART6_IRQHandler(void);
 extern void UART2_IRQHandler(void);
 extern void UART3_IRQHandler(void);
 extern void UART4_IRQHandler(void);
@@ -90,7 +90,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // GPIO Port D
     IntDefaultHandler,                      // GPIO Port E
     UART0_IRQHandler,                      // UART0 Rx and Tx
-    UART1_IRQHandler,                      // UART1 Rx and Tx
+    IntDefaultHandler,                      // UART1 Rx and Tx
     IntDefaultHandler,                      // SSI0 Rx and Tx
     IntDefaultHandler,                      // I2C0 Master and Slave
     IntDefaultHandler,                      // PWM Fault
@@ -143,7 +143,7 @@ void (* const g_pfnVectors[])(void) =
     UART3_IRQHandler,                      // UART3 Rx and Tx
     UART4_IRQHandler,                      // UART4 Rx and Tx
     IntDefaultHandler,                      // UART5 Rx and Tx
-    IntDefaultHandler,                      // UART6 Rx and Tx
+    UART6_IRQHandler,                      // UART6 Rx and Tx
     IntDefaultHandler,                      // UART7 Rx and Tx
     IntDefaultHandler,                      // I2C2 Master and Slave
     IntDefaultHandler,                      // I2C3 Master and Slave

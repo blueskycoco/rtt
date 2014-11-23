@@ -299,6 +299,36 @@ void UART4_IRQHandler(void)
     rt_interrupt_leave();
 }
 #endif
+#if defined(RT_USING_UART6)
+/* UART0 device driver structure */
+struct rt_serial_device serial6;
+hw_uart_t uart6 =
+{
+    UART6_BASE,
+};
+
+void UART6_IRQHandler(void)
+{
+	uint32_t intsrc;
+    hw_uart_t *uart = &uart6;
+
+    /* enter interrupt */
+    rt_interrupt_enter();
+
+    /* Determine the interrupt source */
+    intsrc = MAP_UARTIntStatus(uart->hw_base, true);
+
+    // Receive Data Available or Character time-out
+    if (intsrc & (UART_INT_RX | UART_INT_RT))
+    {
+        MAP_UARTIntClear(uart->hw_base, intsrc);
+        rt_hw_serial_isr(&serial6, RT_SERIAL_EVENT_RX_IND);
+    }
+		
+    /* leave interrupt */
+    rt_interrupt_leave();
+}
+#endif
 
 int rt_hw_uart_init(int use_uart)
 {
@@ -306,9 +336,11 @@ int rt_hw_uart_init(int use_uart)
 	struct serial_configure config;
 	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
 	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 	MAP_SysCtlDelay(1);
-	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_0);//ind0
-	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_1);//ind1
+	MAP_GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, GPIO_PIN_2);//ind0
+	MAP_GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_4);//ind1
 	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_2);//ind2
 	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_3);//ind3
 	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_4);//CNN0
@@ -440,6 +472,30 @@ int rt_hw_uart_init(int use_uart)
 	/* register UART0 device */
 	rt_hw_serial_register(&serial4, "uart4",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
 #endif
+#ifdef RT_USING_UART6
+		uart = &uart6;
+		serial6.ops  = &hw_uart_ops;
+		serial6.config = config;
+	
+		MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOP);
+		MAP_GPIOPinConfigure(GPIO_PP0_U6RX);
+		MAP_GPIOPinConfigure(GPIO_PP1_U6TX);
+	
+		MAP_GPIOPinTypeUART(GPIO_PORTP_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+		MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART6);
+	
+		/* preemption = 1, sub-priority = 1 */
+		//IntPrioritySet(INT_UART0, ((0x01 << 5) | 0x01));
+	
+		/* Enable Interrupt for UART channel */
+		UARTIntRegister(uart->hw_base, UART6_IRQHandler);
+		MAP_IntEnable(INT_UART6);
+		MAP_UARTEnable(uart->hw_base);
+	
+		/* register UART0 device */
+		rt_hw_serial_register(&serial6, "uart6",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
+#endif
+
 	}
 	return 0;
 }

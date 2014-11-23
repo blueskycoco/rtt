@@ -43,7 +43,7 @@ struct rt_semaphore rx_sem[4];
 //rt_mutex_t mutex = RT_NULL;
 void uart_thread_entry(void* parameter);
 struct rt_thread uart_thread[4];
-ALLIGN(RT_ALIGN_SIZE)
+//ALLIGN(RT_ALIGN_SIZE)
 static char uart_thread_stack[4][2048];
 int which_uart_dev(rt_device_t *dev,rt_device_t dev2)
 {
@@ -75,8 +75,10 @@ void uart_rw_config(rt_device_t dev)
 	char ch;	
 	static rt_uint8_t len=0,param;
 	static enum STATE_OP state=GET_F5;
+	rt_kprintf("enter uart_rw_config\r\n");
 	while((rt_device_read(dev, 0, &ch, 1) == 1))
 	{
+		rt_kprintf("%x ==>\r\n",ch);
 		switch(state)
 		{
 			case GET_F5:
@@ -116,8 +118,9 @@ void uart_rw_config(rt_device_t dev)
 					rt_device_write(dev,0,get_config,sizeof(get_config));
 					for(i=0;i<sizeof(get_config);i++)
 						DBG("==>%x \r\n",get_config[i]);
+					state=GET_F5;
 				}
-				state=GET_F5;
+				
 			}
 			break;
 			case GET_DATA:
@@ -275,7 +278,10 @@ void uart_rw_config(rt_device_t dev)
 			}
 			break;
 			default:
+			{
+				DBG("Invaild %x\r\n",ch);
 				state=GET_F5;
+			}
 			break;
 		}
 	}
@@ -283,13 +289,13 @@ void uart_rw_config(rt_device_t dev)
 rt_bool_t ind_low(rt_device_t dev)
 {
 	if(which_uart_dev(uart_dev,dev)==0)
-		return (((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_0)&(0x1<<GPIO_PIN_0))==0)?RT_TRUE:RT_FALSE);
+		return (((MAP_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_4)&(0x1<<GPIO_PIN_4))==0)?RT_TRUE:RT_FALSE);
 	else if(which_uart_dev(uart_dev,dev)==1)
 		return (((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_1)&(0x1<<GPIO_PIN_1))==0)?RT_TRUE:RT_FALSE);
 	else if(which_uart_dev(uart_dev,dev)==2)
 		return (((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_2)&(0x1<<GPIO_PIN_2))==0)?RT_TRUE:RT_FALSE);
 	else if(which_uart_dev(uart_dev,dev)==3)
-		return (((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_3)&(0x1<<GPIO_PIN_3))==0)?RT_TRUE:RT_FALSE);
+		return (((MAP_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_4)&(0x1<<GPIO_PIN_4))==0)?RT_TRUE:RT_FALSE);
 
 	return RT_FALSE;
 }
@@ -299,9 +305,9 @@ void cnn_out(int index,int level)
 		{
 		case 0:
 			if(level)
-				MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_4,GPIO_PIN_4);
+				MAP_GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_2,GPIO_PIN_2);
 			else
-				MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_4,0);	
+				MAP_GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_2,0);	
 			break;
 		case 1:
 			if(level)
@@ -317,9 +323,9 @@ void cnn_out(int index,int level)
 			break;
 		case 3:
 			if(level)
-				MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_3,GPIO_PIN_3);
+				MAP_GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_2,GPIO_PIN_2);
 			else
-				MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_3,0);	
+				MAP_GPIOPinWrite(GPIO_PORTD_BASE,GPIO_PIN_2,0);	
 			break;
 		default:
 			break;
@@ -375,6 +381,7 @@ void uart_thread_entry(void* parameter)
 	{
 		/* wait receive */
 		if (rt_sem_take(&(rx_sem[i]), RT_WAITING_FOREVER) != RT_EOK) continue;
+		rt_kprintf("to read in_low %d\r\n",ind_low(dev));
 		if(ind_low(dev))
 		{	
 			if(flag==1)
@@ -383,7 +390,8 @@ void uart_thread_entry(void* parameter)
 				flag=0;
 			}
 			/*socket data transfer,use dma*/
-			uart_rw_socket(dev);
+			//uart_rw_socket(dev);
+			uart_rw_config(dev);
 		}
 		else
 		{
@@ -408,12 +416,15 @@ int uart_init()
 	rt_err_t result;
 	rt_uint8_t uart[10];
 	int i;
-	for(i=0;i<1;i++)
+	for(i=0;i<4;i++)
 	{
 		
 		rt_sprintf(uart,"uart%d_rx",i);
 		rt_sem_init(&(rx_sem[i]), uart, 0, 0);
-		rt_sprintf(uart,"uart%d",i+1);
+		if(i+2==5)
+			rt_sprintf(uart,"uart6");
+		else
+			rt_sprintf(uart,"uart%d",i+2);
 		rt_kprintf("==>%s\r\n",uart);
 		uart_dev[i] = rt_device_find(uart);
 		if (uart_dev[i] == RT_NULL)
