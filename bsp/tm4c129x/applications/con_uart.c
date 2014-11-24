@@ -78,7 +78,7 @@ void uart_rw_config(rt_device_t dev)
 	rt_kprintf("enter uart_rw_config\r\n");
 	while((rt_device_read(dev, 0, &ch, 1) == 1))
 	{
-		rt_kprintf("%x ==>\r\n",ch);
+		rt_kprintf("%x ==> %d\r\n",ch,state);
 		switch(state)
 		{
 			case GET_F5:
