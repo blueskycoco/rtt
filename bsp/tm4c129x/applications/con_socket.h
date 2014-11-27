@@ -31,6 +31,7 @@ pringbuf g_ringbuf;
 config g_conf;
 
 void socket_send(int index,rt_uint8_t *data,int len);
+#define debug 0
 #if debug
 #define DBG rt_kprintf
 #else

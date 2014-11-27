@@ -95,7 +95,7 @@ static rt_err_t hw_configure(struct rt_serial_device *serial, struct serial_conf
 	// Initialize UART0 peripheral with given to corresponding parameter
     MAP_UARTConfigSetExpClk(uart->hw_base, SysClock, cfg->baud_rate, config);
 	MAP_UARTFIFOEnable(uart->hw_base);
-
+rt_kprintf("set uart baud %d\r\n",cfg->baud_rate);
 	// Enable the UART.
 	MAP_UARTEnable(uart->hw_base);
     return RT_EOK;
@@ -339,12 +339,12 @@ int rt_hw_uart_init(int use_uart)
 	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
 	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
 	MAP_SysCtlDelay(1);
-	MAP_GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_4);//ind0
+	MAP_GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, GPIO_PIN_2);//ind0
 	MAP_GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_4);//ind1
 	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_2);//ind2
 	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_3);//ind3
-	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, GPIO_PIN_2);//CNN0
-	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_5);//CNN1
+	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_4);//CNN0
+	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_2);//CNN1
 	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTK_BASE, GPIO_PIN_2);//CNN2
 	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTK_BASE, GPIO_PIN_3);//CNN3
 
