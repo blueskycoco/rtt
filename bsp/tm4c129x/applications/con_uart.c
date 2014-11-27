@@ -140,7 +140,7 @@ void uart_rw_config(rt_device_t dev)
 				else if(ch==4)
 					len=6;
 				else if(ch==13||ch==14||ch==15)
-					len=4;
+					len=1;
 				
 				}
 				else
@@ -212,24 +212,12 @@ void uart_rw_config(rt_device_t dev)
 							case 5://socket 0 ip		
 							{
 								if(which_uart_dev(uart_dev,dev)==0)
-									ptr=g_conf.remote_ip0;											
-							}
-							break;
-							case 6://socket 1 ip											
-							{
-								if(which_uart_dev(uart_dev,dev)==1)
+									ptr=g_conf.remote_ip0;	
+								else if(which_uart_dev(uart_dev,dev)==1)
 									ptr=g_conf.remote_ip1;
-							}
-							break;
-							case 7://socket 2 ip											
-							{
-								if(which_uart_dev(uart_dev,dev)==2)
+								else if(which_uart_dev(uart_dev,dev)==2)
 									ptr=g_conf.remote_ip2;
-							}
-							break;
-							case 8://socket 3 ip													
-							{
-								if(which_uart_dev(uart_dev,dev)==3)
+								else
 								{
 									ptr=g_conf.remote_ip3;
 									DBG("to write socket3 ip\r\n");
@@ -240,55 +228,42 @@ void uart_rw_config(rt_device_t dev)
 							{
 								if(which_uart_dev(uart_dev,dev)==0)
 									ptr=g_conf.remote_port0;
-							}
-							break;
-							case 10://socket 1 port 										
-							{
-								if(which_uart_dev(uart_dev,dev)==1)
+								else if(which_uart_dev(uart_dev,dev)==1)
 									ptr=g_conf.remote_port1;
-							}
-							break;
-							case 11://socket 2 port 										
-							{
-								if(which_uart_dev(uart_dev,dev)==2)
+								else if(which_uart_dev(uart_dev,dev)==2)
 									ptr=g_conf.remote_port2;
-							}
-							break;
-							case 12://socket 3 port 											
-							{
-								if(which_uart_dev(uart_dev,dev)==3)
+								else
 								{
 									ptr=g_conf.remote_port3;
 									DBG("to write socket3 port\r\n");
 								}
 							}
 							break;									
-							case 13://protol
-								ptr=g_conf.protol+which_uart_dev(uart_dev,dev);								
-								*ptr=buf[which_uart_dev(uart_dev,dev)];
+							case 13://protol	
+								i=which_uart_dev(uart_dev,dev);
+								g_conf.protol[i]=buf[0];
 							break;
 							case 14://server or client mode
-								ptr=g_conf.server_mode+which_uart_dev(uart_dev,dev);
-								*ptr=buf[which_uart_dev(uart_dev,dev)];
+								i=which_uart_dev(uart_dev,dev);
+								g_conf.server_mode[i]=buf[0];
 							break;									
 							case 15://socket uart baud
 							{
 
 								struct serial_configure config;
 								ptr=g_conf.uart_baud+which_uart_dev(uart_dev,dev);
-								len=1;
 								i=which_uart_dev(uart_dev,dev);
-								if(buf[i]==0)
+								if(buf[0]==0)
 									config.baud_rate = 115200;
-								else if(buf[i]==1)
+								else if(buf[0]==1)
 									config.baud_rate = 406800;
-								else if(buf[i]==2)
+								else if(buf[0]==2)
 									config.baud_rate = 921600;
-								else if(buf[i]==3)
+								else if(buf[0]==3)
 									config.baud_rate = 2000000;
-								else if(buf[i]==4)
+								else if(buf[0]==4)
 									config.baud_rate = 4000000;
-								else if(buf[i]==5)
+								else if(buf[0]==5)
 									config.baud_rate = 6000000;
 
 								config.bit_order = BIT_ORDER_LSB;
@@ -297,9 +272,9 @@ void uart_rw_config(rt_device_t dev)
 								config.stop_bits = STOP_BITS_1;
 								config.invert	 = NRZ_NORMAL;
 								config.bufsz	 = RT_SERIAL_RB_BUFSZ;
-								rt_device_control(dev,RT_DEVICE_CTRL_CONFIG,&config);
-								*ptr=buf[which_uart_dev(uart_dev,dev)];
-								rt_kprintf("set uart %d buf[%d] %d to %x baud\r\n",i,i,buf[i],config.baud_rate);
+								rt_device_control(dev,RT_DEVICE_CTRL_CONFIG,&config);								
+								g_conf.uart_baud[i]=buf[0];
+								rt_kprintf("set uart %d buf[%d] %d to %x baud\r\n",i,i,buf[0],config.baud_rate);
 							}
 							break;
 							default:
