@@ -95,7 +95,7 @@ static rt_err_t hw_configure(struct rt_serial_device *serial, struct serial_conf
 	// Initialize UART0 peripheral with given to corresponding parameter
     MAP_UARTConfigSetExpClk(uart->hw_base, SysClock, cfg->baud_rate, config);
 	MAP_UARTFIFOEnable(uart->hw_base);
-rt_kprintf("set uart baud %d\r\n",cfg->baud_rate);
+//rt_kprintf("set uart baud %d\r\n",cfg->baud_rate);
 	// Enable the UART.
 	MAP_UARTEnable(uart->hw_base);
     return RT_EOK;
@@ -135,9 +135,9 @@ static int hw_putc(struct rt_serial_device *serial, char c)
 static int hw_getc(struct rt_serial_device *serial)
 {
 	hw_uart_t* uart;
-    RT_ASSERT(serial != RT_NULL);
-    uart = mUartGetHwPtr(serial);
-	
+	RT_ASSERT(serial != RT_NULL);
+	uart = mUartGetHwPtr(serial);
+
 	return MAP_UARTCharGetNonBlocking(uart->hw_base);
 }
 
@@ -338,12 +338,28 @@ int rt_hw_uart_init(int use_uart)
 	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK);
 	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
 	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+
 	MAP_SysCtlDelay(1);
+
+	MAP_GPIOIntDisable(GPIO_PORTD_BASE, GPIO_PIN_2);
 	MAP_GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, GPIO_PIN_2);//ind0
-	MAP_GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_4);//ind1
+	MAP_GPIOIntTypeSet(GPIO_PORTD_BASE, GPIO_PIN_2, GPIO_BOTH_EDGES);
+	MAP_IntEnable(INT_GPIOD);
+	MAP_GPIOIntEnable(GPIO_PORTD_BASE, GPIO_PIN_2);
+	int ui32Status = MAP_GPIOIntStatus(GPIO_PORTD_BASE, true);
+	MAP_GPIOIntClear(GPIO_PORTD_BASE, ui32Status);
+/*
+	MAP_GPIOADCTriggerEnable(GPIO_PORTB_BASE, GPIO_PIN_4);
+	MAP_GPIOIntDisable(GPIO_PORTB_BASE, GPIO_PIN_4);
+	MAP_GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_4);//ind0
+	MAP_GPIOIntTypeSet(GPIO_PORTB_BASE, GPIO_PIN_4, GPIO_BOTH_EDGES);
+	MAP_IntEnable(INT_GPIOB);
+	MAP_GPIOIntEnable(GPIO_PORTB_BASE, GPIO_PIN_4);
+	ui32Status = MAP_GPIOIntStatus(GPIO_PORTB_BASE, true);
+	MAP_GPIOIntClear(GPIO_PORTB_BASE, ui32Status);
+*/	
 	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_2);//ind2
 	MAP_GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_3);//ind3
-	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_4);//CNN0
 	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_2);//CNN1
 	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTK_BASE, GPIO_PIN_2);//CNN2
 	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTK_BASE, GPIO_PIN_3);//CNN3
@@ -375,7 +391,6 @@ int rt_hw_uart_init(int use_uart)
 	UARTIntRegister(uart->hw_base, UART0_IRQHandler);
 	MAP_IntEnable(INT_UART0);
 	MAP_UARTEnable(uart->hw_base);
-
 	/* register UART0 device */
 	rt_hw_serial_register(&serial0, "uart0",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
 #endif
@@ -399,6 +414,7 @@ int rt_hw_uart_init(int use_uart)
 	UARTIntRegister(uart->hw_base, UART1_IRQHandler);
 	MAP_IntEnable(INT_UART1);
 	MAP_UARTEnable(uart->hw_base);
+	MAP_IntPrioritySet(INT_UART1, 0);
 
 	/* register UART0 device */
 	rt_hw_serial_register(&serial1, "uart1",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
@@ -422,6 +438,7 @@ int rt_hw_uart_init(int use_uart)
 	UARTIntRegister(uart->hw_base, UART2_IRQHandler);
 	MAP_IntEnable(INT_UART2);
 	MAP_UARTEnable(uart->hw_base);
+	MAP_IntPrioritySet(INT_UART2, 0);
 
 	/* register UART0 device */
 	rt_hw_serial_register(&serial2, "uart2",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
@@ -445,6 +462,7 @@ int rt_hw_uart_init(int use_uart)
 	UARTIntRegister(uart->hw_base, UART3_IRQHandler);
 	MAP_IntEnable(INT_UART3);
 	MAP_UARTEnable(uart->hw_base);
+	MAP_IntPrioritySet(INT_UART3, 0);
 
 	/* register UART0 device */
 	rt_hw_serial_register(&serial3, "uart3",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
@@ -468,6 +486,7 @@ int rt_hw_uart_init(int use_uart)
 	UARTIntRegister(uart->hw_base, UART4_IRQHandler);
 	MAP_IntEnable(INT_UART4);
 	MAP_UARTEnable(uart->hw_base);
+	MAP_IntPrioritySet(INT_UART4, 0);
 
 	/* register UART0 device */
 	rt_hw_serial_register(&serial4, "uart4",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
@@ -491,7 +510,7 @@ int rt_hw_uart_init(int use_uart)
 		UARTIntRegister(uart->hw_base, UART6_IRQHandler);
 		MAP_IntEnable(INT_UART6);
 		MAP_UARTEnable(uart->hw_base);
-	
+		MAP_IntPrioritySet(INT_UART6, 0);
 		/* register UART0 device */
 		rt_hw_serial_register(&serial6, "uart6",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
 #endif

@@ -29,9 +29,9 @@ unsigned char config_socket3_port[9]	={0xF5,0x8A,0x0c,0xff,0xff,0x26,0xfa,0x00,0
 unsigned char config_net_protol[11]		={0xF5,0x8A,0x0d,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*protol*/
 unsigned char config_socket_mode[11]	={0xF5,0x8A,0x0e,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*server mode*/
 unsigned char config_uart_baud[11]		={0xF5,0x8A,0x0f,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
-unsigned char get_config[62];//			={0xF5,0x8B,0x0f,0xff,0xff,0xff,0xff,0x27,0xfa,0x00,0x00};/*get config 0xf5,0x8b,********0x27,0xfa,0x00,0x00*/
+unsigned char get_config[35];//			={0xF5,0x8B,0x0f,0xff,0xff,0xff,0xff,0x27,0xfa,0x00,0x00};/*get config 0xf5,0x8b,********0x27,0xfa,0x00,0x00*/
 rt_device_t uart_dev[4] = {RT_NULL,RT_NULL,RT_NULL,RT_NULL};
-
+bool ind[4]={RT_FALSE,RT_FALSE,RT_FALSE,RT_FALSE};
 enum STATE_OP{
 	GET_F5,
 	GET_8A_8B,
@@ -57,7 +57,25 @@ int which_uart_dev(rt_device_t *dev,rt_device_t dev2)
 		}
 	return i;
 }
-
+void IntGpioD()
+{
+	if(MAP_GPIOIntStatus(GPIO_PORTD_BASE, true)&GPIO_PIN_2)
+	{
+		MAP_GPIOIntClear(GPIO_PORTD_BASE, GPIO_PIN_2);
+		ind[3]=((MAP_GPIOPinRead(GPIO_PORTD_BASE, GPIO_PIN_2)&(GPIO_PIN_2))==0)?RT_TRUE:RT_FALSE;
+		rt_kprintf("gpiod 2 int %d\r\n",ind[3]);
+	}	
+}/*
+void IntGpioB()
+{
+	if(MAP_GPIOIntStatus(GPIO_PORTB_BASE, true)&GPIO_PIN_4)
+	{
+		MAP_GPIOIntClear(GPIO_PORTB_BASE, GPIO_PIN_4);
+		ind[3]=((MAP_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_4)&(GPIO_PIN_4))==0)?RT_TRUE:RT_FALSE;
+		rt_kprintf("gpiob 4 int %d\r\n",ind[3]);
+	}	
+}
+*/
 /*get config data to global config zone, or get socket data to buffer*/
 int uart_rw_socket(rt_device_t dev)
 {	
@@ -104,25 +122,62 @@ void uart_rw_config(rt_device_t dev)
 				else if(ch==0x8b)
 				{
 					/*send config data out*/
-					unsigned char i,*ptr=(unsigned char *)&g_conf;
+					unsigned char i,*ptr,*ptr1;
 					int result=0;
-					DBG("Dev %d , 0X8B Got\r\n",which_uart_dev(uart_dev,dev));
+					int devices=which_uart_dev(uart_dev,dev);
+					DBG("Dev %d , 0X8B Got\r\n",devices);
 					get_config[0]=0xf5;
 					get_config[1]=0x8C;
 					result=0xf5+0x8c+0x27+0xfa;
-					for(i=0;i<sizeof(g_conf);i++)
+					for(i=0;i<4;i++)
+						get_config[2+i]=g_conf.local_ip[i];
+					for(i=0;i<2;i++)
+						get_config[6+i]=g_conf.local_port[i];					
+					for(i=0;i<4;i++)
+						get_config[8+i]=g_conf.sub_msk[i];					
+					for(i=0;i<4;i++)
+						get_config[12+i]=g_conf.gw[i];
+					for(i=0;i<6;i++)
+						get_config[16+i]=g_conf.mac[i];
+					switch(devices)
 					{
-						get_config[2+i]=ptr[i];
-						result=result+get_config[2+i];
+						case 0:
+							ptr=g_conf.remote_ip0;
+							ptr1=g_conf.remote_port0;
+							break;
+						case 1:
+							ptr=g_conf.remote_ip1;
+							ptr1=g_conf.remote_port1;
+							break;
+						case 2:
+							ptr=g_conf.remote_ip2;
+							ptr1=g_conf.remote_port2;
+							break;
+						case 3:
+							ptr=g_conf.remote_ip3;
+							ptr1=g_conf.remote_port3;
+							break;
+													
 					}
-					get_config[2+i+1]=0x27;
-					get_config[2+i+2]=0xfa;
-					get_config[2+i+3]=(result&0xff00)>>8;
-					get_config[2+i+4]=result&0xff;
+					
+					for(i=0;i<4;i++)
+						get_config[22+i]=ptr[i];					
+					for(i=0;i<2;i++)
+						get_config[26+i]=ptr1[i];
+					get_config[28]=g_conf.protol[devices];
+					get_config[29]=g_conf.server_mode[devices];
+					get_config[30]=g_conf.uart_baud[devices];					
+					get_config[31]=0x27;
+					get_config[32]=0xfa;
+					for(i=2;i<31;i++)
+						result=result+get_config[i];
+					get_config[33]=(result&0xff00)>>8;
+					get_config[34]=result&0xff;
 					rt_device_write(dev,0,get_config,sizeof(get_config));
 					for(i=0;i<sizeof(get_config);i++)
 						DBG("==>%x \r\n",get_config[i]);
 					state=GET_F5;
+					print_config();
 				}
 				
 			}
@@ -274,7 +329,7 @@ void uart_rw_config(rt_device_t dev)
 								config.bufsz	 = RT_SERIAL_RB_BUFSZ;
 								rt_device_control(dev,RT_DEVICE_CTRL_CONFIG,&config);								
 								g_conf.uart_baud[i]=buf[0];
-								rt_kprintf("set uart %d buf[%d] %d to %x baud\r\n",i,i,buf[0],config.baud_rate);
+								//rt_kprintf("set uart %d buf[%d] %d to %x baud\r\n",i,i,buf[0],config.baud_rate);
 							}
 							break;
 							default:
@@ -305,7 +360,7 @@ void uart_rw_config(rt_device_t dev)
 		}
 	}
 }
-rt_bool_t ind_low(rt_device_t dev)
+/*rt_bool_t ind_low(rt_device_t dev)
 {
 	if(which_uart_dev(uart_dev,dev)==0)
 		return (((MAP_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_4)&(0x1<<GPIO_PIN_4))==0)?RT_TRUE:RT_FALSE);
@@ -321,6 +376,7 @@ rt_bool_t ind_low(rt_device_t dev)
 
 	return RT_FALSE;
 }
+*/
 void cnn_out(int index,int level)
 {
 	switch(index)
@@ -403,8 +459,8 @@ void uart_thread_entry(void* parameter)
 	{
 		/* wait receive */
 		if (rt_sem_take(&(rx_sem[i]), RT_WAITING_FOREVER) != RT_EOK) continue;
-		DBG("to read in_low %d\r\n",ind_low(dev));
-		if(ind_low(dev))
+		//DBG("to read in_low %d\r\n",ind_low(dev));
+		if(ind[i])
 		{	
 			if(flag==1)
 			{
@@ -427,7 +483,7 @@ void uart_thread_entry(void* parameter)
 static rt_err_t uart_rx_ind(rt_device_t dev, rt_size_t size)
 {
     /* release semaphore to let finsh thread rx data */
-	//DBG("uart_rx_ind %d\r\n",size);
+	DBG("uart_rx_ind %d\r\n",size);
     rt_sem_release(&(rx_sem[which_uart_dev(uart_dev,dev)]));
     return RT_EOK;
 }
