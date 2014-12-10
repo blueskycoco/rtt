@@ -1,0 +1,25 @@
+import rtconfig
+Import('RTT_ROOT')
+from building import *
+
+# get current directory
+cwd = GetCurrentDir()
+
+path = [cwd, cwd + '/lib/inc']
+src = Glob('lib/drivers/*.c')
+
+#add for startup script 
+if rtconfig.CROSS_TOOL == 'gcc':
+     src = src + ['startup/startup_MKE02Z2.s']
+     src = src + ['startup/startup.c']
+     
+     path += [cwd + 'startup']
+elif rtconfig.CROSS_TOOL == 'keil':
+     src = src + ['TOOLCHAIN_ARM_STD/startup_MK20D7.s']
+# elif rtconfig.CROSS_TOOL == 'iar':
+
+#CPPDEFINES = ['']
+group = DefineGroup('Device', src, depend = [''], CPPPATH = path)
+#CPPDEFINES = CPPDEFINES)
+
+Return('group')

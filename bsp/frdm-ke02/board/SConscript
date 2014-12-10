@@ -1,0 +1,12 @@
+Import('RTT_ROOT')
+Import('rtconfig')
+from building import *
+
+cwd     = os.path.join(str(Dir('#')), 'board')
+src	= Glob('*.c')
+src	+= Glob('*.s')
+CPPPATH = [cwd]
+SrcRemove(src, 'drv_uart.c')
+group = DefineGroup('Board', src, depend = [''], CPPPATH = CPPPATH)
+
+Return('group')

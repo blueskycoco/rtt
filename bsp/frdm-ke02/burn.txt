@@ -1,0 +1,8 @@
+r
+h
+speed 20
+exec device=MKE02Z64xxx2
+loadbin ke02.bin 0x00000000
+r
+g
+qc
