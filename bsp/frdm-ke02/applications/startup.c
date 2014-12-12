@@ -77,6 +77,7 @@ void rtthread_startup(void)
 
     /* init timer system */
     rt_system_timer_init();
+	rt_kprintf("heap begin %x ,end %x\r\n",KE02_SRAM_BEGIN,KE02_SRAM_END);
     rt_system_heap_init((void*)KE02_SRAM_BEGIN, (void*)KE02_SRAM_END);
 
     /* init scheduler system */
@@ -109,6 +110,7 @@ void rtthread_startup(void)
 
 int main(void)
 {
+		  
     /* disable interrupt first */
     rt_hw_interrupt_disable();
 

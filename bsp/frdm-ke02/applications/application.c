@@ -127,7 +127,7 @@ float f_var3;
 float f_var4;
 
 ALIGN(RT_ALIGN_SIZE)
-static char thread_led1_stack[1024];
+static char thread_led1_stack[512];
 struct rt_thread thread_led1;
 static void rt_thread_entry_led1(void* parameter)
 {
@@ -138,8 +138,25 @@ static void rt_thread_entry_led1(void* parameter)
     {
         rt_hw_led_on();
         
-        rt_thread_delay(RT_TICK_PER_SECOND/2);
+        rt_thread_delay(RT_TICK_PER_SECOND/20);
 	  rt_hw_led_off();
+	  rt_thread_delay(RT_TICK_PER_SECOND/20);
+
+    }
+}
+static char thread_led2_stack[512];
+struct rt_thread thread_led2;
+static void rt_thread_entry_led2(void* parameter)
+{
+    int n = 0;
+    rt_hw_led_init();
+
+    while (1)
+    {
+        rt_hw_led_on2();
+        
+        rt_thread_delay(RT_TICK_PER_SECOND/2);
+	  rt_hw_led_off2();
 	  rt_thread_delay(RT_TICK_PER_SECOND/2);
 
     }
@@ -148,15 +165,16 @@ static void rt_thread_entry_led1(void* parameter)
 int rt_application_init()
 {
     rt_thread_t init_thread;
+    
 
 #if (RT_THREAD_PRIORITY_MAX == 32)
     init_thread = rt_thread_create("init",
                                    rt_init_thread_entry, RT_NULL,
-                                   2048, 8, 20);
+                                   512, 8, 20);
 #else
     init_thread = rt_thread_create("init",
                                    rt_init_thread_entry, RT_NULL,
-                                   2048, 80, 20);
+                                   512, 80, 20);
 #endif
 
     if (init_thread != RT_NULL)
@@ -170,6 +188,13 @@ int rt_application_init()
                    &thread_led1_stack[0],
                    sizeof(thread_led1_stack),11,5);
     rt_thread_startup(&thread_led1);
+    rt_thread_init(&thread_led2,
+                   "led_demo2",
+                   rt_thread_entry_led2,
+                   RT_NULL,
+                   &thread_led2_stack[0],
+                   sizeof(thread_led2_stack),11,5);
+    rt_thread_startup(&thread_led2);
 
     return 0;
 }

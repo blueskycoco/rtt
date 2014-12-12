@@ -913,9 +913,9 @@ void FBILP_to_FBI(ICS_ConfigType *pConfig)
 
 void ICS_Trim(uint16_t u16TrimValue)
 {
-   ICS->C3 =  (uint8_t) u16TrimValue;
-   ICS->C4 = (ICS->C4 & ~(ICS_C4_SCFTRIM_MASK)) | ((u16TrimValue>>8) & 0x01);
-   while(!(ICS->S & ICS_S_LOCK_MASK));    
+	ICS->C3 =  (uint8_t) u16TrimValue;
+   	ICS->C4 = (ICS->C4 & ~(ICS_C4_SCFTRIM_MASK)) | ((u16TrimValue>>8) & 0x01);
+   	while(!(ICS->S & ICS_S_LOCK_MASK));    
 }
 
 

@@ -62,7 +62,7 @@
 //#define PRINT_SYS_LOG             /*!< this macro prints system log information */
 
 #if     !defined(BOOT_LOADER)
-    #define PRINT_SYS_LOG           /*!< this macro prints system log information */
+    //#define PRINT_SYS_LOG           /*!< this macro prints system log information */
 #endif
 
 /* define output bus clock */

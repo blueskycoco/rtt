@@ -41,4 +41,13 @@ void rt_hw_led_off()
 {
     	BLUE_Toggle();
 }
+void rt_hw_led_on2()
+{
+    	RED_Toggle();	
+}
+
+void rt_hw_led_off2()
+{
+    	RED_Toggle();
+}
 

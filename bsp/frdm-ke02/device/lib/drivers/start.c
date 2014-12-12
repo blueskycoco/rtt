@@ -118,7 +118,7 @@ void SystemInit( void )
 	/* Disable the watchdog timer but enable update */
     WDOG_DisableWDOGEnableUpdate();    
 #endif
-	
+	sysinit();
 }
 
 

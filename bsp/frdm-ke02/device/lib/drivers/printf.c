@@ -594,7 +594,7 @@ printk (PRINTK_INFO *info, const char *fmt, va_list ap)
     }
     return count;
 }
-
+#if 1
 /********************************************************************/
 int
 printf (const char *fmt, ...)
@@ -640,7 +640,7 @@ sprintf (char *s, const char *fmt, ...)
     }
     return rvalue;
 }
-
+#endif
 #if defined(__GNUC__)
 int  puts(const char * s)
 {

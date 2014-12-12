@@ -47,7 +47,7 @@ common_startup(void)
 //    extern char __DATA_ROM[];
 //    extern char __DATA_RAM[];
 //    extern char __DATA_END[];
-  
+  #if 0
     /* Declare a counter we'll use in all of the copy loops */
     uint32 n;
  
@@ -100,6 +100,6 @@ common_startup(void)
     n = code_relocate_end - code_relocate;
     while (n--)
       *code_relocate_ram++ = *code_relocate++;
-
+#endif
 }
 /********************************************************************/

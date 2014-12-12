@@ -4,10 +4,10 @@
 
 MEMORY
 {
-  VECTORS (rx)          : ORIGIN = 0x00000000, LENGTH = 0x00000400
+  VECTORS (rx)          : ORIGIN = 0x00000000, LENGTH = 0x00000200
   FLASH_PROTECTION (rx) : ORIGIN = 0x00000400, LENGTH = 0x00000010
   FLASH (rx)            : ORIGIN = 0x00000410, LENGTH = 0x00010000 - 0x00000410
-  RAM (rwx)             : ORIGIN = 0x1FFFFC00, LENGTH = 0x00001000
+  RAM (rwx)             : ORIGIN = 0x1FFFFc00, LENGTH = 0x00001000
 }
 
 /* Linker script to place sections and symbol values. Should be used together
@@ -45,7 +45,7 @@ SECTIONS
         __vector_table = .;
         KEEP(*(.vector_table))
         *(.text.Reset_Handler)
-        *(.text.System_Init)
+        *(.text.SystemInit)
          . = ALIGN(4);
     } > VECTORS
 
@@ -114,6 +114,26 @@ SECTIONS
         *(vtable)
         *(.data*)
 
+        . = ALIGN(4);
+        /* preinit data */
+        PROVIDE_HIDDEN (__preinit_array_start = .);
+        KEEP(*(.preinit_array))
+        PROVIDE_HIDDEN (__preinit_array_end = .);
+
+        . = ALIGN(4);
+        /* init data */
+        PROVIDE_HIDDEN (__init_array_start = .);
+        KEEP(*(SORT(.init_array.*)))
+        KEEP(*(.init_array))
+        PROVIDE_HIDDEN (__init_array_end = .);
+
+
+        . = ALIGN(4);
+        /* finit data */
+        PROVIDE_HIDDEN (__fini_array_start = .);
+        KEEP(*(SORT(.fini_array.*)))
+        KEEP(*(.fini_array))
+        PROVIDE_HIDDEN (__fini_array_end = .);
 
         . = ALIGN(4);
         /* All data end */

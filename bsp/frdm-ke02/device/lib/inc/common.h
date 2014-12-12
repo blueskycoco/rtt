@@ -47,7 +47,7 @@ typedef unsigned short  word;
  */
 
 #define DEBUG
-#define DEBUG_PRINT
+//#define DEBUG_PRINT
 
 /* 
  * Include the generic CPU header file 

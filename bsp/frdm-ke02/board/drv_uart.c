@@ -14,11 +14,11 @@
 
 
 #include "drv_uart.h"
+#include "uart.h"
+static struct rt_serial_device _ke02_serial0;  //abstracted serial for RTT
+static struct rt_serial_device _ke02_serial1;  //abstracted serial for RTT
 
-static struct rt_serial_device _k20_serial3;  //abstracted serial for RTT
-static struct rt_serial_device _k20_serial4;  //abstracted serial for RTT
-
-struct k20_serial_device
+struct ke02_serial_device
 {
     /* UART base address */
     UART_Type *baseAddress;
@@ -31,19 +31,22 @@ struct k20_serial_device
 };
 
 //hardware abstract device
-/*static struct k20_serial_device _k20_node_3 =
+static struct ke02_serial_device _ke02_node_0 =
 {
-    (UART_Type *)UART3_BASE,
-    UART3_RX_TX_IRQn,
-};*/
-static struct k20_serial_device _k20_node_4 =
+    (UART_Type *)UART0_BASE,
+    UART0_IRQn,
+};
+static struct ke02_serial_device _ke02_node_1 =
 {
-    (UART_Type *)UART4_BASE,
-    UART4_RX_TX_IRQn,
+    (UART_Type *)UART1_BASE,
+    UART1_IRQn,
 };
 
 static rt_err_t _configure(struct rt_serial_device *serial, struct serial_configure *cfg)
 {
+	UART_Type *uart_reg;
+	uart_reg = ((struct ke02_serial_device *)serial->parent.user_data)->baseAddress;
+
     switch ((unsigned int)uart_reg)
     {
     /*
@@ -51,22 +54,25 @@ static rt_err_t _configure(struct rt_serial_device *serial, struct serial_config
      * set clock and pin map for UARTx
      */
     case UART0_BASE:
-	UART_ConfigType sConfig;
+	{
+		UART_ConfigType sConfig;
 
 	sConfig.u32SysClkHz = BUS_CLK_HZ;
 	sConfig.u32Baudrate  = UART_PRINT_BITRATE;
 
-	UART_Init (UART3, &sConfig);
+	UART_Init (UART0, &sConfig);
         break;
+    	}
     case UART1_BASE:
-	UART_ConfigType sConfig;
+	{
+		UART_ConfigType sConfig;
 
     	sConfig.u32SysClkHz = BUS_CLK_HZ;
     	sConfig.u32Baudrate  = UART_PRINT_BITRATE;
     
-    	UART_Init (UART3, &sConfig);
+    	UART_Init (UART1, &sConfig);
 	break;
-
+    	}
     default:
         return -RT_ERROR;
     }
@@ -79,8 +85,8 @@ static rt_err_t _control(struct rt_serial_device *serial, int cmd, void *arg)
     UART_Type *uart_reg;
     int uart_irq_num = 0;
 
-    uart_reg = ((struct k20_serial_device *)serial->parent.user_data)->baseAddress;
-    uart_irq_num = ((struct k20_serial_device *)serial->parent.user_data)->irq_num;
+    uart_reg = ((struct ke02_serial_device *)serial->parent.user_data)->baseAddress;
+    uart_irq_num = ((struct ke02_serial_device *)serial->parent.user_data)->irq_num;
 	
 
     switch (cmd)
@@ -116,7 +122,7 @@ static rt_err_t _control(struct rt_serial_device *serial, int cmd, void *arg)
 static int _putc(struct rt_serial_device *serial, char c)
 {
     UART_Type *uart_reg;
-    uart_reg = ((struct k20_serial_device *)serial->parent.user_data)->baseAddress;
+    uart_reg = ((struct ke02_serial_device *)serial->parent.user_data)->baseAddress;
 
     while (!(uart_reg->S1 & UART_S1_TDRE_MASK));
     uart_reg->D = (c & 0xFF);
@@ -126,7 +132,7 @@ static int _putc(struct rt_serial_device *serial, char c)
 static int _getc(struct rt_serial_device *serial)
 {
     UART_Type *uart_reg;
-    uart_reg = ((struct k20_serial_device *)serial->parent.user_data)->baseAddress;
+    uart_reg = ((struct ke02_serial_device *)serial->parent.user_data)->baseAddress;
 
     if (uart_reg->S1 & UART_S1_RDRF_MASK)
         return (uart_reg->D);
@@ -134,7 +140,7 @@ static int _getc(struct rt_serial_device *serial)
         return -1;
 }
 
-static const struct rt_uart_ops _k20_ops =
+static const struct rt_uart_ops _ke02_ops =
 {
     _configure,
     _control,
@@ -143,17 +149,17 @@ static const struct rt_uart_ops _k20_ops =
 };
 
 
-void UART3_RX_TX_IRQHandler(void)
+void UART0_IRQHandler(void)
 {
     rt_interrupt_enter();
-    rt_hw_serial_isr((struct rt_serial_device*)&_k20_serial3, RT_SERIAL_EVENT_RX_IND);
+    rt_hw_serial_isr((struct rt_serial_device*)&_ke02_serial0, RT_SERIAL_EVENT_RX_IND);
     rt_interrupt_leave();
 }
 
-void UART4_RX_TX_IRQHandler(void)
+void UART1_IRQHandler(void)
 {
     rt_interrupt_enter();
-    rt_hw_serial_isr((struct rt_serial_device*)&_k20_serial4, RT_SERIAL_EVENT_RX_IND);
+    rt_hw_serial_isr((struct rt_serial_device*)&_ke02_serial1, RT_SERIAL_EVENT_RX_IND);
     rt_interrupt_leave();
 }
 
@@ -170,18 +176,18 @@ void rt_hw_uart_init(void)
     config.invert    = NRZ_NORMAL;
 	config.bufsz	 = RT_SERIAL_RB_BUFSZ;
 
-    _k20_serial3.ops    = &_k20_ops;
-    _k20_serial3.config = config;
-    _k20_serial4.ops    = &_k20_ops;
-    _k20_serial4.config = config;
+    _ke02_serial0.ops    = &_ke02_ops;
+    _ke02_serial0.config = config;
+    _ke02_serial1.ops    = &_ke02_ops;
+    _ke02_serial1.config = config;
 	//uart3 conflict with sdhc pin*/
-    /*rt_hw_serial_register(&_k20_serial3, "uart3",
+    rt_hw_serial_register(&_ke02_serial0, "uart0",
                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
-                          (void*)&_k20_node_3);*/
+                          (void*)&_ke02_node_0);
     
-    rt_hw_serial_register(&_k20_serial4, "uart4",
+    rt_hw_serial_register(&_ke02_serial1, "uart1",
                           RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_STREAM,
-                          (void*)&_k20_node_4);
+                          (void*)&_ke02_node_1);
 }
 
 void rt_hw_console_output(const char *str)
@@ -189,8 +195,14 @@ void rt_hw_console_output(const char *str)
     while(*str != '\0')
     {
         if (*str == '\n')
-            _putc(&_k20_serial4,'\r');
-        _putc(&_k20_serial4,*str);
+            _putc(&_ke02_serial1,'\r');
+        _putc(&_ke02_serial1,*str);
         str++;
     }
 }
+void
+out_char (char ch)
+{
+	_putc(&_ke02_serial1, ch);
+}
+

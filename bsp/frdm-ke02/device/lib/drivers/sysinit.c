@@ -72,6 +72,8 @@ void sysinit (void)
     /* if not trimmed, do trim first */
     ICS_Trim(ICS_TRIM_VALUE);
 #endif  
+    BLUE_Init();
+	BLUE_Clear();
     /* 
      * Enable SWD pin, RESET pin 
      */
@@ -137,7 +139,7 @@ void sysinit (void)
     ICS_Init(&sICSConfig);   /* initialize ICS */
 
     /* initialize UART for printing */
-    UART_InitPrint();                        
+  //  UART_InitPrint();                        
 
 #if	defined(PRINT_SYS_LOG)
     print_sys_log();

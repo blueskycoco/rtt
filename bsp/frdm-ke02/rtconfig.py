@@ -40,7 +40,7 @@ if PLATFORM == 'gcc':
     OBJCPY = PREFIX + 'objcopy'
 
     DEVICE = ' -mcpu=cortex-m0 -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections'
-    CFLAGS = DEVICE + ' -g -Wall -D__ASSEMBLY__ -DFRDM_KE02 -DCPU_KE02 -DCMSIS'
+    CFLAGS = DEVICE + ' -g -Wall -D__ASSEMBLY__ -DKEIL -DFRDM_KE02 -DCPU_KE02 -DCMSIS'
     AFLAGS = ' -c' + DEVICE + ' -x assembler-with-cpp -Wa,-mimplicit-it=thumb '
     LFLAGS = DEVICE + ' -lm -lgcc -lc' + '  -nostartfiles -Wl,--gc-sections,-Map=rtthread-ke02.map,-cref,-u,Reset_Handler -T ke02.ld'
 
