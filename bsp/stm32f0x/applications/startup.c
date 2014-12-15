@@ -82,10 +82,9 @@ void rtthread_startup(void)
 #ifdef RT_USING_HEAP
     rt_system_heap_init((void*)STM32_SRAM_BEGIN, (void*)STM32_SRAM_END);
 #endif
-
 	rt_hw_led_init();
-	rt_hw_led2_off();
-	//while(1);
+	rt_hw_led_on();
+
 	/* init scheduler system */
 	rt_system_scheduler_init();
 
