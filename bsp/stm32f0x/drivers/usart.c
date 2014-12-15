@@ -46,12 +46,7 @@ int uart_config()
 {
 	USART_InitTypeDef USART_InitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure;
-	rbuffer=rt_malloc(sizeof(struct serial_ringbuffer));
-	rt_memset(rbuffer->buffer, 0, sizeof(rbuffer->buffer));
-	rbuffer->put_index = 0;
-	rbuffer->get_index = 0;
-
-	/* Enable GPIO clock */
+	
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 	/* Enable USART clock */
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
