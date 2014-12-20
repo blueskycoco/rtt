@@ -2,7 +2,7 @@ exec device=MKE02Z64xxx2
 r
 h
 speed 1500
-loadbin ke02.bin,0x00000000
+loadbin rtthread.bin,0x00000000
 r
 g
 qc

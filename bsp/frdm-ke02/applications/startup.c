@@ -36,8 +36,8 @@ extern int Image$$RW_IRAM1$$ZI$$Limit;
 #pragma section="HEAP"
 #define KE02_SRAM_BEGIN    (__segment_end("HEAP"))
 #else
-extern int __bss_end;
-#define KE02_SRAM_BEGIN    (&__bss_end)
+extern int __bss_end__;
+#define KE02_SRAM_BEGIN    (&__bss_end__)
 #endif
 
 /*******************************************************************************

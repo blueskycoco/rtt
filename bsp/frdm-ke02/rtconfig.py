@@ -64,9 +64,9 @@ elif PLATFORM == 'armcc':
     TARGET_EXT = 'axf'
 
     DEVICE = ' --device DARMSTM'
-    CFLAGS = DEVICE + ' --apcs=interwork'
+    CFLAGS = DEVICE + ' --apcs=interwork  -D__ASSEMBLY__ -DKEIL -DFRDM_KE02 -DCPU_KE02 -DCMSIS'
     AFLAGS = DEVICE
-    LFLAGS = DEVICE + ' --info sizes --info totals --info unused --info veneers --list rtthread-k20d.map --scatter MK20DX256VLL.sct'
+    LFLAGS = DEVICE + ' --info sizes --info totals --info unused --info veneers --list rtthread-k20d.map --scatter ke02.sct'
 
     CFLAGS += ' -I' + EXEC_PATH + '/ARM/RV31/INC'
     LFLAGS += ' --libpath ' + EXEC_PATH + '/ARM/RV31/LIB'

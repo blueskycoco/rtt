@@ -4,10 +4,10 @@
 
 MEMORY
 {
-  VECTORS (rx)          : ORIGIN = 0x00000000, LENGTH = 0x00000200
+  VECTORS (rx)          : ORIGIN = 0x00000000, LENGTH = 0x000000C0
   FLASH_PROTECTION (rx) : ORIGIN = 0x00000400, LENGTH = 0x00000010
   FLASH (rx)            : ORIGIN = 0x00000410, LENGTH = 0x00010000 - 0x00000410
-  RAM (rwx)             : ORIGIN = 0x1FFFFc00, LENGTH = 0x00001000
+  RAM (rwx)             : ORIGIN = 0x1FFFFC00, LENGTH = 0x00001000
 }
 
 /* Linker script to place sections and symbol values. Should be used together
@@ -77,19 +77,7 @@ SECTIONS
         *(.dtors)
 
         *(.rodata*)
-/* section information for finsh shell */
-        . = ALIGN(4);
-        __fsymtab_start = .;
-        KEEP(*(FSymTab))
-        __fsymtab_end = .;
-        . = ALIGN(4);
-        __vsymtab_start = .;
-        KEEP(*(VSymTab))
-        __vsymtab_end = .;
-        . = ALIGN(4);
 
-        . = ALIGN(4);
-        _etext = .;
 
         KEEP(*(.eh_frame*))
     } > FLASH
@@ -140,7 +128,7 @@ SECTIONS
         __data_end__ = .;
 
     } > RAM
-    __bss_start = .;
+    
     .bss :
     {
         __bss_start__ = .;
@@ -148,7 +136,7 @@ SECTIONS
         *(COMMON)
         __bss_end__ = .;
     } > RAM
-    __bss_end = .;
+    
     .heap :
     {
         __end__ = .;
