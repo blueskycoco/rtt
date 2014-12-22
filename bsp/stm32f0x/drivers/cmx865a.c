@@ -31,12 +31,16 @@ void init_irq()
 	EXTI_InitTypeDef EXTI_InitStructure;
 
 
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA|RCC_AHBPeriph_GPIOF, ENABLE);
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1|GPIO_Pin_10;
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	//GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1;
-	//GPIO_Init(GPIOF, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1;
+	GPIO_Init(GPIOF, &GPIO_InitStructure);
+	GPIO_ResetBits(GPIOF, GPIO_Pin_1);
 
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
 	SYSCFG_EXTILineConfig(EXTI_PortSourceGPIOA, EXTI_PinSource1);
@@ -59,7 +63,7 @@ void init_spi()
 	init_irq();
 	
 	/* Enable SCK, MOSI, MISO and NSS GPIO clocks */
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA|RCC_AHBPeriph_GPIOF, ENABLE);
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
 
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 
@@ -76,10 +80,9 @@ void init_spi()
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	/* SPI MISO pin configuration */
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
-	GPIO_Init(GPIOF, &GPIO_InitStructure);
 
 	/* SPI NSS pin configuration */
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
@@ -168,6 +171,7 @@ void button_isr(void)
 	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x5,2);
 	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x3,2);
 	write_cmx865a(Transmit_Mode_addr, Transmit_DTMF|0x1,2);*/
+	
 }
 void cmx865a_isr(void)
 {
@@ -297,6 +301,7 @@ void cmx865a_isr(void)
 			{
 				phone_state|=CID_Received;
 				CID_state=Waite;
+				GPIO_SetBits(GPIOF, GPIO_Pin_1);
 				rt_kprintf("finish receive phone num\r\n");
 			}
 			break;
