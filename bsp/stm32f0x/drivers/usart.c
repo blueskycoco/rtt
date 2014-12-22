@@ -324,5 +324,5 @@ void wifi_wakeup()
 	wifi_send("a",1);
 
 }
-INIT_DEVICE_EXPORT(uart_config);
+//INIT_DEVICE_EXPORT(uart_config);
 

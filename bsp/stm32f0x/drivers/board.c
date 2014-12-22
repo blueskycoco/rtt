@@ -143,7 +143,7 @@ void rt_hw_board_init()
 
 	/* Initial usart deriver, and set console device */
 #ifdef RT_USING_CONSOLE
-	rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
+	//rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif
 	/* Print RCC freq info */
 #ifdef PRINT_RCC_FREQ_INFO
@@ -169,7 +169,7 @@ void rt_hw_console_output(const char* string)
 		string++;
 	}
 #else
-//wifi_send(string,rt_strlen(string));
+wifi_send(string,rt_strlen(string));
 #endif
 	//rt_hw_led1_off();
 }

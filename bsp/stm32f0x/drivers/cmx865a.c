@@ -64,6 +64,9 @@ void init_spi()
 	
 	/* Enable SCK, MOSI, MISO and NSS GPIO clocks */
 	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
+	//GPIO_PinAFConfig(GPIOA, GPIO_PinSource5, GPIO_AF_0);//sck	
+	//GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_0);//miso	
+	//GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_0);//mosi
 
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
 
@@ -93,7 +96,7 @@ void init_spi()
 void ms_delay()
 {
 	volatile int i,j;
-	for(i=0;i<10;i++)
+	for(i=0;i<100;i++)
 		j=0;
 }
 rt_uint8_t write_spi(rt_uint8_t data)
