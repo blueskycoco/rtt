@@ -176,7 +176,7 @@ void cmx865a_isr(void)
 	static unsigned char  k=0; 
 	static unsigned char  fsk_long=0; 
 	read_cmx865a(Status_addr,&i,2);
-	
+	rt_kprintf("status %x\r\n",i);
 	if(DTMF_MODE)
 	{
 		if(i&0x0020)//??DTMF
@@ -344,6 +344,7 @@ void cmx865a_init(void)
 	write_cmx865a(G_Control_Command_addr, NORMAL,2);
 
 	read_cmx865a(Status_addr,&data,2);
+	rt_kprintf("cmx865a_init %x\r\n",data);
 	if(data&0x00ff)
 	{
 		rt_kprintf("init cmx865a failed");

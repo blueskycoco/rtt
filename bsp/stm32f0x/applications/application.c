@@ -41,8 +41,6 @@ static void rt_init_thread_entry(void* parameter)
 #ifdef  RT_USING_FINSH
   finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif  /* RT_USING_FINSH */
-	cmx865a_init();
-
 	while(1)
 	{
 		rt_hw_led_off();
