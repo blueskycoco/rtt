@@ -96,8 +96,9 @@ void init_spi()
 void ms_delay()
 {
 	volatile int i,j;
-	for(i=0;i<100;i++)
+	for(i=0;i<120;i++)
 		j=0;
+		
 }
 rt_uint8_t write_spi(rt_uint8_t data)
 {
