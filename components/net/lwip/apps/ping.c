@@ -59,8 +59,8 @@ static void ping_prepare_echo( struct icmp_echo_hdr *iecho, u16_t len)
     {
         ((char*)iecho)[sizeof(struct icmp_echo_hdr) + i] = (char)i;
     }
-
-    iecho->chksum = inet_chksum(iecho, len);
+	/*remove chksum ,tm4c129x can hw set chksum*/
+    //iecho->chksum = inet_chksum(iecho, len);
 }
 
 /* Ping using the socket ip */
