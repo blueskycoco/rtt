@@ -97,9 +97,7 @@ err_t socket_tcp_connected(void *arg, struct tcp_pcb *pcb, err_t err)
 
 void socket_thread_entry(void* parameter)
 {
-	int dev=(int)parameter;
-	
-	
+	int dev=(int)parameter;	
 	int i=0;
 	pcb[dev] = tcp_new();
 	if(g_conf.server_mode[dev]==1)
