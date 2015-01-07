@@ -52,7 +52,7 @@ void rt_init_thread_entry(void *parameter)
 	//app_uart_init();
 	uart_init();
 	//ring_buffer_init();
-	ping_test("192.168.1.6",10,32);
+	ping_test("192.168.1.6",3,32);
 }
 
 int rt_application_init(void)
