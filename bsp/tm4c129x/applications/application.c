@@ -49,11 +49,12 @@ void rt_init_thread_entry(void *parameter)
 #ifdef RT_USING_FINSH
     finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif
+	set_if6("e0","fe80::1");
 	netio_init();
 	//app_uart_init();
 	uart_init();
 	//ring_buffer_init();
-	ping_test("192.168.1.6",3,32);
+	ping_test("192.168.1.6",5,32);
 }
 
 int rt_application_init(void)

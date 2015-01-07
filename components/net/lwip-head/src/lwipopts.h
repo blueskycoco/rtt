@@ -11,7 +11,7 @@
 
 #ifdef RT_LWIP_IPV6
 #define LWIP_IPV6                   1
-#define LWIP_IPV6_DHCP6	       	    1
+//#define LWIP_IPV6_DHCP6	       	    1
 #define LWIP_ICMP6                  1
 #define LWIP_IPV6_NUM_ADDRESSES     3
 
