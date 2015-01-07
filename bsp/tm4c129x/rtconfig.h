@@ -190,7 +190,7 @@
 // <bool name="RT_LWIP_SNMP" description="Enable SNMP protocol" default="false" />
 // #define RT_LWIP_SNMP
 // <bool name="RT_LWIP_DHCP" description="Enable DHCP client to get IP address" default="false" />
-// #define RT_LWIP_DHCP
+#define RT_LWIP_DHCP
 // <integer name="RT_LWIP_TCP_SEG_NUM" description="the number of simultaneously queued TCP" default="4" />
 #define RT_LWIP_TCP_SEG_NUM 144
 // <integer name="RT_LWIP_TCPTHREAD_PRIORITY" description="the thread priority of TCP thread" default="128" />
@@ -222,6 +222,7 @@
 #define RT_LWIP_MSKADDR3 0
 // </section>
 #define RT_LWIP_IPV6 1
+#define RT_LWIP_IPV6_AUTOCONFIG 1
 #define RT_USING_LWIP_HEAD 1
 #define RT_USING_NETUTILS 1
 #define LWIP_CHECKSUM_ON_COPY 0

@@ -11,7 +11,7 @@
 
 #ifdef RT_LWIP_IPV6
 #define LWIP_IPV6                   1
-//#define LWIP_IPV6_DHCP6	       	    1
+#define LWIP_IPV6_DHCP6	       	    1
 #define LWIP_ICMP6                  1
 #define LWIP_IPV6_NUM_ADDRESSES     3
 
@@ -358,7 +358,7 @@
 
 /* MEMP_NUM_SYS_TIMEOUT: the number of simulateously active timeouts. */
 //#define MEMP_NUM_SYS_TIMEOUT       (LWIP_TCP + IP_REASSEMBLY + LWIP_ARP + (2*LWIP_DHCP) + LWIP_AUTOIP + LWIP_IGMP + LWIP_DNS + PPP_SUPPORT)
-#define MEMP_NUM_SYS_TIMEOUT	    8
+#define MEMP_NUM_SYS_TIMEOUT	    10//8
 #ifdef LWIP_IGMP
 #include <stdlib.h>
 #define LWIP_RAND                  rand
