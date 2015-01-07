@@ -2,9 +2,10 @@
 
 #define UDP_ECHO_PORT   7
 
+struct netconn *conn;
+
 void udpecho_entry(void *parameter)
 {
-	struct netconn *conn;
 	struct netbuf *buf;
 	struct ip_addr *addr;
 	unsigned short port;
@@ -50,6 +51,8 @@ void udpecho(rt_uint32_t startup)
 		if (echo_tid != RT_NULL)
 			rt_thread_delete(echo_tid); /* delete thread */
 		echo_tid = RT_NULL;
+		if(conn)
+			netconn_delete(conn);
 	}
 }
 FINSH_FUNCTION_EXPORT(udpecho, startup or stop UDP echo server);
