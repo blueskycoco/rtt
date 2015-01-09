@@ -6,14 +6,15 @@
 #define SERVADDR "fe80::5867:8730:e9e6:d5c5%11"	// Do not use link-local address, lwip-head did not implement it.
 #define BUF_SIZE 1024
 static const char send_data[] = "This is TCP Client from RT-Thread.";
-
+long g_recv_len=0,g_sent_len=0;
 void tcpclient6(char *server_addr,int server_port)
 {
 	char* recv_data;
 	int sockfd, bytes_received;
 	struct sockaddr_in6 server_addr6;
 	int status = 0;
-	
+	g_recv_len=0;
+	g_sent_len=0;
 	recv_data = rt_malloc(BUF_SIZE);
 	if(recv_data == RT_NULL)
 	{
@@ -64,7 +65,9 @@ void tcpclient6(char *server_addr,int server_port)
 		}
 		else
 		{
-			rt_kprintf("\nReceived data = %s ", recv_data);
+			g_recv_len+=bytes_received;
+			g_sent_len+=strlen(send_data);
+			rt_kprintf("\nReceived length = %d ,Sent length = %d ", g_recv_len,g_sent_len);
 		}
 		send(sockfd, send_data, strlen(send_data), 0);
 	}

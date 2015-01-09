@@ -4,11 +4,12 @@ class MiniServer:
     h = ''
     p = ''
     m = ''
+    c = int(0)
+    d = int(0)
     def __init__(self, host, port, mode):
         self.h = host
         self.p = int(port)
         self.m = mode
-        
     def serverT4(self):
         tcpT4Server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         print "Server Socket Created......."
@@ -45,7 +46,9 @@ class MiniServer:
             while True:
 			clientSock.send('Congratulations........')
 			buf = clientSock.recv(1024)
-			print buf
+			self.c = self.c + len(buf)
+			self.d = self.d + len('Congratulations........')
+			print "Received length = ", self.c, ",Sent length = ", self.d
             #clientSock.close()
     def udpT6(self):
         udpT6Server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
