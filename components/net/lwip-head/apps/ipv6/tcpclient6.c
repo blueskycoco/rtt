@@ -2,12 +2,12 @@
 #include <lwip/netdb.h>
 #include <lwip/sockets.h>
 
-#define SERV_PORT 12345
-#define SERVADDR "4006:e024:680:c6e:223:8bff:fe59:de90"	// Do not use link-local address, lwip-head did not implement it.
+#define SERV_PORT 1234
+#define SERVADDR "fe80::5867:8730:e9e6:d5c5%11"	// Do not use link-local address, lwip-head did not implement it.
 #define BUF_SIZE 1024
 static const char send_data[] = "This is TCP Client from RT-Thread.";
 
-void tcpclient6(void)
+void tcpclient6(char *server_addr,int server_port)
 {
 	char* recv_data;
 	int sockfd, bytes_received;
@@ -30,8 +30,8 @@ void tcpclient6(void)
 	
 	memset(&server_addr6, 0, sizeof(server_addr6));
 	server_addr6.sin6_family = AF_INET6;
-	server_addr6.sin6_port = htons(SERV_PORT);
-	if(inet_pton(AF_INET6, SERVADDR, &server_addr6.sin6_addr.s6_addr) != 1)
+	server_addr6.sin6_port = htons(server_port);
+	if(inet_pton(AF_INET6, server_addr, &server_addr6.sin6_addr.s6_addr) != 1)
 	{
 		rt_kprintf("inet_pton() error\n");
 		rt_free(recv_data);

@@ -7,7 +7,7 @@
 #define BUF_SIZE 1024
 static const char send_data[] = "This is UDP Client from RT-Thread.";
 
-void udpclient6(void)
+void udpclient6(char *server_addr,int server_port)
 {
 	char *recv_data;
 	int sockfd;
@@ -30,8 +30,8 @@ void udpclient6(void)
 	
 	memset(&server_addr6, 0, sizeof(server_addr6));
 	server_addr6.sin6_family = AF_INET6;
-	server_addr6.sin6_port = htons(SERV_PORT);
-	if(inet_pton(AF_INET6, SERVADDR, &server_addr6.sin6_addr.s6_addr) != 1)
+	server_addr6.sin6_port = htons(server_port);
+	if(inet_pton(AF_INET6, server_addr, &server_addr6.sin6_addr.s6_addr) != 1)
 	{
 		rt_kprintf("inet_pton() error\n");
 		rt_free(recv_data);
