@@ -136,7 +136,7 @@ static int ping_recv(int s)
 	struct sockaddr_in from;
 	#endif
 	#if IPV6_PING
-	struct sockaddr_in6 *addr;
+	struct ip6_addr *addr;
 	#else
     struct _ip_addr *addr;
 	#endif
@@ -150,22 +150,31 @@ static int ping_recv(int s)
 		#endif
         {
         	#if IPV6_PING
-			addr = (struct sockaddr_in6 *)&(from.sin6_addr); 		
-			rt_kprintf("ping: recv %s\n", addr->sin6_addr.s6_addr);
+			addr = (struct ip6_addr *)&(from.sin6_addr.s6_addr); 				
 			#else
             addr = (struct _ip_addr *)&(from.sin_addr);			
             rt_kprintf("ping: recv %d.%d.%d.%d\n", addr->addr0, addr->addr1, addr->addr2, addr->addr3);
 			#endif
 			#if IPV6_PING
             iphdr = (struct ip6_hdr *)buf;
-            iecho = (struct icmp6_echo_hdr *)(buf+(IP6H_NEXTH(iphdr) * 4));
+            iecho = (struct icmp6_echo_hdr *)(buf+(IP6H_PLEN(iphdr)));
 			#else
             iphdr = (struct ip_hdr *)buf;
             iecho = (struct icmp_echo_hdr *)(buf+(IPH_HL(iphdr) * 4));
 			#endif
-			rt_kprintf("ping: recv ping_id %d,seqno %d\r\n",iecho->id,iecho->seqno);
             if ((iecho->id == PING_ID) && (iecho->seqno == htons(ping_seq_num)))
             {
+            	#if IPV6_PING
+            	rt_kprintf("ping: recv %4x:%4x:%4x:%4x:%4x:%4x:%4x:%4x\n",
+                    IP6_ADDR_BLOCK1(addr),
+                    IP6_ADDR_BLOCK2(addr),
+                    IP6_ADDR_BLOCK3(addr),
+                    IP6_ADDR_BLOCK4(addr),
+                    IP6_ADDR_BLOCK5(addr),
+                    IP6_ADDR_BLOCK6(addr),
+                    IP6_ADDR_BLOCK7(addr),
+                    IP6_ADDR_BLOCK8(addr));
+				#endif
                 return 0;
             }
             else
