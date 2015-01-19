@@ -54,9 +54,9 @@ void rt_init_thread_entry(void *parameter)
 	//app_uart_init();
 	uart_init();
 	//ring_buffer_init();
-	ping("192.168.1.7",5,32);
+	//ping_test("192.168.1.7",5,32);
 	
-	ping_test6("fe80::5867:8730:e9e6:d5c5%11",5,32);
+	//ping_test6("fe80::5867:8730:e9e6:d5c5%11",5,32);
 	//ping_test6("fe80::483:d903:e2ee:d05e%12",5,32);
 	//ping_test("192.168.1.6",5,32);
 }

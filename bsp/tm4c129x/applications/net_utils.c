@@ -316,4 +316,8 @@ rt_err_t ping_test(char* target, rt_uint32_t time, rt_size_t size)
 	
     return result;
 }
-
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+FINSH_FUNCTION_EXPORT(ping_test, ping ipv4 network host);
+FINSH_FUNCTION_EXPORT(ping_test6, ping ipv6 network host);
+#endif

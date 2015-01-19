@@ -6,6 +6,7 @@
 #define SERVADDR "4006:e024:680:c6e:223:8bff:fe59:de90"
 #define BUF_SIZE 1024
 static const char send_data[] = "This is UDP Client from RT-Thread.";
+long g_sent1_len=0;
 
 void udpclient6(char *server_addr,int server_port)
 {
@@ -37,14 +38,19 @@ void udpclient6(char *server_addr,int server_port)
 		rt_free(recv_data);
 		return ;
 	}
-	
-	if(sendto(sockfd, send_data, sizeof(recv_data), 0, (struct sockaddr *)&server_addr6, sizeof(server_addr6)) < 0)
+	while(1)
 	{
-		rt_kprintf("Sendto error\n");
-		rt_free(recv_data);
-		return ;
+		if(sendto(sockfd, send_data, sizeof(send_data), 0, (struct sockaddr *)&server_addr6, sizeof(server_addr6)) < 0)
+		{
+			rt_kprintf("Sendto error\n");
+			closesocket(sockfd);
+			rt_free(recv_data);
+			return ;
+		}
+		g_sent1_len+=sizeof(send_data);
+		rt_kprintf("\nSent length = %d ", g_sent1_len);
 	}
-	
+	/*
 	rt_kprintf("Waiting for a reply...\n");
 	
 	clientlen = sizeof(client_addr6);
@@ -54,7 +60,7 @@ void udpclient6(char *server_addr,int server_port)
 		rt_free(recv_data);
 		return ;
 	}
-	rt_kprintf("got '%s'\n", recv_data);
+	rt_kprintf("got '%s'\n", recv_data);*/
 	closesocket(sockfd);
 }
 #ifdef RT_USING_FINSH

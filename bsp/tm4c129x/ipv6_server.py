@@ -51,13 +51,15 @@ class MiniServer:
 			print "Received length = ", self.c, ",Sent length = ", self.d
             #clientSock.close()
     def udpT6(self):
-        udpT6Server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print "UDP TCP IPv6 Mode Start....."
+        udpT6Server = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+        print "UDP IPv6 Mode Start....."
         udpT6Server.bind((self.h, self.p))
         print "UDP Server Start"
         while True:
             udpT4Data, udpT6ServerInfo = udpT6Server.recvfrom(1024)
             print "Receive from ", udpT6ServerInfo, " and The Data send from The Client is :", udpT4Data
+            self.c = self.c + len(udpT4Data)
+            print "Received length = ", self.c
 
 if __name__ == "__main__":
     x = MiniServer(sys.argv[1], sys.argv[2], sys.argv[3])
