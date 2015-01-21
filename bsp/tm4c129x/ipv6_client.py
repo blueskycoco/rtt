@@ -5,6 +5,8 @@ class MiniClient:
     h = ''
     p = ''
     m = ''
+    c = int(0)
+    d = int(0)
     
     def __init__(self, host, port, mode):
         self.h = host
@@ -16,9 +18,12 @@ class MiniClient:
         tcpT4Client.connect((self.h, self.p))
         print "TCP IPv4 TCP mode connecting..."
         while True:
-            time.sleep(1)
+            #time.sleep(1)
             tcpT4Client.send('hello')
-            print "hello send to Server"
+            buf = tcpT4Client.recv(1024)
+	    self.c = self.c + len(buf)
+	    self.d = self.d + len('hello')
+	    print "Received length = ", self.c, ",Sent length = ", self.d, " ", buf
 
     def udpC4(self):
         udpT4Client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

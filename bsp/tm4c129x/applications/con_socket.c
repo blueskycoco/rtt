@@ -242,48 +242,16 @@ void socket_ip4_w(void *paramter)
 	rt_size_t data_size;
 	const void *last_data_ptr;
 	int status;
-	struct sockaddr_in client_addr;
 	rt_kprintf("socket_ip4_w==> %d , %s mode, %s , %s . Thread Enter\r\n",dev,is_right(g_conf.config[dev],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[dev],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[dev],CONFIG_TCP)?"TCP":"UDP");
 	while(1)
 	{
 
 		if(g_ip4[dev].connected==false)
 		{
-			if(is_right(g_conf.config[dev],CONFIG_SERVER))
-			{				
-				rt_kprintf("to accept %d\n",g_ip4[dev].sockfd);
-				rt_uint32_t  sin_size = sizeof(struct sockaddr_in);
-				g_ip4[dev].clientfd = accept(g_ip4[dev].sockfd, (struct sockaddr *)&client_addr, &sin_size);
-				rt_kprintf("I got a connection from (IP:%s, PORT:%d\n)", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-				g_ip4[dev].connected=true;
-			}
-			else
-			{
-				status = connect(g_ip4[dev].sockfd, (struct sockaddr *)&g_ip4[dev].server_addr, sizeof(g_ip4[dev].server_addr));
-				if(status < 0)
-				{
-					rt_kprintf("Thread ip4_w%d Connect error:%d\n", dev,status);
-					//rt_free(g_ip4[dev].recv_data);
-					//closesocket(g_ip4[dev].sockfd);
-					//return ;
-					rt_thread_delay(10);
-				}
-				else
-					g_ip4[dev].connected=true;
-			}			
-		}
-
-		if(g_ip4[dev].connected==false)
+			rt_thread_delay(10);
 			continue;
-		rt_data_queue_pop(&g_data_queue[dev*2], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
-		if(data_size!=0 && last_data_ptr)
-		{			
-			char *ptr=(char *)rt_malloc((data_size+1)*sizeof(char));
-			rt_memcpy(ptr,last_data_ptr,data_size);
-			ptr[data_size]='\0';
-			rt_kprintf("write =>%d\n%s",data_size,ptr);
-			rt_free(ptr);
 		}
+		rt_data_queue_pop(&g_data_queue[dev*2], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
 		if(is_right(g_conf.config[dev],CONFIG_TCP))
 		{
 			if(is_right(g_conf.config[dev],CONFIG_SERVER))
@@ -302,14 +270,11 @@ void socket_ip4_w(void *paramter)
 		if( status< 0)
 		{
 			rt_kprintf("Thread ip4_w%d Sendto error\n",dev);
-			/*closesocket(g_ip4[dev].sockfd);
 			if(is_right(g_conf.config[dev],CONFIG_SERVER)&&is_right(g_conf.config[dev],CONFIG_TCP))
 			{
 				closesocket(g_ip4[dev].clientfd);
 			}
-			rt_free(g_ip4[dev].recv_data);*/
 			g_ip4[dev].connected=false;
-			//return ;
 		}
 	}
 }
@@ -318,43 +283,58 @@ void socket_ip4_r(void *paramter)
 	int dev=(int)paramter;
 	struct sockaddr_in server_addr;	
 	int status;
+	struct sockaddr_in client_addr;
 	rt_kprintf("socket_ip4_r==> %d , %s mode, %s , %s . Thread Enter\r\n",dev,is_right(g_conf.config[dev],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[dev],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[dev],CONFIG_TCP)?"TCP":"UDP");
 	while(1)
 	{
-		socklen_t clientlen = sizeof(g_ip4[dev].server_addr);
-		if(is_right(g_conf.config[dev],CONFIG_TCP))
+		if(g_ip4[dev].connected==false)
 		{
-			if(g_ip4[dev].connected)
-			{
-				if(g_ip4[dev].clientfd!=0)
-				{
-					status=recv(g_ip4[dev].sockfd, g_ip4[dev].recv_data, BUF_SIZE, 0);
-					if(status>0)
-					{
-						rt_kprintf("Thread ip4_r %d got '%s'\n", status,g_ip4[dev].recv_data);
-						rt_data_queue_push(&g_data_queue[dev*2+1], g_ip4[dev].recv_data, status, RT_WAITING_FOREVER);
-					}
-					else
-					{
-						rt_kprintf("Thread ip4_r_%d recv error\n",dev);
-						//rt_free(g_ip4[dev].recv_data);
-						//closesocket(g_ip4[dev].clientfd);
-						//closesocket(g_ip4[dev].sockfd);
-						g_ip4[dev].connected=false;
-						//return ;
-					}
-				}
-				else
-				{
-					//rt_kprintf("Thread ip4_r_%d need wait connection in\n",dev);
-					rt_thread_delay(10);
-				}
+			if(is_right(g_conf.config[dev],CONFIG_SERVER))
+			{				
+				rt_kprintf("socket_ip4_r %d to accept %d\n",dev,g_ip4[dev].sockfd);
+				rt_uint32_t  sin_size = sizeof(struct sockaddr_in);
+				g_ip4[dev].clientfd = accept(g_ip4[dev].sockfd, (struct sockaddr *)&client_addr, &sin_size);
+				rt_kprintf("socket_ip4_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,g_ip4[dev].clientfd,inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+				g_ip4[dev].connected=true;
 			}
 			else
 			{
-				//rt_kprintf("Thread ip4_r_%d need wait connect to server\n",dev);
-				rt_thread_delay(10);
+				status = connect(g_ip4[dev].sockfd, (struct sockaddr *)&g_ip4[dev].server_addr, sizeof(g_ip4[dev].server_addr));
+				if(status < 0)
+				{
+					rt_kprintf("socket_ip4_r  ip4_w%d Connect error:%d\n", dev,status);
+					rt_thread_delay(10);
+				}
+				else
+					g_ip4[dev].connected=true;
+			}			
+		}
+		socklen_t clientlen = sizeof(g_ip4[dev].server_addr);
+		if(is_right(g_conf.config[dev],CONFIG_TCP))
+		{
+			
+			if(is_right(g_conf.config[dev],CONFIG_SERVER))
+			{
+				status=recv(g_ip4[dev].clientfd, g_ip4[dev].recv_data, BUF_SIZE, 0);					
 			}
+			else
+			{
+				status=recv(g_ip4[dev].sockfd, g_ip4[dev].recv_data, BUF_SIZE, 0);
+			}
+			if(status>0)
+			{
+				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip4[dev].recv_data, status, 0);
+			}
+			else
+			{
+				rt_kprintf("Thread ip4_r_%d recv error\n",dev);
+				if(is_right(g_conf.config[dev],CONFIG_SERVER))
+				{
+					closesocket(g_ip4[dev].clientfd);
+				}
+				g_ip4[dev].connected=false;
+			}
+			
 		}
 		else
 		{
@@ -362,13 +342,11 @@ void socket_ip4_r(void *paramter)
 			if(status>0)
 			{
 				rt_kprintf("Thread ip4_r_ %d got '%s'\n", clientlen,g_ip4[dev].recv_data);
-				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip4[dev].recv_data, clientlen, RT_WAITING_FOREVER);
+				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip4[dev].recv_data, clientlen, 0);
 			}
 			else
 			{
 				rt_kprintf("Thread ip4_r_%d Recvfrom error\n",dev);
-				rt_free(g_ip4[dev].recv_data);
-				closesocket(g_ip4[dev].sockfd);
 				return ;
 			}
 		}
@@ -472,7 +450,7 @@ void socket_init()
 	g_conf.local_port[3]=1237;
 	rt_kprintf("g_conf.config %x,%x,%x,%x\r\n",g_conf.config[0],g_conf.config[1],g_conf.config[2],g_conf.config[3]);
 	thread_string=(rt_uint8_t *)rt_malloc(20*sizeof(rt_uint8_t));
-	for(i=0;i<4;i++)
+	for(i=0;i<3;i++)
 	{
 		rt_memset(thread_string,'\0',20);
 		rt_kprintf("Socket==> %d , %s mode, %s , %s . Thread Enter\r\n",i,is_right(g_conf.config[i],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[i],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[i],CONFIG_TCP)?"TCP":"UDP");
