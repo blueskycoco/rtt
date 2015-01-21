@@ -13,6 +13,8 @@
 #include "driverlib/pin_map.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/rom_map.h"
+struct rt_data_queue g_data_queue[8];
+
 unsigned char config_local_ip[11]		={0xF5,0x8A,0x00,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip*/
 unsigned char config_local_port[9]		={0xF5,0x8A,0x01,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port*/
 unsigned char config_sub_msk[11]		={0xF5,0x8A,0x02,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*sub msk*/
@@ -83,7 +85,7 @@ int uart_rw_socket(rt_device_t dev)
 	rt_uint8_t uart_buf[512],*ptr;
 	ptr=uart_buf;
 	len=rt_device_read(dev, 0, ptr, 512);
-	interface_write_buf(which_uart_dev(uart_dev,dev),uart_buf,len);	
+	rt_data_queue_push(&g_data_queue[dev*2], ptr, len, RT_WAITING_FOREVER);
 	return 0;
 }
 
@@ -487,6 +489,7 @@ static rt_err_t uart_rx_ind(rt_device_t dev, rt_size_t size)
     rt_sem_release(&(rx_sem[which_uart_dev(uart_dev,dev)]));
     return RT_EOK;
 }
+
 /*init uart1,2,3,4 for 4 socket*/
 int uart_init()
 {
@@ -517,14 +520,10 @@ int uart_init()
 			rt_thread_startup(&uart_thread[i]);
 			rt_device_set_rx_indicate(uart_dev[i], uart_rx_ind);
 		}
+		
 	}	
-/*	mutex = rt_mutex_create("mutex", RT_IPC_FLAG_FIFO);
-	if (mutex == RT_NULL)
-	{
-		DBG("create mutex failed\n");
-		return 0;
-	}
-*/
+	for(i=0;i<8;i++)//0,1 for socket0,2,3 for socket1,4,5 for socket2,6,7 for socket3
+		rt_data_queue_init(&g_data_queue[i], 2048, 80, RT_NULL);
 	return 1;
 
 }
