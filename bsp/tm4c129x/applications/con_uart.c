@@ -13,8 +13,17 @@
 #include "driverlib/pin_map.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/rom_map.h"
-struct rt_data_queue g_data_queue[8];
+void IntGpioD()
+{
+	if(MAP_GPIOIntStatus(GPIO_PORTD_BASE, true)&GPIO_PIN_2)
+	{
+		MAP_GPIOIntClear(GPIO_PORTD_BASE, GPIO_PIN_2);
+		//ind[3]=((MAP_GPIOPinRead(GPIO_PORTD_BASE, GPIO_PIN_2)&(GPIO_PIN_2))==0)?RT_TRUE:RT_FALSE;
+		//rt_kprintf("gpiod 2 int %d\r\n",ind[3]);
+	}	
+}
 
+#if 0
 unsigned char config_local_ip[11]		={0xF5,0x8A,0x00,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip*/
 unsigned char config_local_port[9]		={0xF5,0x8A,0x01,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port*/
 unsigned char config_sub_msk[11]		={0xF5,0x8A,0x02,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*sub msk*/
@@ -527,3 +536,4 @@ int uart_init()
 	return 1;
 
 }
+#endif

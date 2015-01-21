@@ -13,6 +13,7 @@
  */
 
 #include <rtthread.h>
+#include <rtdevice.h>
 #include <board.h>
 #include <components.h>
 
@@ -20,11 +21,14 @@
 #include "drv_eth.h"
 #endif
 #include "led.h"
+#include "con_socket.h"
 const char buf[]="abcdefghijklmnopqrstuvwxyz\n";
 const char buf1[]="123\n";
 const char buf2[]="5654d54f\n";
 
-extern struct rt_data_queue g_data_queue[8];
+extern void set_if6(char* netif_name, char* ip6_addr);
+extern void netio_init(void);
+
 /* led thread entry */
 static void led_thread_entry(void* parameter)
 {
@@ -32,21 +36,17 @@ static void led_thread_entry(void* parameter)
 	const void *data_ptr;
     rt_size_t data_size;
     const void *last_data_ptr;
-	int i=0;
-	  while(1)
-	  {
-			rt_hw_led_on();
-			rt_thread_delay(RT_TICK_PER_SECOND);
-			rt_hw_led_off();
-			rt_thread_delay(RT_TICK_PER_SECOND);
-			if(i<10)
-			{
-				rt_data_queue_push(&g_data_queue[0], buf, strlen(buf), RT_WAITING_FOREVER); 
-				rt_data_queue_push(&g_data_queue[0], buf1, strlen(buf1), RT_WAITING_FOREVER); 
-				rt_data_queue_push(&g_data_queue[0], buf2, strlen(buf2), RT_WAITING_FOREVER); 
-				i++;
-			}
-	  }
+	while(1)
+	{
+		rt_hw_led_on();
+		rt_thread_delay(RT_TICK_PER_SECOND);
+		rt_hw_led_off();
+		rt_thread_delay(RT_TICK_PER_SECOND);
+		rt_data_queue_push(&g_data_queue[0], buf, strlen(buf), RT_WAITING_FOREVER); 
+		rt_data_queue_push(&g_data_queue[2], buf1, strlen(buf1), RT_WAITING_FOREVER); 
+		rt_data_queue_push(&g_data_queue[4], buf2, strlen(buf2), RT_WAITING_FOREVER); 
+		rt_data_queue_push(&g_data_queue[6], buf2, strlen(buf2), RT_WAITING_FOREVER); 
+	}
 }
 static void led_thread_entry1(void* parameter)
 {
@@ -56,13 +56,40 @@ static void led_thread_entry1(void* parameter)
 	  while(1)
 	  {
 			
-			rt_data_queue_pop(&g_data_queue[0], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
+			rt_data_queue_pop(&g_data_queue[1], &last_data_ptr, &data_size, 0);
 			if(data_size!=0&&last_data_ptr)
 			{			
 				char *ptr=(char *)rt_malloc((data_size+1)*sizeof(char));
 				rt_memcpy(ptr,last_data_ptr,data_size);
 				ptr[data_size]='\0';
-				rt_kprintf("=>%d\n%s",data_size,ptr);
+				rt_kprintf("1=>%d\n%s",data_size,ptr);
+				rt_free(ptr);
+			}
+			rt_data_queue_pop(&g_data_queue[3], &last_data_ptr, &data_size, 0);
+			if(data_size!=0&&last_data_ptr)
+			{			
+				char *ptr=(char *)rt_malloc((data_size+1)*sizeof(char));
+				rt_memcpy(ptr,last_data_ptr,data_size);
+				ptr[data_size]='\0';
+				rt_kprintf("3=>%d\n%s",data_size,ptr);
+				rt_free(ptr);
+			}
+			rt_data_queue_pop(&g_data_queue[5], &last_data_ptr, &data_size, 0);
+			if(data_size!=0&&last_data_ptr)
+			{			
+				char *ptr=(char *)rt_malloc((data_size+1)*sizeof(char));
+				rt_memcpy(ptr,last_data_ptr,data_size);
+				ptr[data_size]='\0';
+				rt_kprintf("5=>%d\n%s",data_size,ptr);
+				rt_free(ptr);
+			}
+			rt_data_queue_pop(&g_data_queue[7], &last_data_ptr, &data_size, 0);
+			if(data_size!=0&&last_data_ptr)
+			{			
+				char *ptr=(char *)rt_malloc((data_size+1)*sizeof(char));
+				rt_memcpy(ptr,last_data_ptr,data_size);
+				ptr[data_size]='\0';
+				rt_kprintf("7=>%d\n%s",data_size,ptr);
 				rt_free(ptr);
 			}
 	  }
@@ -72,7 +99,7 @@ static void led_thread_entry1(void* parameter)
 void rt_init_thread_entry(void *parameter)
 {
     /* Initialization RT-Thread Components */
-	
+	int i;
 #ifdef RT_USING_LWIP
 		rt_hw_tiva_eth_init();
 #endif
@@ -83,10 +110,13 @@ void rt_init_thread_entry(void *parameter)
 	set_if6("e0","fe80::1");
 	netio_init();
 	//app_uart_init();
-	uart_init();
+	//uart_init();
 	//ring_buffer_init();
 	//ping_test("192.168.1.7",5,32);
-	
+	g_data_queue=(struct rt_data_queue *)rt_malloc(sizeof(struct rt_data_queue)*8);
+	for(i=0;i<8;i++)//0,1 for socket0,2,3 for socket1,4,5 for socket2,6,7 for socket3
+		rt_data_queue_init(&g_data_queue[i], 2048, 80, RT_NULL);
+	socket_init();
 	//ping_test6("fe80::5867:8730:e9e6:d5c5%11",5,32);
 	//ping_test6("fe80::483:d903:e2ee:d05e%12",5,32);
 	//ping_test("192.168.1.6",5,32);

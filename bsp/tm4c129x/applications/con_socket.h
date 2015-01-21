@@ -3,7 +3,7 @@
 #include <components.h>
 typedef struct {
 	rt_uint32_t local_ip;
-	rt_uint16_t local_port;
+	rt_uint16_t local_port[4];
 	rt_uint32_t sub_msk;
 	rt_uint32_t gw;
 	rt_uint8_t mac[6];
@@ -31,8 +31,9 @@ config g_conf;
 #define CONFIG_BAUD_2000000 	0x40
 #define CONFIG_BAUD_4000000 	0x80
 #define CONFIG_BAUD_6000000 	0x88
-
-void socket_send(int index,rt_uint8_t *data,int len);
+void socket_init();
+struct rt_data_queue *g_data_queue;
+//void socket_send(int index,rt_uint8_t *data,int len);
 #define debug 0
 #if debug
 #define DBG rt_kprintf
