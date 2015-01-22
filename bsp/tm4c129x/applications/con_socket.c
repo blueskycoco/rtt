@@ -17,6 +17,7 @@ typedef struct ip6
 typedef struct ip4
 {
 	struct sockaddr_in server_addr;
+	struct sockaddr_in client_addr;
 	int sockfd;
 	int clientfd;
 	char *recv_data;
@@ -265,7 +266,10 @@ void socket_ip4_w(void *paramter)
 		}
 		else
 		{
-			status=sendto(g_ip4[dev].sockfd, last_data_ptr, data_size, 0, (struct sockaddr *)&g_ip4[dev].server_addr, sizeof(g_ip4[dev].server_addr));
+			if(is_right(g_conf.config[dev],CONFIG_SERVER))
+				status=sendto(g_ip4[dev].sockfd, last_data_ptr, data_size, 0, (struct sockaddr *)&g_ip4[dev].client_addr, sizeof(g_ip4[dev].client_addr));
+			else
+				status=sendto(g_ip4[dev].sockfd, last_data_ptr, data_size, 0, (struct sockaddr *)&g_ip4[dev].server_addr, sizeof(g_ip4[dev].server_addr));
 		}
 		if( status< 0)
 		{
@@ -357,7 +361,7 @@ void socket_ip4_r(void *paramter)
 			status=recvfrom(g_ip4[dev].sockfd, g_ip4[dev].recv_data, BUF_SIZE, 0, (struct sockaddr *)&g_ip4[dev].server_addr, &clientlen);
 			if(status>0)
 			{				
-				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip4[dev].recv_data, clientlen, 0);
+				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip4[dev].recv_data, status, 0);
 			}
 			else
 			{
@@ -407,6 +411,19 @@ bool socket_ip4(int dev,bool init)
 					return false;
 				}
 			}
+			if(!is_right(g_conf.config[dev],CONFIG_TCP))
+			{
+				memset(&g_ip4[dev].client_addr, 0, sizeof(g_ip4[dev].client_addr));
+				g_ip4[dev].client_addr.sin_family = AF_INET;
+				g_ip4[dev].client_addr.sin_port = htons(g_conf.remote_port[dev]);
+				rt_memset(&(g_ip4[dev].client_addr.sin_zero),8, sizeof(g_ip4[dev].client_addr.sin_zero));
+				if(inet_pton(AF_INET, (char *)g_conf.remote_ip[dev], &g_ip4[dev].client_addr.sin_addr.s_addr) != 1)
+				{
+					rt_kprintf("inet_pton() error\n");
+					closesocket(g_ip4[dev].sockfd);
+					return false;
+				}
+			}
 		}
 		else
 		{//client mode
@@ -419,6 +436,19 @@ bool socket_ip4(int dev,bool init)
 				rt_kprintf("inet_pton() error\n");
 				closesocket(g_ip4[dev].sockfd);
 				return false;
+			}
+			if(!is_right(g_conf.config[dev],CONFIG_TCP))
+			{
+				g_ip4[dev].client_addr.sin_family = AF_INET;
+				g_ip4[dev].client_addr.sin_addr.s_addr = INADDR_ANY;
+				g_ip4[dev].client_addr.sin_port = htons(g_conf.local_port[dev]);
+				rt_memset(&(g_ip4[dev].client_addr.sin_zero),8, sizeof(g_ip4[dev].client_addr.sin_zero));
+				if(bind(g_ip4[dev].sockfd, (struct sockaddr *)&g_ip4[dev].client_addr, sizeof(struct sockaddr)) == -1)
+				{
+					rt_kprintf("Bind error\n");
+					closesocket(g_ip4[dev].sockfd);
+					return false;
+				}
 			}
 		}
 		/*mall receive buffer*/
@@ -455,10 +485,10 @@ void socket_init()
 {
 	rt_uint8_t *thread_string;
 	int i;
-	g_conf.config[0]=CONFIG_SERVER|CONFIG_TCP;
-	g_conf.config[1]=CONFIG_SERVER|CONFIG_TCP;
-	g_conf.config[2]=CONFIG_SERVER|CONFIG_TCP;
-	g_conf.config[3]=CONFIG_SERVER|CONFIG_TCP;
+	g_conf.config[0]=0;
+	g_conf.config[1]=0;
+	g_conf.config[2]=CONFIG_SERVER;
+	g_conf.config[3]=CONFIG_SERVER;
 	g_conf.local_port[0]=1234;
 	g_conf.local_port[1]=1235;
 	g_conf.local_port[2]=1236;
