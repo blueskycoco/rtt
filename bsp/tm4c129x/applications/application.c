@@ -22,10 +22,7 @@
 #endif
 #include "led.h"
 #include "con_socket.h"
-const char buf[]="abcdefghijklmnopqrstuvwxyz\n";
-const char buf1[]="123\n";
-const char buf2[]="5654d54f\n";
-
+char buf[]="123456789";
 extern void set_if6(char* netif_name, char* ip6_addr);
 extern void netio_init(void);
 
@@ -42,10 +39,6 @@ static void led_thread_entry(void* parameter)
 		rt_thread_delay(RT_TICK_PER_SECOND);
 		rt_hw_led_off();
 		rt_thread_delay(RT_TICK_PER_SECOND);
-		//rt_data_queue_push(&g_data_queue[0], buf, strlen(buf), 0); 
-		//rt_data_queue_push(&g_data_queue[2], buf1, strlen(buf1), 0); 
-		//rt_data_queue_push(&g_data_queue[4], buf2, strlen(buf2), 0); 
-		//rt_data_queue_push(&g_data_queue[6], buf2, strlen(buf2), RT_WAITING_FOREVER); 
 	}
 }
 static void dump_thread_entry(void* parameter)
@@ -57,11 +50,12 @@ static void dump_thread_entry(void* parameter)
 	long sent_size=0,receive_size=0;
 	  while(1)
 	  {
-	  		rt_data_queue_push(&g_data_queue[dev-1], buf, strlen(buf), 0); 
-			sent_size+=strlen(buf);
+	  		#if 1
 			rt_data_queue_pop(&g_data_queue[dev], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
 			if(data_size!=0&&last_data_ptr)
 			{			
+				rt_data_queue_push(&g_data_queue[dev-1], last_data_ptr, data_size, 0); 
+				sent_size+=data_size;
 				receive_size+=data_size;
 				char *ptr=(char *)rt_malloc((data_size+1)*sizeof(char));
 				rt_memcpy(ptr,last_data_ptr,data_size);
@@ -69,7 +63,10 @@ static void dump_thread_entry(void* parameter)
 				rt_kprintf("socket %d sent %d receive %d=>%s\n",dev/2,sent_size,receive_size,ptr);
 				rt_free(ptr);
 			}
-			
+			#else
+			rt_data_queue_push(&g_data_queue[dev-1], buf, strlen(buf),RT_WAITING_FOREVER); 
+			rt_thread_delay(RT_TICK_PER_SECOND/2);
+			#endif
 	  }
 }
 

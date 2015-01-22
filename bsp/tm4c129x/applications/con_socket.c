@@ -269,10 +269,15 @@ void socket_ip4_w(void *paramter)
 		}
 		if( status< 0)
 		{
-			rt_kprintf("Thread ip4_w%d Sendto error\n",dev);
+			rt_kprintf("Thread ip4_w%d send error\n",dev);
 			if(is_right(g_conf.config[dev],CONFIG_SERVER)&&is_right(g_conf.config[dev],CONFIG_TCP))
-			{
-				closesocket(g_ip4[dev].clientfd);
+			{	
+				//server&tcp mode need closesocket clientfd
+				if(g_ip4[dev].clientfd!=0)
+				{
+					closesocket(g_ip4[dev].clientfd);
+					g_ip4[dev].clientfd=0;
+				}
 			}
 			g_ip4[dev].connected=false;
 		}
@@ -302,12 +307,18 @@ void socket_ip4_r(void *paramter)
 				status = connect(g_ip4[dev].sockfd, (struct sockaddr *)&g_ip4[dev].server_addr, sizeof(g_ip4[dev].server_addr));
 				if(status < 0)
 				{
-					rt_kprintf("socket_ip4_r  ip4_w%d Connect error:%d\n", dev,status);
-					rt_thread_delay(10);
+					//rt_kprintf("socket_ip4_r  ip4_r%d Connect error:%d\n", dev,status);
+					closesocket(g_ip4[dev].sockfd);
+					g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
 				}
 				else
 					g_ip4[dev].connected=true;
 			}			
+		}
+		if(g_ip4[dev].connected==false)
+		{
+			rt_thread_delay(10);			
+			continue;
 		}
 		socklen_t clientlen = sizeof(g_ip4[dev].server_addr);
 		if(is_right(g_conf.config[dev],CONFIG_TCP))
@@ -327,10 +338,15 @@ void socket_ip4_r(void *paramter)
 			}
 			else
 			{
-				rt_kprintf("Thread ip4_r_%d recv error\n",dev);
+				rt_kprintf("Thread ip4_r_%d recv error,connection lost\n",dev);
 				if(is_right(g_conf.config[dev],CONFIG_SERVER))
 				{
-					closesocket(g_ip4[dev].clientfd);
+					//server&tcp mode need closesocket clientfd
+					if(g_ip4[dev].clientfd!=0)
+					{
+						closesocket(g_ip4[dev].clientfd);
+						g_ip4[dev].clientfd=0;
+					}
 				}
 				g_ip4[dev].connected=false;
 			}
@@ -340,14 +356,13 @@ void socket_ip4_r(void *paramter)
 		{
 			status=recvfrom(g_ip4[dev].sockfd, g_ip4[dev].recv_data, BUF_SIZE, 0, (struct sockaddr *)&g_ip4[dev].server_addr, &clientlen);
 			if(status>0)
-			{
-				rt_kprintf("Thread ip4_r_ %d got '%s'\n", clientlen,g_ip4[dev].recv_data);
+			{				
 				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip4[dev].recv_data, clientlen, 0);
 			}
 			else
 			{
-				rt_kprintf("Thread ip4_r_%d Recvfrom error\n",dev);
-				return ;
+				rt_kprintf("Thread ip4_r_%d Recvfrom error,connection lost\n",dev);
+				//return ;
 			}
 		}
 	}
@@ -448,6 +463,18 @@ void socket_init()
 	g_conf.local_port[1]=1235;
 	g_conf.local_port[2]=1236;
 	g_conf.local_port[3]=1237;
+	memset(g_conf.remote_ip[0],'\0',16);
+	strcpy(g_conf.remote_ip[0],"192.168.1.6");
+	memset(g_conf.remote_ip[1],'\0',16);
+	strcpy(g_conf.remote_ip[1],"192.168.1.6");
+	memset(g_conf.remote_ip[2],'\0',16);
+	strcpy(g_conf.remote_ip[2],"192.168.1.6");
+	memset(g_conf.remote_ip[3],'\0',16);
+	strcpy(g_conf.remote_ip[3],"192.168.1.6");
+	g_conf.remote_port[0]=1234;
+	g_conf.remote_port[1]=1235;
+	g_conf.remote_port[2]=1236;
+	g_conf.remote_port[3]=1237;
 	rt_kprintf("g_conf.config %x,%x,%x,%x\r\n",g_conf.config[0],g_conf.config[1],g_conf.config[2],g_conf.config[3]);
 	thread_string=(rt_uint8_t *)rt_malloc(20*sizeof(rt_uint8_t));
 	for(i=0;i<3;i++)
