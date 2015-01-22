@@ -8,7 +8,7 @@ typedef struct {
 	rt_uint32_t gw;
 	rt_uint8_t mac[6];
 	rt_uint8_t remote_ip[4][16];
-	rt_uint8_t remote_ip6[4][16];
+	rt_uint8_t remote_ip6[4][64];
 	rt_uint16_t remote_port[4];
 	rt_uint8_t config[4];//bit0 ipv4 or ipv6 	,bit1 tcp or udp , bit2 server or client ,bit 3 to bit 7 uart baud
 }config,*pconfig;

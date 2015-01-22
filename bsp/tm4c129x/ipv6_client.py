@@ -47,7 +47,7 @@ class MiniClient:
     def udpC6(self):
         udpU6Client = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
         udpU6Client.bind(('fe80::5867:8730:e9e6:d5c5%11', self.p))
-        print "UDP TCP IPv4 Mode connecting..."
+        print "UDP TCP IPv6 Mode connecting..."
         while True:
             time.sleep(1)
             udpU6Client.sendto("hello", (self.h, self.p))
