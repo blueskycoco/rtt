@@ -54,9 +54,7 @@ class MiniClient:
         while True:
             udpU6Client.sendto("hello", (self.h, self.p))
             self.d = self.d + len('hello')
-            print "Hello Send to " , self.h , ' Use ', self.p, 'Port'
             udpT4Data, udpT6ServerInfo = udpU6Client.recvfrom(1024)
-            print "Receive from ", udpT6ServerInfo, " and The Data send from The Client is :", udpT4Data
             self.c = self.c + len(udpT4Data)
             print "Received length = ", self.c, "Sent length = ", self.d+5
             

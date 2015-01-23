@@ -161,7 +161,12 @@ void rt_init_thread_entry(void *parameter)
 	//ping_test("192.168.1.7",5,32);
 	g_data_queue=(struct rt_data_queue *)rt_malloc(sizeof(struct rt_data_queue)*8);
 	for(i=0;i<6;i++)//0,1 for socket0,2,3 for socket1,4,5 for socket2,6,7 for socket3
-		rt_data_queue_init(&g_data_queue[i], 2048, 80, RT_NULL);
+	{
+		if((i%2)==0)
+			rt_data_queue_init(&g_data_queue[i], 4096, 80, RT_NULL);
+		else
+			rt_data_queue_init(&g_data_queue[i], 2048, 80, RT_NULL);
+	}
 	socket_init();
 	//ping_test6("fe80::5867:8730:e9e6:d5c5%11",5,32);
 	//ping_test6("fe80::483:d903:e2ee:d05e%12",5,32);
