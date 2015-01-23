@@ -18,6 +18,7 @@
 #ifdef RT_LWIP_IPV6_AUTOCONFIG
 #define LWIP_IPV6_AUTOCONFIG        1
 #endif
+#define TCP_KEEPINTVL_DEFAULT 1
 
 #endif
 

@@ -940,6 +940,7 @@ tivaif_receive(net_device_t dev)
  * transmitter.
  *
  */
+ extern bool phy_link;
 void
 tivaif_process_phy_interrupt(net_device_t dev)
 {
@@ -971,6 +972,7 @@ tivaif_process_phy_interrupt(net_device_t dev)
 #else
             //tcpip_callback((tcpip_callback_fn)netif_set_link_up, psNetif);
 			eth_device_linkchange(&(dev->parent), RT_TRUE);
+			phy_link=true;
 #endif
 
             /* In this case we drop through since we may need to reconfigure
@@ -985,6 +987,7 @@ tivaif_process_phy_interrupt(net_device_t dev)
 #else
             //tcpip_callback((tcpip_callback_fn)netif_set_link_down, psNetif);
 			eth_device_linkchange(&(dev->parent), RT_FALSE);
+			phy_link=false;
 #endif
         }
     }

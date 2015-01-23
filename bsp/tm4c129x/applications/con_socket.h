@@ -1,6 +1,10 @@
 #include <rtthread.h>
 #include <board.h>
 #include <components.h>
+#include <rtdevice.h>
+#include <lwip/netdb.h>
+#include <lwip/sockets.h>
+
 typedef struct {
 	rt_uint32_t local_ip;
 	rt_uint16_t local_port[4];
@@ -33,6 +37,28 @@ config g_conf;
 #define CONFIG_BAUD_6000000 	0x88
 void socket_init();
 struct rt_data_queue *g_data_queue;
+typedef struct ip6
+{
+	struct sockaddr_in6 server_addr6;
+	struct sockaddr_in6 client_addr6;
+	int sockfd;
+	int clientfd;
+	char *recv_data;
+	bool connected;
+}ip6_t,*pip6_t;
+typedef struct ip4
+{
+	struct sockaddr_in server_addr;
+	struct sockaddr_in client_addr;
+	int sockfd;
+	int clientfd;
+	char *recv_data;
+	bool connected;
+}ip4_t,*pip4_t;
+
+ip6_t g_ip6[4];
+ip4_t g_ip4[4];
+
 //void socket_send(int index,rt_uint8_t *data,int len);
 #define debug 0
 #if debug

@@ -93,7 +93,9 @@ void rt_hw_board_init()
     /*init uart device*/		
     rt_hw_uart_init(1);
     //redirect RTT stdio to CONSOLE device
-    rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
+	#ifdef RT_USING_CONSOLE 
+	rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
+	#endif
     //
     // Enable interrupts to the processor.
     //

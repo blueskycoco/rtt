@@ -6,27 +6,7 @@
 #define BUF_SIZE 1024
 rt_thread_t tid_w[4],tid_r[4];
 
-typedef struct ip6
-{
-	struct sockaddr_in6 server_addr6;
-	struct sockaddr_in6 client_addr6;
-	int sockfd;
-	int clientfd;
-	char *recv_data;
-	bool connected;
-}ip6_t,*pip6_t;
-typedef struct ip4
-{
-	struct sockaddr_in server_addr;
-	struct sockaddr_in client_addr;
-	int sockfd;
-	int clientfd;
-	char *recv_data;
-	bool connected;
-}ip4_t,*pip4_t;
 
-ip6_t g_ip6[4];
-ip4_t g_ip4[4];
 bool is_right(char config,char flag)
 {
 	if((config&flag)==flag)
@@ -54,7 +34,7 @@ void socket_ip6_w(void *paramter)
 			if(is_right(g_conf.config[dev],CONFIG_SERVER))
 			{
 				status=send(g_ip6[dev].clientfd, last_data_ptr, data_size, 0);
-			}
+			}	
 			else
 			{
 				status=send(g_ip6[dev].sockfd, last_data_ptr, data_size, 0);
@@ -66,8 +46,9 @@ void socket_ip6_w(void *paramter)
 				status=sendto(g_ip6[dev].sockfd, last_data_ptr, data_size, 0, (struct sockaddr *)&g_ip6[dev].client_addr6, sizeof(g_ip6[dev].client_addr6));
 			else
 				status=sendto(g_ip6[dev].sockfd, last_data_ptr, data_size, 0, (struct sockaddr *)&g_ip6[dev].server_addr6, sizeof(g_ip6[dev].server_addr6));
+			//rt_thread_delay(1);
 		}
-		if( status< 0)
+		if( status<= 0)
 		{
 			rt_kprintf("Thread ip6_w%d send error\n",dev);
 			if(is_right(g_conf.config[dev],CONFIG_SERVER)&&is_right(g_conf.config[dev],CONFIG_TCP))
@@ -79,7 +60,6 @@ void socket_ip6_w(void *paramter)
 					g_ip6[dev].clientfd=0;
 				}
 			}
-			g_ip6[dev].connected=false;
 		}
 	}
 }
@@ -99,15 +79,16 @@ void socket_ip6_r(void *paramter)
 				rt_kprintf("socket_ip6_r %d to accept %d\n",dev,g_ip6[dev].sockfd);
 				rt_uint32_t  sin_size = sizeof(struct sockaddr_in6);
 				g_ip6[dev].clientfd = accept(g_ip6[dev].sockfd, (struct sockaddr *)&client_addr6, &sin_size);
-				rt_kprintf("socket_ip6_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,g_ip6[dev].clientfd,inet_ntoa(client_addr6.sin6_addr), ntohs(client_addr6.sin6_port));
+				rt_kprintf("socket_ip6_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,inet6_ntoa(client_addr6.sin6_addr), ntohs(client_addr6.sin6_port),g_ip6[dev].clientfd);
 				g_ip6[dev].connected=true;
+				char a=1;
+				setsockopt(g_ip6[dev].clientfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
 			}
 			else
 			{
 				status = connect(g_ip6[dev].sockfd, (struct sockaddr *)&g_ip6[dev].server_addr6, sizeof(g_ip6[dev].server_addr6));
 				if(status < 0)
 				{
-					//rt_kprintf("socket_ip4_r  ip4_r%d Connect error:%d\n", dev,status);
 					closesocket(g_ip6[dev].sockfd);
 					g_ip6[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);
 				}
@@ -156,13 +137,12 @@ void socket_ip6_r(void *paramter)
 		{
 			status=recvfrom(g_ip6[dev].sockfd, g_ip6[dev].recv_data, BUF_SIZE, 0, (struct sockaddr *)&g_ip6[dev].server_addr6, &clientlen);
 			if(status>0)
-			{				
+			{			
 				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip6[dev].recv_data, status, 0);
 			}
 			else
 			{
 				rt_kprintf("Thread ip6_r_%d Recvfrom error,connection lost\n",dev);
-				//return ;
 			}
 		}
 	}
@@ -197,7 +177,7 @@ bool socket_ip6(int dev,bool init)
 			}
 			if(is_right(g_conf.config[dev],CONFIG_TCP))
 			{
-				rt_kprintf("to listen %d\n",g_ip6[dev].sockfd);
+				rt_kprintf("socket_ip6 %d to listen %d\n",dev,g_ip6[dev].sockfd);
 				if(listen(g_ip6[dev].sockfd, 1) == -1)
 				{
 					rt_kprintf("Listen error\n");
@@ -240,6 +220,11 @@ bool socket_ip6(int dev,bool init)
 					closesocket(g_ip6[dev].sockfd);
 					return false;
 				}
+			}
+			else
+			{
+				char a=1;
+				setsockopt(g_ip6[dev].sockfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
 			}
 		}
 		/*mall receive buffer*/
@@ -316,7 +301,6 @@ void socket_ip4_w(void *paramter)
 					g_ip4[dev].clientfd=0;
 				}
 			}
-			g_ip4[dev].connected=false;
 		}
 	}
 }
@@ -336,15 +320,16 @@ void socket_ip4_r(void *paramter)
 				rt_kprintf("socket_ip4_r %d to accept %d\n",dev,g_ip4[dev].sockfd);
 				rt_uint32_t  sin_size = sizeof(struct sockaddr_in);
 				g_ip4[dev].clientfd = accept(g_ip4[dev].sockfd, (struct sockaddr *)&client_addr, &sin_size);
-				rt_kprintf("socket_ip4_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,g_ip4[dev].clientfd,inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+				rt_kprintf("socket_ip4_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),g_ip4[dev].clientfd);
 				g_ip4[dev].connected=true;
+				char a=1;
+				setsockopt(g_ip6[dev].clientfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
 			}
 			else
 			{
 				status = connect(g_ip4[dev].sockfd, (struct sockaddr *)&g_ip4[dev].server_addr, sizeof(g_ip4[dev].server_addr));
 				if(status < 0)
 				{
-					//rt_kprintf("socket_ip4_r  ip4_r%d Connect error:%d\n", dev,status);
 					closesocket(g_ip4[dev].sockfd);
 					g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
 				}
@@ -399,7 +384,6 @@ void socket_ip4_r(void *paramter)
 			else
 			{
 				rt_kprintf("Thread ip4_r_%d Recvfrom error,connection lost\n",dev);
-				//return ;
 			}
 		}
 	}
@@ -482,6 +466,11 @@ bool socket_ip4(int dev,bool init)
 					return false;
 				}
 			}
+			else
+			{
+				char a=1;
+				setsockopt(g_ip6[dev].sockfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
+			}
 		}
 		/*mall receive buffer*/
 		g_ip4[dev].recv_data = rt_malloc(BUF_SIZE);
@@ -517,7 +506,7 @@ void socket_init()
 {
 	rt_uint8_t *thread_string;
 	int i;
-	g_conf.config[0]=CONFIG_IPV6|CONFIG_SERVER;
+	g_conf.config[0]=CONFIG_SERVER/*|CONFIG_TCP*/|CONFIG_IPV6;
 	g_conf.config[1]=0;
 	g_conf.config[2]=CONFIG_SERVER;
 	g_conf.config[3]=CONFIG_SERVER;
@@ -549,6 +538,8 @@ void socket_init()
 	thread_string=(rt_uint8_t *)rt_malloc(20*sizeof(rt_uint8_t));
 	for(i=0;i<3;i++)
 	{
+		g_ip6[i].connected=false;
+		g_ip4[i].connected=false;
 		rt_memset(thread_string,'\0',20);
 		rt_kprintf("Socket==> %d , %s mode, %s , %s . Thread Enter\r\n",i,is_right(g_conf.config[i],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[i],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[i],CONFIG_TCP)?"TCP":"UDP");
 		if(is_right(g_conf.config[i],CONFIG_IPV6))
