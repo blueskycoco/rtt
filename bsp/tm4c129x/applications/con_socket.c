@@ -5,7 +5,7 @@
 /*client use socket,server use netconn*/
 #define BUF_SIZE 1024
 rt_thread_t tid_w[4],tid_r[4];
-
+extern struct rt_semaphore fifo_sem;
 
 bool is_right(char config,char flag)
 {
@@ -46,8 +46,8 @@ void socket_ip6_w(void *paramter)
 				status=sendto(g_ip6[dev].sockfd, last_data_ptr, data_size, 0, (struct sockaddr *)&g_ip6[dev].client_addr6, sizeof(g_ip6[dev].client_addr6));
 			else
 				status=sendto(g_ip6[dev].sockfd, last_data_ptr, data_size, 0, (struct sockaddr *)&g_ip6[dev].server_addr6, sizeof(g_ip6[dev].server_addr6));
-			rt_thread_delay(1);
 		}
+		//rt_kprintf("socket_ip6_w status %d\n",status);
 		if( status<= 0)
 		{
 			rt_kprintf("Thread ip6_w%d send error\n",dev);
@@ -141,17 +141,19 @@ void socket_ip6_r(void *paramter)
 
 		}
 		else
-		{
+		{	
 			status=recvfrom(g_ip6[dev].sockfd, g_ip6[dev].recv_data, BUF_SIZE, 0, (struct sockaddr *)&g_ip6[dev].server_addr6, &clientlen);
+			//rt_kprintf("socket_ip6_r status %d\n",status);
 			if(status>0)
-			{			
-				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip6[dev].recv_data, status, 0);
+			{
+				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip6[dev].recv_data, status, RT_WAITING_FOREVER);	
 			}
 			else
 			{
 				rt_kprintf("Thread ip6_r_%d Recvfrom error,connection lost\n",dev);
 			}
-		}
+			break;
+		}		    
 	}
 }
 
@@ -192,7 +194,7 @@ bool socket_ip6(int dev,bool init)
 					return false;
 				}
 			}
-			if(!is_right(g_conf.config[dev],CONFIG_TCP))
+			else
 			{
 				memset(&g_ip6[dev].client_addr6, 0, sizeof(g_ip6[dev].client_addr6));
 				g_ip6[dev].client_addr6.sin6_family = AF_INET6;
@@ -521,7 +523,7 @@ void socket_init()
 {
 	rt_uint8_t *thread_string;
 	int i;
-	g_conf.config[0]=CONFIG_SERVER|CONFIG_IPV6|CONFIG_TCP;
+	g_conf.config[0]=CONFIG_SERVER|CONFIG_IPV6/*|CONFIG_TCP*/;
 	g_conf.config[1]=0;
 	g_conf.config[2]=CONFIG_SERVER;
 	g_conf.config[3]=CONFIG_SERVER;
@@ -564,7 +566,7 @@ void socket_init()
 				rt_sprintf(thread_string,"socket_%d_6_w",i);
 				tid_w[i] = rt_thread_create(thread_string,socket_ip6_w, (void *)i,2048, 20, 10);
 				rt_sprintf(thread_string,"socket_%d_6_r",i);
-				tid_r[i] = rt_thread_create(thread_string,socket_ip6_r, (void *)i,2048, 20, 10);
+				tid_r[i] = rt_thread_create(thread_string,socket_ip6_r, (void *)i,2048, 15, 10);
 			}
 		}
 		else
@@ -574,7 +576,7 @@ void socket_init()
 				rt_sprintf(thread_string,"socket_%d_4_w",i);
 				tid_w[i] = rt_thread_create(thread_string,socket_ip4_w, (void *)i,2048, 20, 10);
 				rt_sprintf(thread_string,"socket_%d_4_r",i);
-				tid_r[i] = rt_thread_create(thread_string,socket_ip4_r, (void *)i,2048, 20, 10);
+				tid_r[i] = rt_thread_create(thread_string,socket_ip4_r, (void *)i,2048, 15, 10);
 			}
 		}
 

@@ -90,15 +90,17 @@ static void dump_thread_entry(void* parameter)
 		{
 			if(rt_sem_take(&(rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;
 			//rt_kprintf("uart got\n");
-			int len;
+			int len,i;
 			char *ptr;
 			ptr=uart_buf;
 			len=rt_device_read(uart_dev, 0, ptr, 512);
 			if(phy_link&&(len>0))
 			{				
 				if((is_right(g_conf.config[dev/2],CONFIG_IPV6)&&g_ip6[dev/2].connected)||(!is_right(g_conf.config[dev/2],CONFIG_IPV6)&&g_ip4[dev/2].connected))
-				{
+				{					
 					rt_data_queue_push(&g_data_queue[dev-1], ptr, len, RT_WAITING_FOREVER);
+					if(!is_right(g_conf.config[dev/2],CONFIG_TCP))
+					rt_thread_delay(10);
 				}
 			}
 		}
@@ -163,7 +165,7 @@ void rt_init_thread_entry(void *parameter)
 	for(i=0;i<6;i++)//0,1 for socket0,2,3 for socket1,4,5 for socket2,6,7 for socket3
 	{
 		if((i%2)==0)
-			rt_data_queue_init(&g_data_queue[i], 4096, 80, RT_NULL);
+			rt_data_queue_init(&g_data_queue[i], 2048, 80, RT_NULL);
 		else
 			rt_data_queue_init(&g_data_queue[i], 2048, 80, RT_NULL);
 	}

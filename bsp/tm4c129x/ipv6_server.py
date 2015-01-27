@@ -1,5 +1,5 @@
 import socket, sys
-
+import time
 class MiniServer:
     h = ''
     p = ''
@@ -18,12 +18,14 @@ class MiniServer:
         tcpT4Server.listen(5)
         while True:
             clientSock, clientaddr = tcpT4Server.accept()
-            print "Connected from: ", clientSock.getpeername() 
-            clientSock.send('Congratulations........')
+            print "Connected from: ", clientSock.getpeername()             
             while True:
+                clientSock.send('Congratulations........')
                 buf = clientSock.recv(1024)
-                print buf
-            #clientSock.close()
+                self.c = self.c + len(buf)
+                self.d = self.d + len('Congratulations........')
+                print "Received length = ", self.c, ",Sent length = ", self.d
+               #clientSock.close()
     
     def udpT4(self):
         udpT4Server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -33,6 +35,9 @@ class MiniServer:
         while True:
             udpT4Data, udpT4ServerInfo = udpT4Server.recvfrom(1024)
             print "Receive from ", udpT4ServerInfo, " and The Data send from The Client is :", udpT4Data
+            self.c = self.c + len(udpT4Data)
+            self.d = self.d + len('Congratulations........')
+            print "Received length = ", self.c, ",Sent length = ", self.d
 
     def serverT6(self):
         tcpT6Server = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
@@ -57,10 +62,12 @@ class MiniServer:
         print "UDP Server Start"
         while True:
             udpT6Server.sendto('Congratulations........',('fe80::1', self.p))
-            udpT4Data, udpT6ServerInfo = udpT6Server.recvfrom(1024)
-            print "Receive from ", udpT6ServerInfo, " and The Data send from The Client is :", udpT4Data
-            self.c = self.c + len(udpT4Data)
-            print "Received length = ", self.c
+            #udpT4Data, udpT6ServerInfo = udpT6Server.recvfrom(1024)
+            #print "Receive from ", udpT6ServerInfo, " and The Data send from The Client is :", udpT4Data
+            #self.c = self.c + len(udpT4Data)
+            #time.sleep(0.001)
+            self.d = self.d + len('Congratulations........')
+            print "Received length = ", self.c, ",Sent length = ", self.d
 
 if __name__ == "__main__":
     x = MiniServer(sys.argv[1], sys.argv[2], sys.argv[3])
