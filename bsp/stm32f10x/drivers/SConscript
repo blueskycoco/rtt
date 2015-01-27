@@ -10,6 +10,10 @@ board.c
 stm32f10x_it.c
 led.c
 usart.c
+LM096.c
+cc1101.c
+cc1101_hw.c
+power.c
 """)
 
 # add Ethernet drivers.

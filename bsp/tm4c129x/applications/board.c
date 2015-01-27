@@ -61,7 +61,7 @@ extern void HardFault_Handler(void);
  */
 void rt_hw_board_init()
 {
-  MAP_IntMasterDisable();
+    MAP_IntMasterDisable();
     IntRegister(FAULT_HARD, HardFault_Handler);	
     IntRegister(FAULT_PENDSV, PendSV_Handler);
     IntRegister(FAULT_SYSTICK, SysTick_Handler);
@@ -91,11 +91,13 @@ void rt_hw_board_init()
     //IntPrioritySet(FAULT_PENDSV, (1 << 5) - 1);
     
     /*init uart device*/		
-    rt_hw_uart_init();
+    rt_hw_uart_init(1);
     //redirect RTT stdio to CONSOLE device
-    rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
+	#ifdef RT_USING_CONSOLE 
+	rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
+	#endif
     //
     // Enable interrupts to the processor.
     //
-	  MAP_IntMasterEnable();
+    MAP_IntMasterEnable();
 }

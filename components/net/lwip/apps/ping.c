@@ -59,7 +59,7 @@ static void ping_prepare_echo( struct icmp_echo_hdr *iecho, u16_t len)
     {
         ((char*)iecho)[sizeof(struct icmp_echo_hdr) + i] = (char)i;
     }
-
+	
     iecho->chksum = inet_chksum(iecho, len);
 }
 

@@ -1,0 +1,13 @@
+Import('RTT_ROOT')
+Import('rtconfig')
+from building import *
+
+cwd     = os.path.join(str(Dir('#')), 'board')
+src	= Glob('*.c')
+src	+= Glob('*.s')
+CPPPATH = [cwd]
+SrcRemove(src, 'psram_mtd.c')
+SrcRemove(src, 'ddk20.c')
+group = DefineGroup('Board', src, depend = [''], CPPPATH = CPPPATH)
+
+Return('group')

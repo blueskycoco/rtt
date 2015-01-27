@@ -18,6 +18,7 @@
 #ifdef RT_LWIP_IPV6_AUTOCONFIG
 #define LWIP_IPV6_AUTOCONFIG        1
 #endif
+#define TCP_KEEPINTVL_DEFAULT 1
 
 #endif
 
@@ -58,7 +59,7 @@
 #define LWIP_SO_RCVTIMEO            1
 #define LWIP_SO_SNDTIMEO            1
 
-/* #define RT_LWIP_DEBUG */
+#define RT_LWIP_DEBUG
 
 #ifdef RT_LWIP_DEBUG
 #define LWIP_DEBUG
@@ -358,10 +359,9 @@
 
 /* MEMP_NUM_SYS_TIMEOUT: the number of simulateously active timeouts. */
 //#define MEMP_NUM_SYS_TIMEOUT       (LWIP_TCP + IP_REASSEMBLY + LWIP_ARP + (2*LWIP_DHCP) + LWIP_AUTOIP + LWIP_IGMP + LWIP_DNS + PPP_SUPPORT)
-#define MEMP_NUM_SYS_TIMEOUT	    8
+#define MEMP_NUM_SYS_TIMEOUT	    10//8
 #ifdef LWIP_IGMP
 #include <stdlib.h>
 #define LWIP_RAND                  rand
 #endif
-
 #endif /* __LWIPOPTS_H__ */

@@ -17,7 +17,7 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
-#include "tm4c129xnczad.h"
+#include "tm4c1294ncpdt.h"
 #include <rtthread.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -30,7 +30,10 @@ extern uint32_t SysClock;
 // <bool name="RT_USING_UART1" description="Using UART1" default="true" />
 //#define RT_USING_UART1
 // <bool name="RT_USING_UART2" description="Using UART2" default="true" />
-//#define RT_USING_UART2
+#define RT_USING_UART2
+#define RT_USING_UART3
+#define RT_USING_UART4
+#define RT_USING_UART6
 
 // </RDTConfigurator>
 

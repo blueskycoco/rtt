@@ -120,7 +120,7 @@
 // </section>
 
 // <section name="RT_USING_DFS" description="Device file system" default="true" >
-//#define RT_USING_DFS
+#define RT_USING_DFS
 // <bool name="DFS_USING_WORKDIR" description="Using working directory" default="true" />
 //#define DFS_USING_WORKDIR
 // <integer name="DFS_FILESYSTEM_TYPES_MAX" description="The maximal number of the supported file system type" default="4" />
@@ -158,21 +158,21 @@
 // <bool name="RT_USING_DFS_DEVFS" description="Using devfs for device objects" default="true" />
 #define RT_USING_DFS_DEVFS
 // <bool name="RT_USING_DFS_ROMFS" description="Using ROMFS" default="false" />
-//#define RT_USING_DFS_ROMFS
+#define RT_USING_DFS_ROMFS
 // <bool name="RT_USING_DFS_NFS" description="Using NFS" default="false" />
-//#define RT_USING_DFS_NFS
+#define RT_USING_DFS_NFS
 // <string name="RT_NFS_HOST_EXPORT" description="The exported NFS host path" default="192.168.1.10:/" />
-#define RT_NFS_HOST_EXPORT  "192.168.1.20:/"
+#define RT_NFS_HOST_EXPORT  "192.168.1.6:/"
 // </section>
 
 // <section name="RT_USING_LWIP" description="lwip, a lightweight TCP/IP protocol stack" default="true" >
 #define RT_USING_LWIP
 // <bool name="RT_USING_LWIP141" description="Using lwIP 1.4.1 version" default="true" />
-#define RT_USING_LWIP141
+/*#define RT_USING_LWIP141*/
 // <bool name="RT_LWIP_ICMP" description="Enable ICMP protocol" default="true" />
 #define RT_LWIP_ICMP
 // <bool name="RT_LWIP_IGMP" description="Enable IGMP protocol" default="false" />
-// #define RT_LWIP_IGMP
+#define RT_LWIP_IGMP
 // <bool name="RT_LWIP_UDP" description="Enable UDP protocol" default="true" />
 #define RT_LWIP_UDP
 // <bool name="RT_LWIP_TCP" description="Enable TCP protocol" default="true" />
@@ -180,19 +180,19 @@
 // <bool name="RT_LWIP_DNS" description="Enable DNS protocol" default="true" />
 #define RT_LWIP_DNS
 // <integer name="RT_LWIP_PBUF_NUM" description="Maximal number of buffers in the pbuf pool" default="4" />
-#define RT_LWIP_PBUF_NUM    4
+#define RT_LWIP_PBUF_NUM    16
 // <integer name="RT_LWIP_TCP_PCB_NUM" description="Maximal number of simultaneously active TCP connections" default="5" />
 #define RT_LWIP_TCP_PCB_NUM 3
 // <integer name="RT_LWIP_TCP_SND_BUF" description="TCP sender buffer size" default="8192" />
-#define RT_LWIP_TCP_SND_BUF 4086
+#define RT_LWIP_TCP_SND_BUF 8192 //4096
 // <integer name="RT_LWIP_TCP_WND" description="TCP receive window" default="8192" />
-#define RT_LWIP_TCP_WND 2048
+#define RT_LWIP_TCP_WND 4096//2048
 // <bool name="RT_LWIP_SNMP" description="Enable SNMP protocol" default="false" />
 // #define RT_LWIP_SNMP
 // <bool name="RT_LWIP_DHCP" description="Enable DHCP client to get IP address" default="false" />
-// #define RT_LWIP_DHCP
+//#define RT_LWIP_DHCP
 // <integer name="RT_LWIP_TCP_SEG_NUM" description="the number of simultaneously queued TCP" default="4" />
-#define RT_LWIP_TCP_SEG_NUM 12
+#define RT_LWIP_TCP_SEG_NUM 144
 // <integer name="RT_LWIP_TCPTHREAD_PRIORITY" description="the thread priority of TCP thread" default="128" />
 #define RT_LWIP_TCPTHREAD_PRIORITY  12
 // <integer name="RT_LWIP_TCPTHREAD_MBOX_SIZE" description="the mail box size of TCP thread to wait for" default="32" />
@@ -221,8 +221,22 @@
 #define RT_LWIP_MSKADDR2 255
 #define RT_LWIP_MSKADDR3 0
 // </section>
-
-
+#define RT_LWIP_IPV6 1
+#define RT_LWIP_IPV6_AUTOCONFIG 1
+#define RT_USING_LWIP_HEAD 1
+#define RT_USING_NETUTILS 1
+#define LWIP_CHECKSUM_ON_COPY 0
+#define CHECKSUM_GEN_UDP 0
+#define CHECKSUM_GEN_TCP 0
+#define CHECKSUM_GEN_ICMP 0
+#define CHECKSUM_GEN_ICMP6 0
+#define CHECKSUM_GEN_IP 0
+#define CHECKSUM_CHECK_IP 0
+#define CHECKSUM_CHECK_UDP 0
+#define CHECKSUM_CHECK_TCP 0
+#define CHECKSUM_CHECK_ICMP 0
+#define CHECKSUM_CHECK_ICMP6 0
+#define RT_SERIAL_RB_BUFSZ 512
 
 // </RDTConfigurator>
 

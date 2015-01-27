@@ -387,6 +387,37 @@ int eth_system_device_init(void)
 	return 0;
 }
 INIT_DEVICE_EXPORT(eth_system_device_init);
+#if LWIP_IPV6
+void set_if6(char* netif_name, char* ip6_addr)
+{
+	struct netif* netif = netif_list;
+	struct ip6_addr ip6addr;
+	
+	if(strlen(netif_name) > sizeof(netif->name))
+	{
+		rt_kprintf("network interface name too long!\r\n");
+		return;
+	}
+	
+	while(netif != RT_NULL)
+	{
+		if(strncmp(netif_name, netif->name, sizeof(netif->name)) == 0)
+			break;
+
+		netif = netif->next;
+		if( netif == RT_NULL)
+		{
+			rt_kprintf("network interface: %s not found!\r\n", netif_name);
+			return;
+		}		
+	}
+	if((ip6_addr != RT_NULL) && ip6addr_aton(ip6_addr, &ip6addr))
+	{
+		ip6_addr_copy(netif->ip6_addr[1], ip6addr);
+		netif_ip6_addr_set_state(netif, 1, IP6_ADDR_TENTATIVE);
+	}	
+}
+#endif
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
@@ -438,35 +469,6 @@ void set_if(char* netif_name, char* ip_addr, char* gw_addr, char* nm_addr)
 FINSH_FUNCTION_EXPORT(set_if, set network interface address);
 
 #if LWIP_IPV6
-void set_if6(char* netif_name, char* ip6_addr)
-{
-	struct netif* netif = netif_list;
-	struct ip6_addr ip6addr;
-	
-	if(strlen(netif_name) > sizeof(netif->name))
-	{
-		rt_kprintf("network interface name too long!\r\n");
-		return;
-	}
-	
-	while(netif != RT_NULL)
-	{
-		if(strncmp(netif_name, netif->name, sizeof(netif->name)) == 0)
-			break;
-
-		netif = netif->next;
-		if( netif == RT_NULL)
-		{
-			rt_kprintf("network interface: %s not found!\r\n", netif_name);
-			return;
-		}		
-	}
-	if((ip6_addr != RT_NULL) && ip6addr_aton(ip6_addr, &ip6addr))
-	{
-		ip6_addr_copy(netif->ip6_addr[1], ip6addr);
-		netif_ip6_addr_set_state(netif, 1, IP6_ADDR_TENTATIVE);
-	}	
-}
 FINSH_FUNCTION_EXPORT(set_if6, set ipv6 local address)
 #endif
 

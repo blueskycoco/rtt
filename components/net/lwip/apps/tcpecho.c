@@ -1,23 +1,22 @@
 #include <lwip/api.h>
 
 #define TCP_ECHO_PORT   7
-
+struct netconn *conn, *newconn;
 void tcpecho_entry(void *parameter)
 {
-	struct netconn *conn, *newconn;
+	
 	err_t err;
 
 	/* Create a new connection identifier. */
 	conn = netconn_new(NETCONN_TCP);
-
 	/* Bind connection to well known port number 7. */
 	netconn_bind(conn, NULL, TCP_ECHO_PORT);
-
 	/* Tell connection to go into listening mode. */
 	netconn_listen(conn);
 
 	while(1)
 	{
+		
 		/* Grab new connection. */
 		err = netconn_accept(conn, &newconn);
 		/* Process the new connection. */
@@ -41,6 +40,7 @@ void tcpecho_entry(void *parameter)
 			/* Close connection and discard connection identifier. */
 			netconn_delete(newconn);
 		}
+		
 	}
 }
 
@@ -62,6 +62,10 @@ void tcpecho(rt_uint32_t startup)
         if (echo_tid != RT_NULL)
             rt_thread_delete(echo_tid); /* delete thread */
         echo_tid = RT_NULL;
+		if(conn)
+			netconn_delete(conn);
+		if(newconn)
+			netconn_delete(newconn);
     }
 }
 FINSH_FUNCTION_EXPORT(tcpecho, startup or stop TCP echo server);
