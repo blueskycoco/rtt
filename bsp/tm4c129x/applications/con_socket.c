@@ -152,7 +152,6 @@ void socket_ip6_r(void *paramter)
 			{
 				rt_kprintf("Thread ip6_r_%d Recvfrom error,connection lost\n",dev);
 			}
-			break;
 		}		    
 	}
 }
@@ -522,7 +521,7 @@ void socket_init()
 {
 	rt_uint8_t *thread_string;
 	int i;
-	g_conf.config[0]=CONFIG_SERVER/*|CONFIG_IPV6*/|CONFIG_TCP;
+	g_conf.config[0]=CONFIG_SERVER|CONFIG_IPV6/*|CONFIG_TCP*/;
 	g_conf.config[1]=0;
 	g_conf.config[2]=CONFIG_SERVER;
 	g_conf.config[3]=CONFIG_SERVER;
