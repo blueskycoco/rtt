@@ -99,8 +99,8 @@ static void dump_thread_entry(void* parameter)
 				if((is_right(g_conf.config[dev/2],CONFIG_IPV6)&&g_ip6[dev/2].connected)||(!is_right(g_conf.config[dev/2],CONFIG_IPV6)&&g_ip4[dev/2].connected))
 				{					
 					rt_data_queue_push(&g_data_queue[dev-1], ptr, len, RT_WAITING_FOREVER);
-					if(!is_right(g_conf.config[dev/2],CONFIG_TCP))
-					rt_thread_delay(10);
+					//if(!is_right(g_conf.config[dev/2],CONFIG_TCP))
+					//rt_thread_delay(10);
 				}
 			}
 		}

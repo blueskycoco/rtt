@@ -121,7 +121,7 @@ void socket_ip6_r(void *paramter)
 			}
 			if(status>0)
 			{
-				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip6[dev].recv_data, status, 0);
+				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip6[dev].recv_data, status, RT_WAITING_FOREVER);
 			}
 			else
 			{
@@ -370,7 +370,7 @@ void socket_ip4_r(void *paramter)
 			}
 			if(status>0)
 			{
-				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip4[dev].recv_data, status, 0);
+				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip4[dev].recv_data, status, RT_WAITING_FOREVER);
 			}
 			else
 			{
@@ -380,7 +380,6 @@ void socket_ip4_r(void *paramter)
 					//server&tcp mode need closesocket clientfd
 					
 						closesocket(g_ip4[dev].clientfd);
-						g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
 				}
 				else
 				{
@@ -397,7 +396,7 @@ void socket_ip4_r(void *paramter)
 			status=recvfrom(g_ip4[dev].sockfd, g_ip4[dev].recv_data, BUF_SIZE, 0, (struct sockaddr *)&g_ip4[dev].server_addr, &clientlen);
 			if(status>0)
 			{				
-				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip4[dev].recv_data, status, 0);
+				rt_data_queue_push(&g_data_queue[dev*2+1], g_ip4[dev].recv_data, status, RT_WAITING_FOREVER);
 			}
 			else
 			{
@@ -523,7 +522,7 @@ void socket_init()
 {
 	rt_uint8_t *thread_string;
 	int i;
-	g_conf.config[0]=CONFIG_SERVER|CONFIG_IPV6/*|CONFIG_TCP*/;
+	g_conf.config[0]=CONFIG_SERVER/*|CONFIG_IPV6*/|CONFIG_TCP;
 	g_conf.config[1]=0;
 	g_conf.config[2]=CONFIG_SERVER;
 	g_conf.config[3]=CONFIG_SERVER;

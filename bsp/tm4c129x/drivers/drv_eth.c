@@ -871,6 +871,7 @@ tivaif_receive(net_device_t dev)
                       /* drop the packet */
                       LWIP_DEBUGF(NETIF_DEBUG, ("tivaif_input: input error\n"));
                       pbuf_free(pBuf);
+					  
 
                       /* Adjust the link statistics */
                       LINK_STATS_INC(link.memerr);
@@ -1379,7 +1380,7 @@ static struct pbuf* eth_dev_rx(rt_device_t dev)
 	rt_uint32_t temp =0;
 	net_device_t net_dev = (net_device_t)dev;
 	result = rt_mb_recv(net_dev->rx_pbuf_mb, &temp, RT_WAITING_NO);
-	
+
 	return (result == RT_EOK)? (struct pbuf*)temp : RT_NULL;
 }
 
@@ -1403,7 +1404,7 @@ rt_err_t rt_hw_tiva_eth_init(void)
 	
 	result = rt_mb_init(&eth_rx_pbuf_mb, "epbuf",
                         &rx_pbuf_mb_pool[0], sizeof(rx_pbuf_mb_pool)/4,
-                        RT_IPC_FLAG_FIFO);
+                        RT_IPC_FLAG_PRIO);
 	RT_ASSERT(result == RT_EOK);
 	eth_dev->rx_pbuf_mb = &eth_rx_pbuf_mb;
 	

@@ -200,7 +200,7 @@
 // <integer name="RT_LWIP_TCPTHREAD_STACKSIZE" description="the thread stack size of TCP thread" default="4096" />
 #define RT_LWIP_TCPTHREAD_STACKSIZE 4096
 // <integer name="RT_LWIP_ETHTHREAD_PRIORITY" description="the thread priority of ethnetif thread" default="144" />
-#define RT_LWIP_ETHTHREAD_PRIORITY  14
+#define RT_LWIP_ETHTHREAD_PRIORITY  8
 // <integer name="RT_LWIP_ETHTHREAD_MBOX_SIZE" description="the mail box size of ethnetif thread to wait for" default="8" />
 #define RT_LWIP_ETHTHREAD_MBOX_SIZE 8
 // <integer name="RT_LWIP_ETHTHREAD_STACKSIZE" description="the stack size of ethnetif thread" default="512" />
