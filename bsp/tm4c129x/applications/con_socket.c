@@ -521,10 +521,10 @@ void socket_init()
 {
 	rt_uint8_t *thread_string;
 	int i;
-	g_conf.config[0]=CONFIG_SERVER|CONFIG_IPV6/*|CONFIG_TCP*/;
-	g_conf.config[1]=0;
-	g_conf.config[2]=CONFIG_SERVER;
-	g_conf.config[3]=CONFIG_SERVER;
+	g_conf.config[0]=CONFIG_SERVER|CONFIG_IPV6|CONFIG_TCP;
+	g_conf.config[1]=CONFIG_SERVER|CONFIG_TCP;
+	g_conf.config[2]=CONFIG_SERVER|CONFIG_TCP;
+	g_conf.config[3]=CONFIG_SERVER|CONFIG_TCP;
 	g_conf.local_port[0]=1234;
 	g_conf.local_port[1]=1235;
 	g_conf.local_port[2]=1236;
@@ -551,7 +551,7 @@ void socket_init()
 	g_conf.remote_port[3]=1237;
 	rt_kprintf("g_conf.config %x,%x,%x,%x\r\n",g_conf.config[0],g_conf.config[1],g_conf.config[2],g_conf.config[3]);
 	thread_string=(rt_uint8_t *)rt_malloc(20*sizeof(rt_uint8_t));
-	for(i=0;i<3;i++)
+	for(i=0;i<4;i++)
 	{
 		g_ip6[i].connected=false;
 		g_ip4[i].connected=false;

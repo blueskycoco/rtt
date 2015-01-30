@@ -55,7 +55,7 @@ static rt_err_t uart_rx_ind(rt_device_t dev, rt_size_t size)
     return RT_EOK;
 }
 
-
+#if 1
 rt_device_t uart_dev;
 bool phy_link=false;
 
@@ -116,7 +116,7 @@ static void dump_thread_entry(void* parameter)
 				char *ptr=(char *)rt_malloc((data_size+1)*sizeof(char));
 				rt_memcpy(ptr,last_data_ptr,data_size);
 				ptr[data_size]='\0';
-				rt_kprintf("socket %d sent %d receive %d=>%s\n",dev/2,sent_size,receive_size,ptr);
+				//rt_kprintf("socket %d sent %d receive %d=>%s\n",dev/2,sent_size,receive_size,ptr);
 				rt_free(ptr);
 			}
 			#else
@@ -142,7 +142,7 @@ static void dump_thread_entry1(void* parameter)
 		}
 	}
 }
-
+#endif
 /* thread phase init */
 void rt_init_thread_entry(void *parameter)
 {
@@ -162,7 +162,7 @@ void rt_init_thread_entry(void *parameter)
 	//ring_buffer_init();
 	//ping_test("192.168.1.7",5,32);
 	g_data_queue=(struct rt_data_queue *)rt_malloc(sizeof(struct rt_data_queue)*8);
-	for(i=0;i<6;i++)//0,1 for socket0,2,3 for socket1,4,5 for socket2,6,7 for socket3
+	for(i=0;i<8;i++)//0,1 for socket0,2,3 for socket1,4,5 for socket2,6,7 for socket3
 	{
 		if((i%2)==0)
 			rt_data_queue_init(&g_data_queue[i], 2048, 80, RT_NULL);
@@ -191,7 +191,8 @@ int rt_application_init(void)
 			    256, 20, 20);
     if(led_thread != RT_NULL)
 		  rt_thread_startup(led_thread);
-	for(i=0;i<3;i++)
+	#if 1
+	for(i=0;i<4;i++)
 	{
 		rt_sprintf(buf,"led%d",i);
 		led_thread = rt_thread_create(buf,
@@ -205,6 +206,6 @@ int rt_application_init(void)
 						1024, 20, 20);
 			if(led_thread != RT_NULL)
 				  rt_thread_startup(led_thread);
-
+	#endif
     return 0;
 }

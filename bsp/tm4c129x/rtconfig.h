@@ -91,7 +91,7 @@
 // <integer name="RT_MMCSD_THREAD_PREORITY" description="The prority of mmcsd thread" default="15" />
 #define RT_MMCSD_THREAD_PREORITY    15
 // <section name="RT_USING_CONSOLE" description="Using console" default="true" >
-#define RT_USING_CONSOLE
+//#define RT_USING_CONSOLE
 // <integer name="RT_CONSOLEBUF_SIZE" description="The buffer size for console output" default="128" />
 #define RT_CONSOLEBUF_SIZE  128
 // <string name="RT_CONSOLE_DEVICE_NAME" description="The device name for console" default="uart" />
@@ -101,7 +101,7 @@
 // <bool name="RT_USING_COMPONENTS_INIT" description="Using RT-Thread components initialization" default="true" />
 #define RT_USING_COMPONENTS_INIT
 // <section name="RT_USING_FINSH" description="Using finsh as shell, which is a C-Express shell" default="true" >
-#define RT_USING_FINSH
+//#define RT_USING_FINSH
 // <bool name="FINSH_USING_SYMTAB" description="Using symbol table in finsh shell" default="true" />
 #define FINSH_USING_SYMTAB
 // <bool name="FINSH_USING_DESCRIPTION" description="Keeping description in symbol table" default="true" />
@@ -180,9 +180,9 @@
 // <bool name="RT_LWIP_DNS" description="Enable DNS protocol" default="true" />
 #define RT_LWIP_DNS
 // <integer name="RT_LWIP_PBUF_NUM" description="Maximal number of buffers in the pbuf pool" default="4" />
-#define RT_LWIP_PBUF_NUM    16
+#define RT_LWIP_PBUF_NUM    36
 // <integer name="RT_LWIP_TCP_PCB_NUM" description="Maximal number of simultaneously active TCP connections" default="5" />
-#define RT_LWIP_TCP_PCB_NUM 3
+#define RT_LWIP_TCP_PCB_NUM 9
 // <integer name="RT_LWIP_TCP_SND_BUF" description="TCP sender buffer size" default="8192" />
 #define RT_LWIP_TCP_SND_BUF 8192 //4096
 // <integer name="RT_LWIP_TCP_WND" description="TCP receive window" default="8192" />

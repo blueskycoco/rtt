@@ -16,15 +16,7 @@ typedef struct {
 	rt_uint16_t remote_port[4];
 	rt_uint8_t config[4];//bit0 ipv4 or ipv6 	,bit1 tcp or udp , bit2 server or client ,bit 3 to bit 7 uart baud
 }config,*pconfig;
-typedef struct {
-	rt_uint8_t *socket_buf_send[4];/*every buf use 10k*/
-	rt_uint8_t *socket_buf_recv[4];
-	rt_uint16_t w_send_index[4];
-	rt_uint16_t r_send_index[4];	
-	rt_uint16_t w_recv_index[4];
-	rt_uint16_t r_recv_index[4];
-}ringbuf,*pringbuf;
-pringbuf g_ringbuf;
+
 config g_conf;
 #define CONFIG_IPV6 			0x01
 #define CONFIG_TCP 				0x02

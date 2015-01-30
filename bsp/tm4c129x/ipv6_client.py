@@ -46,9 +46,9 @@ class MiniClient:
         while True:
             tcpT4Client.send('hello')
             self.d = self.d + len('hello')
-            #buf = tcpT4Client.recv(1024)
-            #print "Receive  ", buf
-            #self.c = self.c + len(buf)
+            buf = tcpT4Client.recv(1024)
+            print "Receive  ", buf
+            self.c = self.c + len(buf)
             print "Received length = ", self.c, "Sent length = ", self.d
         
     def udpC6(self):
