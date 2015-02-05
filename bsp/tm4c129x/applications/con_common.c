@@ -61,6 +61,11 @@ unsigned char config_uart_baud1[1+7]			={0xF5,0x8A,0x1d,0xff,0x26,0xfa,0x00,0x00
 unsigned char config_uart_baud2[1+7]			={0xF5,0x8A,0x1e,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
 unsigned char config_uart_baud3[1+7]			={0xF5,0x8A,0x1f,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
 unsigned char config_local_ip6[64+7]			={0xF5,0x8A,0x20,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip6*/
+unsigned char config_tcp0[1+7]					={0xF5,0x8A,0x21,0xff,0x26,0xfa,0x00,0x00};/*protol0*/
+unsigned char config_tcp1[1+7]					={0xF5,0x8A,0x22,0xff,0x26,0xfa,0x00,0x00};/*protol1*/
+unsigned char config_tcp2[1+7]					={0xF5,0x8A,0x23,0xff,0x26,0xfa,0x00,0x00};/*protol2*/
+unsigned char config_tcp3[1+7]					={0xF5,0x8A,0x24,0xff,0x26,0xfa,0x00,0x00};/*protol3*/
+
 void print_config();
 
 unsigned char get_config[35];//			={0xF5,0x8B,0x0f,0xff,0xff,0xff,0xff,0x27,0xfa,0x00,0x00};/*get config 0xf5,0x8b,********0x27,0xfa,0x00,0x00*/
@@ -151,9 +156,10 @@ void default_config()
 	set_if6("e0","fe80::1");
 	set_if("e0","192.168.1.30","255.255.255.0","192.168.1.1");
 }
-void set_config(rt_uint8_t *data)
+void set_config(rt_uint8_t *data,int ipv6_len)
 {
 	bool ipv6_changed=false,ipv4_changed=false;
+	int i;
 	switch(data[0])
 	{
 		case 0:
@@ -170,19 +176,23 @@ void set_config(rt_uint8_t *data)
 		case 4:
 		{
 			//set local port
-			g_conf.local_port[data[0]-1]=(data[2]<<8|data[1]);
+			g_conf.local_port[data[0]-1]=(data[1]<<8|data[2]);
 		}
 		break;
 		case 5:
 		{
 			//set sub msk
 			ipv4_changed=true;
+			rt_memset(g_conf.sub_msk,'\0',16);
+			rt_sprintf(g_conf.sub_msk,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
 		}
 		break;
 		case 6:
 		{
 			//set gateway
 			ipv4_changed=true;
+			rt_memset(g_conf.gw,'\0',16);
+			rt_sprintf(g_conf.gw,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
 		}
 		break;
 		case 7:
@@ -197,7 +207,8 @@ void set_config(rt_uint8_t *data)
 		case 11:
 		{
 			//set remote ipv4 ip
-			
+			rt_memset(g_conf.remote_ip[data[0]-8],'\0',16);
+			rt_sprintf(g_conf.remote_ip[data[0]-8],"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
 		}
 		break;
 		case 12:
@@ -206,7 +217,9 @@ void set_config(rt_uint8_t *data)
 		case 15:
 		{
 			//set remote ipv6 ip
-			
+			rt_memset(g_conf.remote_ip6[data[0]-12],'\0',64);
+			for(i=0;i<ipv6_len;i++)
+				g_conf.remote_ip6[data[0]-12][i]=data[i+1];
 		}
 		break;
 		case 16:
@@ -215,7 +228,7 @@ void set_config(rt_uint8_t *data)
 		case 19:
 		{
 			//set remote port
-			
+			g_conf.remote_port[data[0]-16]=(data[1]<<8|data[2]);
 		}
 		break;
 		case 20:
@@ -223,8 +236,11 @@ void set_config(rt_uint8_t *data)
 		case 22:
 		case 23:
 		{
-			//set net protol
-			
+			//set net protol ipv4 or ipv6
+			if(data[1])
+				g_conf.config[data[0]-20]|=CONFIG_IPV6;
+			else
+				g_conf.config[data[0]-20]&=~CONFIG_IPV6;
 		}
 		break;
 		case 24:
@@ -233,7 +249,10 @@ void set_config(rt_uint8_t *data)
 		case 27:
 		{
 			//set server or client mode
-			
+			if(data[1])
+				g_conf.config[data[0]-24]|=CONFIG_SERVER;
+			else
+				g_conf.config[data[0]-24]&=~CONFIG_SERVER;
 		}
 		break;
 		case 28:
@@ -242,16 +261,29 @@ void set_config(rt_uint8_t *data)
 		case 31:
 		{
 			//set uart baud
-			
+			g_conf.config[data[0]-28]=((g_conf.config[data[0]-20]&0x07)|(data[1]<<3));
 		}
 		break;
 		case 32:
 		{
 			//set local ipv6 ip
 			ipv6_changed=true;
+			rt_memset(g_conf.local_ip6,'\0',64);
+			for(i=0;i<ipv6_len;i++)
+				g_conf.local_ip6[i]=data[i+1];
 		}
 		break;
-		
+		case 33:
+		case 34:
+		case 35:
+		case 36:
+		{//set tcp or udp
+			if(data[1])
+				g_conf.config[data[0]-33]|=CONFIG_TCP;
+			else
+				g_conf.config[data[0]-33]&=~CONFIG_TCP;
+		}
+		break;
 	}
 	if(ipv4_changed)
 		set_if("e0",g_conf.local_ip,g_conf.sub_msk,g_conf.gw);
@@ -296,7 +328,7 @@ void common_rw_config(int dev)
 			*(ptr+data_len)=ch;
 			if(data_len==0)
 			{
-				if(ch==0x0c || ch==0x0d || ch==0x0e || ch==0x20)
+				if(ch==0x0c || ch==0x0d || ch==0x0e || ch==0x0f || ch==0x20)
 					state=GET_LEN;
  			}
 			else
@@ -330,7 +362,7 @@ void common_rw_config(int dev)
 			if(crc_len==2)
 			{
 				//verify checksum
-				int verify=0xf5+0x8a+0xfa+0x26;
+				int verify=0xf5+0x8a+0xfa+0x26+longlen;
 				rt_kprintf("command is \n");
 				for(i=0;i<data_len;i++)
 				{
@@ -339,11 +371,11 @@ void common_rw_config(int dev)
 				}
 				rt_kprintf("crc is %2x %2x\n",crc[0],crc[1]);
 				if(verify!=(crc[0]<<8|crc[1]))
-					rt_kprintf("verify crc error\n");
+					rt_kprintf("verify %d crc error\n",verify);
 				else
 				{
 					rt_kprintf("Command OK\n");
-					set_config(ptr);
+					set_config(ptr,longlen);
 				}
 				state=GET_F5;
 			}
