@@ -9,6 +9,7 @@
 
 typedef struct {
 	rt_uint8_t local_ip[16];
+	rt_uint8_t local_ip6[64];
 	rt_uint16_t local_port[4];
 	rt_uint8_t sub_msk[16];
 	rt_uint8_t gw[16];

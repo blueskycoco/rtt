@@ -418,9 +418,6 @@ void set_if6(char* netif_name, char* ip6_addr)
 	}	
 }
 #endif
-
-#ifdef RT_USING_FINSH
-#include <finsh.h>
 void set_if(char* netif_name, char* ip_addr, char* gw_addr, char* nm_addr)
 {
     struct ip_addr *ip;
@@ -466,6 +463,10 @@ void set_if(char* netif_name, char* ip_addr, char* gw_addr, char* nm_addr)
         netif_set_netmask(netif, ip);
     }
 }
+
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+
 FINSH_FUNCTION_EXPORT(set_if, set network interface address);
 
 #if LWIP_IPV6

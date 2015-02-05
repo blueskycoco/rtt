@@ -157,8 +157,8 @@ void rt_init_thread_entry(void *parameter)
 #ifdef RT_USING_FINSH
     finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif
-	set_if6("e0","fe80::1");
-	netio_init();
+	
+	
 	//app_uart_init();
 	//uart_init();
 	//ring_buffer_init();
@@ -173,6 +173,7 @@ void rt_init_thread_entry(void *parameter)
 			rt_data_queue_init(&g_data_queue[i], 2048, 80, RT_NULL);
 	}
 	common_init(DEV_UART);
+	netio_init();
 	//socket_init();
 	//ping_test6("fe80::5867:8730:e9e6:d5c5%11",5,32);
 	//ping_test6("fe80::483:d903:e2ee:d05e%12",5,32);

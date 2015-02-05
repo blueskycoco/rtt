@@ -60,6 +60,9 @@ unsigned char config_uart_baud0[1+7]			={0xF5,0x8A,0x1c,0xff,0x26,0xfa,0x00,0x00
 unsigned char config_uart_baud1[1+7]			={0xF5,0x8A,0x1d,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
 unsigned char config_uart_baud2[1+7]			={0xF5,0x8A,0x1e,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
 unsigned char config_uart_baud3[1+7]			={0xF5,0x8A,0x1f,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
+unsigned char config_local_ip6[64+7]			={0xF5,0x8A,0x20,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip6*/
+void print_config();
+
 unsigned char get_config[35];//			={0xF5,0x8B,0x0f,0xff,0xff,0xff,0xff,0x27,0xfa,0x00,0x00};/*get config 0xf5,0x8b,********0x27,0xfa,0x00,0x00*/
 rt_thread_t tid_common_w[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL},tid_common_r[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL};
 rt_device_t common_dev[4] = {RT_NULL,RT_NULL,RT_NULL,RT_NULL};
@@ -68,6 +71,7 @@ bool phy_link=false;
 enum STATE_OP{
 	GET_F5,
 	GET_8A_8B,
+	GET_LEN,
 	GET_DATA,
 	GET_26,
 	GET_FA,
@@ -107,19 +111,246 @@ void IntGpioB()
 }
 */
 /*get config data to global config zone, or get socket data to buffer*/
-
+void default_config()
+{
+	struct netif * netif=netif_list;
+	g_conf.config[0]=CONFIG_IPV6|CONFIG_TCP;
+	g_conf.config[1]=CONFIG_TCP;
+	g_conf.config[2]=CONFIG_TCP;
+	g_conf.config[3]=CONFIG_TCP;
+	g_conf.local_port[0]=1234;
+	g_conf.local_port[1]=1235;
+	g_conf.local_port[2]=1236;
+	g_conf.local_port[3]=1237;
+	memset(g_conf.remote_ip[0],'\0',16);
+	strcpy(g_conf.remote_ip[0],"192.168.1.6");
+	memset(g_conf.remote_ip[1],'\0',16);
+	strcpy(g_conf.remote_ip[1],"192.168.1.6");
+	memset(g_conf.remote_ip[2],'\0',16);
+	strcpy(g_conf.remote_ip[2],"192.168.1.6");
+	memset(g_conf.remote_ip[3],'\0',16);
+	strcpy(g_conf.remote_ip[3],"192.168.1.6");
+	memset(g_conf.remote_ip6[0],'\0',64);
+	strcpy(g_conf.remote_ip6[0],"fe80::5867:8730:e9e6:d5c5%11");
+	memset(g_conf.remote_ip6[1],'\0',64);
+	strcpy(g_conf.remote_ip6[1],"fe80::5867:8730:e9e6:d5c5%11");
+	memset(g_conf.remote_ip6[2],'\0',64);
+	strcpy(g_conf.remote_ip6[2],"fe80::5867:8730:e9e6:d5c5%11");
+	memset(g_conf.remote_ip6[3],'\0',64);
+	strcpy(g_conf.remote_ip6[3],"fe80::5867:8730:e9e6:d5c5%11");
+	memset(g_conf.gw,'\0',16);
+	strcpy(g_conf.gw,"192.168.1.1");	
+	memset(g_conf.sub_msk,'\0',16);
+	strcpy(g_conf.sub_msk,"255.255.255.0");
+	memset(g_conf.mac,'\0',16);
+	rt_sprintf(g_conf.mac,"%02x:%02x:%02x:%02x:%02x:%02x",netif->hwaddr[0],netif->hwaddr[1],netif->hwaddr[2],netif->hwaddr[3],netif->hwaddr[4],netif->hwaddr[5]);
+	g_conf.remote_port[0]=1234;
+	g_conf.remote_port[1]=1235;
+	g_conf.remote_port[2]=1236;
+	g_conf.remote_port[3]=1237;
+	set_if6("e0","fe80::1");
+	set_if("e0","192.168.1.30","255.255.255.0","192.168.1.1");
+}
+void set_config(rt_uint8_t *data)
+{
+	bool ipv6_changed=false,ipv4_changed=false;
+	switch(data[0])
+	{
+		case 0:
+		{
+			//set local ipv4 ip
+			ipv4_changed=true;
+			rt_memset(g_conf.local_ip,'\0',16);
+			rt_sprintf(g_conf.local_ip,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+		}
+		break;
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		{
+			//set local port
+			g_conf.local_port[data[0]-1]=(data[2]<<8|data[1]);
+		}
+		break;
+		case 5:
+		{
+			//set sub msk
+			ipv4_changed=true;
+		}
+		break;
+		case 6:
+		{
+			//set gateway
+			ipv4_changed=true;
+		}
+		break;
+		case 7:
+		{
+			//set mac
+			
+		}
+		break;
+		case 8:
+		case 9:
+		case 10:
+		case 11:
+		{
+			//set remote ipv4 ip
+			
+		}
+		break;
+		case 12:
+		case 13:			
+		case 14:
+		case 15:
+		{
+			//set remote ipv6 ip
+			
+		}
+		break;
+		case 16:
+		case 17:
+		case 18:
+		case 19:
+		{
+			//set remote port
+			
+		}
+		break;
+		case 20:
+		case 21:
+		case 22:
+		case 23:
+		{
+			//set net protol
+			
+		}
+		break;
+		case 24:
+		case 25:
+		case 26:
+		case 27:
+		{
+			//set server or client mode
+			
+		}
+		break;
+		case 28:
+		case 29:
+		case 30:
+		case 31:
+		{
+			//set uart baud
+			
+		}
+		break;
+		case 32:
+		{
+			//set local ipv6 ip
+			ipv6_changed=true;
+		}
+		break;
+		
+	}
+	if(ipv4_changed)
+		set_if("e0",g_conf.local_ip,g_conf.sub_msk,g_conf.gw);
+	if(ipv6_changed)
+		set_if6("e0",g_conf.local_ip6);
+	print_config();
+}
 void common_rw_config(int dev)
 {
-#if 0
-	static rt_uint8_t buf[6];
+
+	static rt_uint8_t buf[65];
 	rt_uint8_t i=0;
-	static int data_len,crc_len;
+	static int data_len,crc_len,longlen=0;
 	static unsigned char crc[2];
 	char ch;	
 	static rt_uint8_t len=0,param;
 	static enum STATE_OP state=GET_F5;
 	DBG("enter common_rw_config\r\n");
-	while((rt_device_read(dev, 0, &ch, 1) == 1))
+	rt_uint8_t *ptr=(rt_uint8_t *)buf;
+	while((rt_device_read(common_dev[dev], 0, &ch, 1) == 1))
+	{
+		if(ch==0xf5 && state==GET_F5)
+		{
+			DBG("GET_F5\n");
+			state=GET_8A_8B;
+		}
+		else if(ch==0x8a && state==GET_8A_8B)
+		{
+			DBG("GET_8A\n");
+			data_len=0;
+			longlen=0;
+			state=GET_DATA;
+		}
+		else if(ch==0x8b && state==GET_8A_8B)
+		{
+			DBG("GET_8B\n");
+			break;
+		}
+		else if(state==GET_DATA)
+		{	
+			DBG("GET_DATA %2x\n",ch);
+			*(ptr+data_len)=ch;
+			if(data_len==0)
+			{
+				if(ch==0x0c || ch==0x0d || ch==0x0e || ch==0x20)
+					state=GET_LEN;
+ 			}
+			else
+			{
+				if(ch==0x26&&(data_len>longlen))
+					state=GET_FA;
+ 			}
+			
+			data_len++;
+		}
+		else if(state==GET_LEN)
+		{
+			DBG("GET_LEN %2x\n",ch);
+			longlen=ch;
+			state=GET_DATA;
+		}
+		else if(ch==0xfa && state==GET_FA)
+		{
+			DBG("GET_FA\n");
+			data_len--;
+			crc_len=0;
+			state=GET_CHECSUM;
+		}
+		else if(state==GET_CHECSUM)
+		{
+			if(crc_len!=2)
+			{
+				crc[crc_len++]=ch;
+			}
+
+			if(crc_len==2)
+			{
+				//verify checksum
+				int verify=0xf5+0x8a+0xfa+0x26;
+				rt_kprintf("command is \n");
+				for(i=0;i<data_len;i++)
+				{
+					rt_kprintf("%2x ",ptr[i]);	
+					verify+=ptr[i];
+				}
+				rt_kprintf("crc is %2x %2x\n",crc[0],crc[1]);
+				if(verify!=(crc[0]<<8|crc[1]))
+					rt_kprintf("verify crc error\n");
+				else
+				{
+					rt_kprintf("Command OK\n");
+					set_config(ptr);
+				}
+				state=GET_F5;
+			}
+		}
+	}
+#if 0
+	while((rt_device_read(common_dev[dev], 0, &ch, 1) == 1))
 	{
 		DBG("%x ==> %d\r\n",ch,state);
 		switch(state)
@@ -380,7 +611,7 @@ void common_rw_config(int dev)
 			break;
 		}
 	}
-	#endif
+#endif
 }
 static bool flag_cnn[4]={false,false,false,false};
 void all_cut()
@@ -450,7 +681,7 @@ void cnn_out(int index,int level)
 int baud(int type)
 {
 	switch(type)
-		{
+	{
 		case 0:
 			return 115200;
 		case 1:
@@ -470,6 +701,7 @@ int baud(int type)
 }
 void print_config()
 {
+	rt_kprintf("\n============================================================================>\n");
 	rt_kprintf("local_ip %s\n",g_conf.local_ip);
 	rt_kprintf("local_port0 %d\n",g_conf.local_port[0]);
 	rt_kprintf("local_port1 %d\n",g_conf.local_port[1]);
@@ -490,10 +722,11 @@ void print_config()
 	rt_kprintf("remote_port1 %d\n",g_conf.remote_port[1]);
 	rt_kprintf("remote_port2 %d\n",g_conf.remote_port[2]);
 	rt_kprintf("remote_port3 %d\n",g_conf.remote_port[3]);
-	rt_kprintf("IP socket0 %s socket1 %s socket2 %s socket3 %s\n",(g_conf.config[0]&0x01==0)?"IPV4":"IPV6",(g_conf.config[1]&0x01==0)?"IPV4":"IPV6",(g_conf.config[2]&0x01==0)?"IPV4":"IPV6",(g_conf.config[3]&0x01==0)?"IPV4":"IPV6");
-	rt_kprintf("protol socket0 %s socket1 %s socket2 %s socket3 %s\n",(g_conf.config[0]&0x02==0)?"TCP":"UDP",(g_conf.config[1]&0x02==0)?"TCP":"UDP",(g_conf.config[2]&0x02==0)?"TCP":"UDP",(g_conf.config[3]&0x02==0)?"TCP":"UDP");
-	rt_kprintf("mode socket0 %s socket1 %s socket2 %s socket3 %s\n",(g_conf.config[0]&0x04==0)?"SERVER":"CLIENT",(g_conf.config[1]&0x04==0)?"SERVER":"CLIENT",(g_conf.config[2]&0x04==0)?"SERVER":"CLIENT",(g_conf.config[3]&0x04==0)?"SERVER":"CLIENT");
-	rt_kprintf("baud %d.%d.%d.%d\n",baud(g_conf.config[0]&0xf8>>3),baud(g_conf.config[1]&0xf8>>3),baud(g_conf.config[2]&0xf8>>3),baud(g_conf.config[3]&0xf8>>3));
+	rt_kprintf("IP socket0 %s socket1 %s socket2 %s socket3 %s\n",((g_conf.config[0]&0x01)==0)?"IPV4":"IPV6",((g_conf.config[1]&0x01)==0)?"IPV4":"IPV6",((g_conf.config[2]&0x01)==0)?"IPV4":"IPV6",((g_conf.config[3]&0x01)==0)?"IPV4":"IPV6");
+	rt_kprintf("protol socket0 %s socket1 %s socket2 %s socket3 %s\n",((g_conf.config[0]&0x02)==0x02)?"TCP":"UDP",((g_conf.config[1]&0x02)==0x02)?"TCP":"UDP",((g_conf.config[2]&0x02)==0x02)?"TCP":"UDP",((g_conf.config[3]&0x02)==0x02)?"TCP":"UDP");
+	rt_kprintf("mode socket0 %s socket1 %s socket2 %s socket3 %s\n",((g_conf.config[0]&0x04)==0x04)?"SERVER":"CLIENT",((g_conf.config[1]&0x04)==0x04)?"SERVER":"CLIENT",((g_conf.config[2]&0x04)==0x04)?"SERVER":"CLIENT",((g_conf.config[3]&0x04)==0x04)?"SERVER":"CLIENT");
+	rt_kprintf("baud %d.%d.%d.%d\n",baud((g_conf.config[0]&0xf8)>>3),baud((g_conf.config[1]&0xf8)>>3),baud((g_conf.config[2]&0xf8)>>3),baud((g_conf.config[3]&0xf8)>>3));
+	rt_kprintf("\n============================================================================>\n");
 }
 int common_w_socket(int dev)
 {	
@@ -594,6 +827,8 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 	MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,GPIO_PIN_4);	
 	MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_5,0);	
 	MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_2,0);	
+	default_config();
+	ind[0]=0;
 
 	for(i=3;i<67;i++)
 	{
@@ -601,15 +836,18 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 		config_socket1_ip6[i]=0xff;
 		config_socket2_ip6[i]=0xff;
 		config_socket3_ip6[i]=0xff;
+		config_local_ip6[i]=0xff;
 	}
 	config_socket0_ip6[67]=0x26;
 	config_socket1_ip6[67]=0x26;
 	config_socket2_ip6[67]=0x26;
 	config_socket3_ip6[67]=0x26;
+	config_local_ip6[67]=0x26;
 	config_socket0_ip6[68]=0xfa;
 	config_socket1_ip6[68]=0xfa;
 	config_socket2_ip6[68]=0xfa;
 	config_socket3_ip6[68]=0xfa;
+	config_local_ip6[68]=0xfa;
 	for(i=0;i<4;i++)
 	{
 		//config sem

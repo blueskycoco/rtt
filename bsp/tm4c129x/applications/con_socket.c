@@ -549,34 +549,6 @@ void socket_ctl(bool open)
 {
 	rt_uint8_t *thread_string;
 	int i;
-	g_conf.config[0]=CONFIG_IPV6|CONFIG_TCP;
-	g_conf.config[1]=CONFIG_TCP;
-	g_conf.config[2]=CONFIG_TCP;
-	g_conf.config[3]=CONFIG_TCP;
-	g_conf.local_port[0]=1234;
-	g_conf.local_port[1]=1235;
-	g_conf.local_port[2]=1236;
-	g_conf.local_port[3]=1237;
-	memset(g_conf.remote_ip[0],'\0',16);
-	strcpy(g_conf.remote_ip[0],"192.168.1.6");
-	memset(g_conf.remote_ip[1],'\0',16);
-	strcpy(g_conf.remote_ip[1],"192.168.1.6");
-	memset(g_conf.remote_ip[2],'\0',16);
-	strcpy(g_conf.remote_ip[2],"192.168.1.6");
-	memset(g_conf.remote_ip[3],'\0',16);
-	strcpy(g_conf.remote_ip[3],"192.168.1.6");
-	memset(g_conf.remote_ip6[0],'\0',64);
-	strcpy(g_conf.remote_ip6[0],"fe80::5867:8730:e9e6:d5c5%11");
-	memset(g_conf.remote_ip6[1],'\0',64);
-	strcpy(g_conf.remote_ip6[1],"fe80::5867:8730:e9e6:d5c5%11");
-	memset(g_conf.remote_ip6[2],'\0',64);
-	strcpy(g_conf.remote_ip6[2],"fe80::5867:8730:e9e6:d5c5%11");
-	memset(g_conf.remote_ip6[3],'\0',64);
-	strcpy(g_conf.remote_ip6[3],"fe80::5867:8730:e9e6:d5c5%11");
-	g_conf.remote_port[0]=1234;
-	g_conf.remote_port[1]=1235;
-	g_conf.remote_port[2]=1236;
-	g_conf.remote_port[3]=1237;
 	rt_kprintf("g_conf.config %x,%x,%x,%x\r\n",g_conf.config[0],g_conf.config[1],g_conf.config[2],g_conf.config[3]);
 	thread_string=(rt_uint8_t *)rt_malloc(20*sizeof(rt_uint8_t));
 	for(i=0;i<4;i++)
