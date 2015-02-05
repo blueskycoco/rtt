@@ -28,6 +28,7 @@ void socket_ip6_w(void *paramter)
 			rt_thread_delay(10);
 			continue;
 		}
+		cnn_out(dev,1);
 		rt_data_queue_pop(&g_data_queue[dev*2], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
 		if(is_right(g_conf.config[dev],CONFIG_TCP))
 		{
@@ -65,6 +66,7 @@ void socket_ip6_w(void *paramter)
 						g_ip6[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);
 				}
 				g_ip6[dev].connected=false;
+				cnn_out(dev,0);
 			}
 		}
 	}
@@ -87,6 +89,7 @@ void socket_ip6_r(void *paramter)
 				g_ip6[dev].clientfd = accept(g_ip6[dev].sockfd, (struct sockaddr *)&client_addr6, &sin_size);
 				rt_kprintf("socket_ip6_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,inet6_ntoa(client_addr6.sin6_addr), ntohs(client_addr6.sin6_port),g_ip6[dev].clientfd);
 				g_ip6[dev].connected=true;
+				cnn_out(dev,1);
 				char a=1;
 				setsockopt(g_ip6[dev].clientfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
 			}
@@ -99,7 +102,10 @@ void socket_ip6_r(void *paramter)
 					g_ip6[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);
 				}
 				else
+				{
 					g_ip6[dev].connected=true;
+					cnn_out(dev,1);
+				}
 			}			
 		}
 		if(g_ip6[dev].connected==false)
@@ -107,6 +113,7 @@ void socket_ip6_r(void *paramter)
 			rt_thread_delay(10);			
 			continue;
 		}
+		cnn_out(dev,1);
 		socklen_t clientlen = sizeof(g_ip6[dev].server_addr6);
 		if(is_right(g_conf.config[dev],CONFIG_TCP))
 		{
@@ -137,6 +144,7 @@ void socket_ip6_r(void *paramter)
 						g_ip6[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);
 				}
 				g_ip6[dev].connected=false;
+				cnn_out(dev,0);
 			}
 
 		}
@@ -244,9 +252,15 @@ bool socket_ip6(int dev,bool init)
 			return false;
 		}
 		if(is_right(g_conf.config[dev],CONFIG_TCP))
+		{
 			g_ip6[dev].connected=false;
+			cnn_out(dev,0);
+		}
 		else
+		{
 			g_ip6[dev].connected=true;	
+			cnn_out(dev,1);
+		}
 	}
 	else
 	{
@@ -277,6 +291,7 @@ void socket_ip4_w(void *paramter)
 			rt_thread_delay(10);
 			continue;
 		}
+		cnn_out(dev,1);
 		rt_data_queue_pop(&g_data_queue[dev*2], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
 		if(is_right(g_conf.config[dev],CONFIG_TCP))
 		{
@@ -313,6 +328,7 @@ void socket_ip4_w(void *paramter)
 						closesocket(g_ip4[dev].sockfd);
 						g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
 				}
+				cnn_out(dev,0);
 			}
 		}      
 	}
@@ -335,6 +351,7 @@ void socket_ip4_r(void *paramter)
 				g_ip4[dev].clientfd = accept(g_ip4[dev].sockfd, (struct sockaddr *)&client_addr, &sin_size);
 				rt_kprintf("socket_ip4_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),g_ip4[dev].clientfd);
 				g_ip4[dev].connected=true;
+				cnn_out(dev,1);
 				char a=1;
 				setsockopt(g_ip4[dev].clientfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
 			}
@@ -347,7 +364,10 @@ void socket_ip4_r(void *paramter)
 					g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
 				}
 				else
+				{
 					g_ip4[dev].connected=true;
+					cnn_out(dev,1);
+				}
 			}			
 		}
 		if(g_ip4[dev].connected==false)
@@ -355,6 +375,7 @@ void socket_ip4_r(void *paramter)
 			rt_thread_delay(10);			
 			continue;
 		}
+		cnn_out(dev,1);
 		socklen_t clientlen = sizeof(g_ip4[dev].server_addr);
 		if(is_right(g_conf.config[dev],CONFIG_TCP))
 		{
@@ -387,6 +408,7 @@ void socket_ip4_r(void *paramter)
 						g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
 				}
 				g_ip4[dev].connected=false;
+				cnn_out(dev,0);
 			}
 
 		}
@@ -497,9 +519,15 @@ bool socket_ip4(int dev,bool init)
 			return false;
 		}
 		if(is_right(g_conf.config[dev],CONFIG_TCP))
+		{
 			g_ip4[dev].connected=false;
+			cnn_out(dev,0);
+		}
 		else
+		{
 			g_ip4[dev].connected=true;	
+			cnn_out(dev,1);
+		}
 	}
 	else
 	{

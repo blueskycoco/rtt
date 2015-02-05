@@ -1,5 +1,4 @@
 #include "con_socket.h"
-#include "con_uart.h"
 #include <rthw.h>
 #include <rtthread.h>
 #include <rtdevice.h>
@@ -9,7 +8,7 @@
 #include "inc/hw_memmap.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
-#include "driverlib/common.h"
+#include "driverlib/uart.h"
 #include "driverlib/pin_map.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/rom_map.h"
@@ -64,7 +63,8 @@ unsigned char config_uart_baud3[1+7]			={0xF5,0x8A,0x1f,0xff,0x26,0xfa,0x00,0x00
 unsigned char get_config[35];//			={0xF5,0x8B,0x0f,0xff,0xff,0xff,0xff,0x27,0xfa,0x00,0x00};/*get config 0xf5,0x8b,********0x27,0xfa,0x00,0x00*/
 rt_thread_t tid_common_w[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL},tid_common_r[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL};
 rt_device_t common_dev[4] = {RT_NULL,RT_NULL,RT_NULL,RT_NULL};
-bool ind[4]={RT_FALSE,RT_FALSE,RT_FALSE,RT_FALSE};
+bool ind[4]={RT_TRUE,RT_TRUE,RT_TRUE,RT_TRUE};
+bool phy_link=false;
 enum STATE_OP{
 	GET_F5,
 	GET_8A_8B,
@@ -74,11 +74,7 @@ enum STATE_OP{
 	GET_CHECSUM
 };
 struct rt_semaphore rx_sem[4];
-//rt_mutex_t mutex = RT_NULL;
-void common_thread_entry(void* parameter);
-//struct rt_thread common_thread[4];
-//ALLIGN(RT_ALIGN_SIZE)
-//static char common_thread_stack[4][2048];
+
 int which_common_dev(rt_device_t *dev,rt_device_t dev2)
 {
 	int i=0;
@@ -93,10 +89,11 @@ int which_common_dev(rt_device_t *dev,rt_device_t dev2)
 void IntGpioD()
 {
 	if(MAP_GPIOIntStatus(GPIO_PORTD_BASE, true)&GPIO_PIN_2)
-	{
+	{		
 		MAP_GPIOIntClear(GPIO_PORTD_BASE, GPIO_PIN_2);
-		ind[3]=((MAP_GPIOPinRead(GPIO_PORTD_BASE, GPIO_PIN_2)&(GPIO_PIN_2))==0)?RT_TRUE:RT_FALSE;
-		rt_kprintf("gpiod 2 int %d\r\n",ind[3]);
+		ind[0]=((MAP_GPIOPinRead(GPIO_PORTD_BASE, GPIO_PIN_2)&(GPIO_PIN_2))==GPIO_PIN_2)?RT_TRUE:RT_FALSE;
+		rt_kprintf("gpiod 2 int %d\r\n",ind[0]);
+		
 	}	
 }/*
 void IntGpioB()
@@ -111,8 +108,9 @@ void IntGpioB()
 */
 /*get config data to global config zone, or get socket data to buffer*/
 
-void common_rw_config(rt_device_t dev)
+void common_rw_config(int dev)
 {
+#if 0
 	static rt_uint8_t buf[6];
 	rt_uint8_t i=0;
 	static int data_len,crc_len;
@@ -382,55 +380,72 @@ void common_rw_config(rt_device_t dev)
 			break;
 		}
 	}
+	#endif
 }
-/*rt_bool_t ind_low(rt_device_t dev)
+static bool flag_cnn[4]={false,false,false,false};
+void all_cut()
 {
-	if(which_common_dev(common_dev,dev)==0)
-		return (((MAP_GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_4)&(0x1<<GPIO_PIN_4))==0)?RT_TRUE:RT_FALSE);
-	else if(which_common_dev(common_dev,dev)==1)
-		return (((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_1)&(0x1<<GPIO_PIN_1))==0)?RT_TRUE:RT_FALSE);
-	else if(which_common_dev(common_dev,dev)==2)
-		return (((MAP_GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_2)&(0x1<<GPIO_PIN_2))==0)?RT_TRUE:RT_FALSE);
-	else if(which_common_dev(common_dev,dev)==3)
-	{
-		DBG("IND %x\r\n",MAP_GPIOPinRead(GPIO_PORTD_BASE,GPIO_PIN_2));
-		return (((MAP_GPIOPinRead(GPIO_PORTD_BASE, GPIO_PIN_2)&(GPIO_PIN_2))==0)?RT_TRUE:RT_FALSE);
-	}
-
-	return RT_FALSE;
+	MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,GPIO_PIN_4);	
+	MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_5,0); 
+	MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_2,0); 
+	flag_cnn[0]=false;
+	flag_cnn[1]=false;
+	flag_cnn[2]=false;
+	flag_cnn[3]=false;
 }
-*/
 void cnn_out(int index,int level)
 {
-	switch(index)
+	
+	rt_kprintf("dev %d , level %d, phy_link %d\n",index,level,phy_link);
+	if(phy_link)
+	{
+		if(level&&(flag_cnn[index]==false))
+			flag_cnn[index]=true;
+		else if(!level&&(flag_cnn[index]==true))
+			flag_cnn[index]=false;
+		else
+			return;
+		switch(index)
 		{
-		case 0:
-			if(level)
-				MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,GPIO_PIN_4);
-			else
-				MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,0);	
-			break;
-		case 1:
-			if(level)
-				MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_5,GPIO_PIN_5);
-			else
-				MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_5,0);	
-			break;
-		case 2:
-			if(level)
-				MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_2,GPIO_PIN_2);
-			else
-				MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_2,0);	
-			break;
-		case 3:
-			if(level)
-				MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,GPIO_PIN_4);
-			else
-				MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,0);	
-			break;
-		default:
-			break;
+			case 0:
+				if(level)
+					MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,0);
+				else
+					MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,GPIO_PIN_4);
+				break;
+			case 1:
+				if(level)
+					MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_5,GPIO_PIN_5);
+				else
+					MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_5,0);	
+				break;
+			case 2:
+				if(level)
+					MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_2,GPIO_PIN_2);
+				else
+					MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_2,0);	
+				break;
+			case 3:
+				if(level)
+				;//	MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,GPIO_PIN_4);
+				else
+				;//	MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,0);	
+				break;
+			default:
+				break;
 		}
+	}
+	else
+	{
+		MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,GPIO_PIN_4);	
+		MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_5,0);	
+		MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_2,0);	
+		flag_cnn[0]=false;
+		flag_cnn[1]=false;
+		flag_cnn[2]=false;
+		flag_cnn[3]=false;
+		//MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,0);	
+	}
 }
 int baud(int type)
 {
@@ -455,68 +470,84 @@ int baud(int type)
 }
 void print_config()
 {
-	rt_kprintf("local_ip %d.%d.%d.%d\r\n",g_conf.local_ip[0],g_conf.local_ip[1],g_conf.local_ip[2],g_conf.local_ip[3]);
-	rt_kprintf("local_port %d\r\n",g_conf.local_port[0]<<8|g_conf.local_port[1]);
-	rt_kprintf("sub_msk %d.%d.%d.%d\r\n",g_conf.sub_msk[0],g_conf.sub_msk[1],g_conf.sub_msk[2],g_conf.sub_msk[3]);
-	rt_kprintf("gw %d.%d.%d.%d\r\n",g_conf.gw[0],g_conf.gw[1],g_conf.gw[2],g_conf.gw[3]);
-	rt_kprintf("mac %x:%x:%x:%x:%x:%x\r\n",g_conf.mac[0],g_conf.mac[1],g_conf.mac[2],g_conf.mac[3],g_conf.mac[4],g_conf.mac[5]);
-	rt_kprintf("remote_ip0 %d.%d.%d.%d\r\n",g_conf.remote_ip0[0],g_conf.remote_ip0[1],g_conf.remote_ip0[2],g_conf.remote_ip0[3]);
-	rt_kprintf("remote_ip1 %d.%d.%d.%d\r\n",g_conf.remote_ip1[0],g_conf.remote_ip1[1],g_conf.remote_ip1[2],g_conf.remote_ip1[3]);
-	rt_kprintf("remote_ip2 %d.%d.%d.%d\r\n",g_conf.remote_ip2[0],g_conf.remote_ip2[1],g_conf.remote_ip2[2],g_conf.remote_ip2[3]);
-	rt_kprintf("remote_ip3 %d.%d.%d.%d\r\n",g_conf.remote_ip3[0],g_conf.remote_ip3[1],g_conf.remote_ip3[2],g_conf.remote_ip3[3]);
-	rt_kprintf("remote_port0 %d\r\n",g_conf.remote_port0[0]<<8|g_conf.remote_port0[1]);
-	rt_kprintf("remote_port1 %d\r\n",g_conf.remote_port1[0]<<8|g_conf.remote_port1[1]);
-	rt_kprintf("remote_port2 %d\r\n",g_conf.remote_port2[0]<<8|g_conf.remote_port2[1]);
-	rt_kprintf("remote_port3 %d\r\n",g_conf.remote_port3[0]<<8|g_conf.remote_port3[1]);
-	rt_kprintf("protol socket0 %s socket1 %s socket2 %s socket3 %s\r\n",(g_conf.protol[0]==0)?"TCP":"UDP",(g_conf.protol[1]==0)?"TCP":"UDP",(g_conf.protol[2]==0)?"TCP":"UDP",(g_conf.protol[3]==0)?"TCP":"UDP");
-	rt_kprintf("mode socket0 %s socket1 %s socket2 %s socket3 %s\r\n",(g_conf.server_mode[0]==0)?"SERVER":"CLIENT",(g_conf.server_mode[1]==0)?"SERVER":"CLIENT",(g_conf.server_mode[2]==0)?"SERVER":"CLIENT",(g_conf.server_mode[3]==0)?"SERVER":"CLIENT");
-	rt_kprintf("baud %d.%d.%d.%d\r\n",baud(g_conf.common_baud[0]),baud(g_conf.common_baud[1]),baud(g_conf.common_baud[2]),baud(g_conf.common_baud[3]));
+	rt_kprintf("local_ip %s\n",g_conf.local_ip);
+	rt_kprintf("local_port0 %d\n",g_conf.local_port[0]);
+	rt_kprintf("local_port1 %d\n",g_conf.local_port[1]);
+	rt_kprintf("local_port2 %d\n",g_conf.local_port[2]);
+	rt_kprintf("local_port3 %d\n",g_conf.local_port[3]);
+	rt_kprintf("sub_msk %s\n",g_conf.sub_msk);
+	rt_kprintf("gw %s\n",g_conf.gw);
+	rt_kprintf("mac %s\n",g_conf.mac);
+	rt_kprintf("remote_ip0 %s\n",g_conf.remote_ip[0]);
+	rt_kprintf("remote_ip1 %s\n",g_conf.remote_ip[1]);
+	rt_kprintf("remote_ip2 %s\n",g_conf.remote_ip[2]);
+	rt_kprintf("remote_ip3 %s\n",g_conf.remote_ip[3]);
+	rt_kprintf("remote_ip60 %s\n",g_conf.remote_ip6[0]);
+	rt_kprintf("remote_ip61 %s\n",g_conf.remote_ip6[1]);
+	rt_kprintf("remote_ip62 %s\n",g_conf.remote_ip6[2]);
+	rt_kprintf("remote_ip63 %s\n",g_conf.remote_ip6[3]);
+	rt_kprintf("remote_port0 %d\n",g_conf.remote_port[0]);
+	rt_kprintf("remote_port1 %d\n",g_conf.remote_port[1]);
+	rt_kprintf("remote_port2 %d\n",g_conf.remote_port[2]);
+	rt_kprintf("remote_port3 %d\n",g_conf.remote_port[3]);
+	rt_kprintf("IP socket0 %s socket1 %s socket2 %s socket3 %s\n",(g_conf.config[0]&0x01==0)?"IPV4":"IPV6",(g_conf.config[1]&0x01==0)?"IPV4":"IPV6",(g_conf.config[2]&0x01==0)?"IPV4":"IPV6",(g_conf.config[3]&0x01==0)?"IPV4":"IPV6");
+	rt_kprintf("protol socket0 %s socket1 %s socket2 %s socket3 %s\n",(g_conf.config[0]&0x02==0)?"TCP":"UDP",(g_conf.config[1]&0x02==0)?"TCP":"UDP",(g_conf.config[2]&0x02==0)?"TCP":"UDP",(g_conf.config[3]&0x02==0)?"TCP":"UDP");
+	rt_kprintf("mode socket0 %s socket1 %s socket2 %s socket3 %s\n",(g_conf.config[0]&0x04==0)?"SERVER":"CLIENT",(g_conf.config[1]&0x04==0)?"SERVER":"CLIENT",(g_conf.config[2]&0x04==0)?"SERVER":"CLIENT",(g_conf.config[3]&0x04==0)?"SERVER":"CLIENT");
+	rt_kprintf("baud %d.%d.%d.%d\n",baud(g_conf.config[0]&0xf8>>3),baud(g_conf.config[1]&0xf8>>3),baud(g_conf.config[2]&0xf8>>3),baud(g_conf.config[3]&0xf8>>3));
 }
 int common_w_socket(int dev)
 {	
 	int len;
-	rt_uint8_t common_buf[512],*ptr;
+	rt_uint8_t common_buf[1024],*ptr;
 	ptr=common_buf;
-	len=rt_device_read(dev, 0, ptr, 512);
-	if(len>0)
+	len=rt_device_read(common_dev[dev], 0, ptr, 1024);
+	if(phy_link&&(len>0))
 		rt_data_queue_push(&g_data_queue[dev*2], ptr, len, RT_WAITING_FOREVER);
 	return 0;
+}
+static rt_err_t common_rx_ind(rt_device_t dev, rt_size_t size)
+{
+    /* release semaphore to let finsh thread rx data */
+	//DBG("dev %d common_rx_ind %d\r\n",which_common_dev(common_dev,dev),size);
+    rt_sem_release(&(rx_sem[which_common_dev(common_dev,dev)]));
+    return RT_EOK;
 }
 
 void common_w(void* parameter)
 {
 	int dev=((int)parameter)/2;
 	static int flag=0;
-	DBG("common_w %d Enter\r\n",i);
+	DBG("common_w %d Enter\r\n",dev);
 	while (1)
 	{
 		/* wait receive */
-		if (rt_sem_take(&(rx_sem[i]), RT_WAITING_FOREVER) != RT_EOK) continue;
+		if (rt_sem_take(&(rx_sem[dev]), RT_WAITING_FOREVER) != RT_EOK) continue;
 		//DBG("to read in_low %d\r\n",ind_low(dev));
-		if(ind[i])
+		if(ind[dev])
 		{	
+			DBG("dev %d in socket data flag %d\n",dev,flag);
 			if(flag==1)
 			{
 				print_config();
 				flag=0;
+				socket_ctl(RT_TRUE);
 			}
+			
 			/*socket data transfer,use dma*/
 			common_w_socket(dev);
 		}
 		else
 		{
-			flag=1;
-			/*config data parser*/
+			DBG("dev %d in config data flag %d\n",dev,flag);
+			if(flag==0)
+			{
+				flag=1;
+				/*config data parser*/
+				socket_ctl(RT_FALSE);
+			}
 			common_rw_config(dev);
 		}
 	}
-}
-static rt_err_t common_rx_ind(rt_device_t dev, rt_size_t size)
-{
-    /* release semaphore to let finsh thread rx data */
-	DBG("common_rx_ind %d\r\n",size);
-    rt_sem_release(&(rx_sem[which_common_dev(common_dev,dev)]));
-    return RT_EOK;
 }
 static void common_r(void* parameter)
 {
@@ -541,6 +572,28 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 	rt_uint8_t common[10];
 	int i;
 	/*read config data from internal flash*/
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOD);
+	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);
+
+	MAP_SysCtlDelay(1);
+	//config select
+	MAP_GPIOIntDisable(GPIO_PORTD_BASE, GPIO_PIN_2);
+	MAP_GPIOPinTypeGPIOInput(GPIO_PORTD_BASE, GPIO_PIN_2);//ind0
+	MAP_GPIOIntTypeSet(GPIO_PORTD_BASE, GPIO_PIN_2, GPIO_BOTH_EDGES);
+	MAP_IntEnable(INT_GPIOD);
+	MAP_GPIOIntEnable(GPIO_PORTD_BASE, GPIO_PIN_2);
+	int ui32Status = MAP_GPIOIntStatus(GPIO_PORTD_BASE, true);
+	MAP_GPIOIntClear(GPIO_PORTD_BASE, ui32Status);
+	//connect ind
+	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_5);//CNN1
+	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTK_BASE, GPIO_PIN_2);//CNN2
+	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTK_BASE, GPIO_PIN_3);//CNN3
+	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_4);//CNN4
+	MAP_GPIOPinWrite(GPIO_PORTB_BASE,GPIO_PIN_4,GPIO_PIN_4);	
+	MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_5,0);	
+	MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_2,0);	
 
 	for(i=3;i<67;i++)
 	{
@@ -564,10 +617,10 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 		rt_sem_init(&(rx_sem[i]), common, 0, 0);
 		if(dev==DEV_UART)
 		{
-			if(i==0)
-				rt_sprintf(common,"uart0");
+			if(i==1)
+				rt_sprintf(common,"uart%d",4);
 			else
-				rt_sprintf(common,"uart%d",i+2);
+				rt_sprintf(common,"uart%d",i);
 		}
 		else if(dev==DEV_BUS)
 		{
@@ -597,9 +650,9 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 			rt_device_set_rx_indicate(common_dev[i], common_rx_ind);
 
 			if(tid_common_w[i]!=RT_NULL)
-				rt_thread_startup(&tid_common_w[i]);			
+				rt_thread_startup(tid_common_w[i]);			
 			if(tid_common_r[i]!=RT_NULL)
-				rt_thread_startup(&tid_common_r[i]);
+				rt_thread_startup(tid_common_r[i]);
 		}
 	}	
 	DBG("common_init ok\n");

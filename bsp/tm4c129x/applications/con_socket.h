@@ -8,11 +8,11 @@
 #include <lwip/sockets.h>
 
 typedef struct {
-	rt_uint32_t local_ip;
+	rt_uint8_t local_ip[16];
 	rt_uint16_t local_port[4];
-	rt_uint32_t sub_msk;
-	rt_uint32_t gw;
-	rt_uint8_t mac[6];
+	rt_uint8_t sub_msk[16];
+	rt_uint8_t gw[16];
+	rt_uint8_t mac[18];
 	rt_uint8_t remote_ip[4][16];
 	rt_uint8_t remote_ip6[4][64];
 	rt_uint16_t remote_port[4];
@@ -57,9 +57,11 @@ typedef struct ip4
 
 ip6_t g_ip6[4];
 ip4_t g_ip4[4];
+void cnn_out(int index,int level);
+void socket_ctl(bool open);
 
 //void socket_send(int index,rt_uint8_t *data,int len);
-#define debug 0
+#define debug 1
 #if debug
 #define DBG rt_kprintf
 #else

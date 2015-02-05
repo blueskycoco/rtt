@@ -989,6 +989,7 @@ tivaif_process_phy_interrupt(net_device_t dev)
             //tcpip_callback((tcpip_callback_fn)netif_set_link_down, psNetif);
 			eth_device_linkchange(&(dev->parent), RT_FALSE);
 			phy_link=false;
+			all_cut();
 #endif
         }
     }

@@ -1,2 +1,0 @@
-int uart_init();
-

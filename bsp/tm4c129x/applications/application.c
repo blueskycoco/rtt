@@ -45,6 +45,7 @@ static void led_thread_entry(void* parameter)
 		rt_thread_delay(RT_TICK_PER_SECOND);
 	}
 }
+#if 0
 struct rt_semaphore rx_sem;
 
 static rt_err_t uart_rx_ind(rt_device_t dev, rt_size_t size)
@@ -142,6 +143,7 @@ static void dump_thread_entry1(void* parameter)
 		}
 	}
 }
+#endif
 #endif
 /* thread phase init */
 void rt_init_thread_entry(void *parameter)
