@@ -4,7 +4,7 @@
 #include <lwip/sockets.h>
 /*client use socket,server use netconn*/
 #define BUF_SIZE 1024
-rt_thread_t tid_w[4],tid_r[4];
+rt_thread_t tid_w[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL},tid_r[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL};
 extern struct rt_semaphore fifo_sem;
 
 bool is_right(char config,char flag)
@@ -336,7 +336,7 @@ void socket_ip4_r(void *paramter)
 				rt_kprintf("socket_ip4_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),g_ip4[dev].clientfd);
 				g_ip4[dev].connected=true;
 				char a=1;
-				setsockopt(g_ip6[dev].clientfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
+				setsockopt(g_ip4[dev].clientfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
 			}
 			else
 			{
@@ -517,14 +517,14 @@ bool socket_ip4(int dev,bool init)
 }
 
 /*init socket 1,2,3,4*/
-void socket_init()
+void socket_ctl(bool open)
 {
 	rt_uint8_t *thread_string;
 	int i;
-	g_conf.config[0]=CONFIG_SERVER|CONFIG_IPV6|CONFIG_TCP;
-	g_conf.config[1]=CONFIG_SERVER|CONFIG_TCP;
-	g_conf.config[2]=CONFIG_SERVER|CONFIG_TCP;
-	g_conf.config[3]=CONFIG_SERVER|CONFIG_TCP;
+	g_conf.config[0]=CONFIG_IPV6|CONFIG_TCP;
+	g_conf.config[1]=CONFIG_TCP;
+	g_conf.config[2]=CONFIG_TCP;
+	g_conf.config[3]=CONFIG_TCP;
 	g_conf.local_port[0]=1234;
 	g_conf.local_port[1]=1235;
 	g_conf.local_port[2]=1236;
@@ -557,31 +557,66 @@ void socket_init()
 		g_ip4[i].connected=false;
 		rt_memset(thread_string,'\0',20);
 		rt_kprintf("Socket==> %d , %s mode, %s , %s . Thread Enter\r\n",i,is_right(g_conf.config[i],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[i],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[i],CONFIG_TCP)?"TCP":"UDP");
-		if(is_right(g_conf.config[i],CONFIG_IPV6))
-		{//udp client ipv6
-			if(socket_ip6(i,true))
+		if(open)
+		{
+			if(tid_w[i]==RT_NULL && tid_r[i]==RT_NULL)
 			{
-				rt_sprintf(thread_string,"socket_%d_6_w",i);
-				tid_w[i] = rt_thread_create(thread_string,socket_ip6_w, (void *)i,2048, 20, 10);
-				rt_sprintf(thread_string,"socket_%d_6_r",i);
-				tid_r[i] = rt_thread_create(thread_string,socket_ip6_r, (void *)i,2048, 15, 10);
+				if(is_right(g_conf.config[i],CONFIG_IPV6))
+				{//udp client ipv6
+					if(socket_ip6(i,true))
+					{
+						rt_sprintf(thread_string,"socket_%d_6_w",i);
+						tid_w[i] = rt_thread_create(thread_string,socket_ip6_w, (void *)i,2048, 20, 10);
+						rt_sprintf(thread_string,"socket_%d_6_r",i);
+						tid_r[i] = rt_thread_create(thread_string,socket_ip6_r, (void *)i,2048, 15, 10);
+					}
+				}
+				else
+				{//udp client ipv4	
+					if(socket_ip4(i,true))
+					{
+						rt_sprintf(thread_string,"socket_%d_4_w",i);
+						tid_w[i] = rt_thread_create(thread_string,socket_ip4_w, (void *)i,2048, 20, 10);
+						rt_sprintf(thread_string,"socket_%d_4_r",i);
+						tid_r[i] = rt_thread_create(thread_string,socket_ip4_r, (void *)i,2048, 15, 10);
+					}
+				}
+
+				if (tid_w[i] != RT_NULL)
+					rt_thread_startup(tid_w[i]);
+				if (tid_r[i] != RT_NULL)
+					rt_thread_startup(tid_r[i]);
 			}
 		}
 		else
-		{//udp client ipv4	
-			if(socket_ip4(i,true))
+		{
+			if(tid_w[i]!=RT_NULL && tid_r[i]!=RT_NULL)
 			{
-				rt_sprintf(thread_string,"socket_%d_4_w",i);
-				tid_w[i] = rt_thread_create(thread_string,socket_ip4_w, (void *)i,2048, 20, 10);
-				rt_sprintf(thread_string,"socket_%d_4_r",i);
-				tid_r[i] = rt_thread_create(thread_string,socket_ip4_r, (void *)i,2048, 15, 10);
+				rt_thread_delete(tid_w[i]);
+				rt_thread_delete(tid_r[i]);
+				if(is_right(g_conf.config[i],CONFIG_IPV6))
+				{
+					
+					closesocket(g_ip6[i].clientfd);
+					closesocket(g_ip6[i].sockfd);
+					rt_free(g_ip6[i].recv_data);
+				}
+				else
+				{
+					
+					closesocket(g_ip4[i].clientfd);
+					closesocket(g_ip4[i].sockfd);
+					rt_free(g_ip4[i].recv_data);
+				}
+				tid_w[i]=RT_NULL;
+				tid_r[i]=RT_NULL;
 			}
 		}
-
-		if (tid_w[i] != RT_NULL)
-			rt_thread_startup(tid_w[i]);
-		if (tid_r[i] != RT_NULL)
-			rt_thread_startup(tid_r[i]);
 	}
 	rt_free(thread_string);
 }
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+/* 输出udpclient函数到finsh shell中 */
+FINSH_FUNCTION_EXPORT(socket_ctl, ctl socket);
+#endif

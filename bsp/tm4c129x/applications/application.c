@@ -161,6 +161,7 @@ void rt_init_thread_entry(void *parameter)
 	//uart_init();
 	//ring_buffer_init();
 	//ping_test("192.168.1.7",5,32);
+	
 	g_data_queue=(struct rt_data_queue *)rt_malloc(sizeof(struct rt_data_queue)*8);
 	for(i=0;i<8;i++)//0,1 for socket0,2,3 for socket1,4,5 for socket2,6,7 for socket3
 	{
@@ -169,7 +170,8 @@ void rt_init_thread_entry(void *parameter)
 		else
 			rt_data_queue_init(&g_data_queue[i], 2048, 80, RT_NULL);
 	}
-	socket_init();
+	common_init(DEV_UART);
+	//socket_init();
 	//ping_test6("fe80::5867:8730:e9e6:d5c5%11",5,32);
 	//ping_test6("fe80::483:d903:e2ee:d05e%12",5,32);
 	//ping_test("192.168.1.6",5,32);
@@ -191,7 +193,7 @@ int rt_application_init(void)
 			    256, 20, 20);
     if(led_thread != RT_NULL)
 		  rt_thread_startup(led_thread);
-	#if 1
+	#if 0
 	for(i=0;i<4;i++)
 	{
 		rt_sprintf(buf,"led%d",i);

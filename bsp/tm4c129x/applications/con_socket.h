@@ -1,3 +1,5 @@
+#ifndef CON_SOCKET_H
+#define CON_SOCKET_H
 #include <rtthread.h>
 #include <board.h>
 #include <components.h>
@@ -27,6 +29,11 @@ config g_conf;
 #define CONFIG_BAUD_2000000 	0x40
 #define CONFIG_BAUD_4000000 	0x80
 #define CONFIG_BAUD_6000000 	0x88
+#define DEV_UART 0
+#define DEV_BUS 1
+#define DEV_USB 2
+
+
 void socket_init();
 struct rt_data_queue *g_data_queue;
 typedef struct ip6
@@ -57,4 +64,5 @@ ip4_t g_ip4[4];
 #define DBG rt_kprintf
 #else
 #define DBG 
+#endif
 #endif

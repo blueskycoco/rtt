@@ -363,6 +363,7 @@ int rt_hw_uart_init(int use_uart)
 	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_2);//CNN1
 	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTK_BASE, GPIO_PIN_2);//CNN2
 	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTK_BASE, GPIO_PIN_3);//CNN3
+	MAP_GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_4);
 
 	config.baud_rate = BAUD_RATE_115200;
 	config.bit_order = BIT_ORDER_LSB;
