@@ -6,7 +6,7 @@
 #define BUF_SIZE 1024
 rt_thread_t tid_w[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL},tid_r[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL};
 extern struct rt_semaphore fifo_sem;
-
+bool ip6_flag=false,ip4_flag=false;
 bool is_right(char config,char flag)
 {
 	if((config&flag)==flag)
@@ -21,7 +21,7 @@ void socket_ip6_w(void *paramter)
 	const void *last_data_ptr;
 	int status;
 	rt_kprintf("socket_ip6_w==> %d , %s mode, %s , %s . Thread Enter\r\n",dev,is_right(g_conf.config[dev],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[dev],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[dev],CONFIG_TCP)?"TCP":"UDP");
-	while(1)
+	while(ip6_flag)
 	{
 		if(g_ip6[dev].connected==false)
 		{
@@ -78,7 +78,7 @@ void socket_ip6_r(void *paramter)
 	int status;
 	struct sockaddr_in6 client_addr6;
 	rt_kprintf("socket_ip6_r==> %d , %s mode, %s , %s . Thread Enter\r\n",dev,is_right(g_conf.config[dev],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[dev],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[dev],CONFIG_TCP)?"TCP":"UDP");
-	while(1)
+	while(ip6_flag)
 	{
 		if(g_ip6[dev].connected==false)
 		{
@@ -162,6 +162,10 @@ void socket_ip6_r(void *paramter)
 			}
 		}		    
 	}
+	closesocket(g_ip6[dev].clientfd);
+	closesocket(g_ip6[dev].sockfd);	
+	rt_free(g_ip6[dev].recv_data);
+	g_ip6[dev].sockfd=-1;
 }
 
 bool socket_ip6(int dev,bool init)
@@ -283,7 +287,7 @@ void socket_ip4_w(void *paramter)
 	const void *last_data_ptr;
 	int status;
 	rt_kprintf("socket_ip4_w==> %d , %s mode, %s , %s . Thread Enter\r\n",dev,is_right(g_conf.config[dev],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[dev],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[dev],CONFIG_TCP)?"TCP":"UDP");
-	while(1)
+	while(ip4_flag)
 	{
 
 		if(g_ip4[dev].connected==false)
@@ -340,7 +344,7 @@ void socket_ip4_r(void *paramter)
 	int status;
 	struct sockaddr_in client_addr;
 	rt_kprintf("socket_ip4_r==> %d , %s mode, %s , %s . Thread Enter\r\n",dev,is_right(g_conf.config[dev],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[dev],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[dev],CONFIG_TCP)?"TCP":"UDP");
-	while(1)
+	while(ip4_flag)
 	{
 		if(g_ip4[dev].connected==false)
 		{
@@ -425,6 +429,11 @@ void socket_ip4_r(void *paramter)
 			}
 		}
 	}
+	closesocket(g_ip4[dev].clientfd);
+	closesocket(g_ip4[dev].sockfd);
+	rt_free(g_ip4[dev].recv_data);
+	g_ip4[dev].sockfd=-1;
+
 }
 
 bool socket_ip4(int dev,bool init)
@@ -556,7 +565,7 @@ void socket_ctl(bool open)
 		g_ip6[i].connected=false;
 		g_ip4[i].connected=false;
 		rt_memset(thread_string,'\0',20);
-		rt_kprintf("Socket==> %d , %s mode, %s , %s . Thread Enter\r\n",i,is_right(g_conf.config[i],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[i],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[i],CONFIG_TCP)?"TCP":"UDP");
+		rt_kprintf("%s Socket==> %d , %s mode, %s , %s . Thread Enter\r\n",open?"Create":"Delete",i,is_right(g_conf.config[i],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[i],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[i],CONFIG_TCP)?"TCP":"UDP");
 		if(open)
 		{
 			if(tid_w[i]==RT_NULL && tid_r[i]==RT_NULL)
@@ -565,6 +574,7 @@ void socket_ctl(bool open)
 				{//udp client ipv6
 					if(socket_ip6(i,true))
 					{
+						ip6_flag=true;
 						rt_sprintf(thread_string,"socket_%d_6_w",i);
 						tid_w[i] = rt_thread_create(thread_string,socket_ip6_w, (void *)i,2048, 20, 10);
 						rt_sprintf(thread_string,"socket_%d_6_r",i);
@@ -575,6 +585,7 @@ void socket_ctl(bool open)
 				{//udp client ipv4	
 					if(socket_ip4(i,true))
 					{
+						ip4_flag=true;
 						rt_sprintf(thread_string,"socket_%d_4_w",i);
 						tid_w[i] = rt_thread_create(thread_string,socket_ip4_w, (void *)i,2048, 20, 10);
 						rt_sprintf(thread_string,"socket_%d_4_r",i);
@@ -592,22 +603,26 @@ void socket_ctl(bool open)
 		{
 			if(tid_w[i]!=RT_NULL && tid_r[i]!=RT_NULL)
 			{
-				rt_thread_delete(tid_w[i]);
-				rt_thread_delete(tid_r[i]);
+				int set=1;
 				if(is_right(g_conf.config[i],CONFIG_IPV6))
 				{
-					
-					closesocket(g_ip6[i].clientfd);
-					closesocket(g_ip6[i].sockfd);
-					rt_free(g_ip6[i].recv_data);
+					ip6_flag=false;
+					ioctlsocket(g_ip6[i].clientfd,FIONBIO,&set);
+					ioctlsocket(g_ip6[i].sockfd,FIONBIO,&set);
+					while(g_ip6[i].sockfd!=-1)
+						rt_thread_delay(1);
 				}
 				else
 				{
-					
-					closesocket(g_ip4[i].clientfd);
-					closesocket(g_ip4[i].sockfd);
-					rt_free(g_ip4[i].recv_data);
+					ip4_flag=false;
+					ioctlsocket(g_ip4[i].clientfd,FIONBIO,&set);
+					ioctlsocket(g_ip4[i].sockfd,FIONBIO,&set);
+					while(g_ip4[i].sockfd!=-1)
+						rt_thread_delay(1);
 				}
+				if(tid_w[i]!=RT_NULL && 
+				rt_thread_delete(tid_w[i]);
+				rt_thread_delete(tid_r[i]);
 				tid_w[i]=RT_NULL;
 				tid_r[i]=RT_NULL;
 			}

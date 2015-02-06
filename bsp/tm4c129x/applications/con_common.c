@@ -777,6 +777,44 @@ static rt_err_t common_rx_ind(rt_device_t dev, rt_size_t size)
     rt_sem_release(&(rx_sem[which_common_dev(common_dev,dev)]));
     return RT_EOK;
 }
+extern struct rt_object_information rt_object_container[];
+
+static long _list_thread(struct rt_list_node *list)
+{
+    struct rt_thread *thread;
+    struct rt_list_node *node;
+    rt_uint8_t *ptr;
+
+    rt_kprintf(" thread  pri  status      sp     stack size max used   left tick  error\n");
+    rt_kprintf("-------- ---- ------- ---------- ---------- ---------- ---------- ---\n");
+    for (node = list->next; node != list; node = node->next)
+    {
+        thread = rt_list_entry(node, struct rt_thread, list);
+        rt_kprintf("%-8.*s 0x%02x", RT_NAME_MAX, thread->name, thread->current_priority);
+
+        if (thread->stat == RT_THREAD_READY)        rt_kprintf(" ready  ");
+        else if (thread->stat == RT_THREAD_SUSPEND) rt_kprintf(" suspend");
+        else if (thread->stat == RT_THREAD_INIT)    rt_kprintf(" init   ");
+        else if (thread->stat == RT_THREAD_CLOSE)   rt_kprintf(" close  ");
+
+        ptr = (rt_uint8_t*)thread->stack_addr;
+        while (*ptr == '#')ptr ++;
+
+        rt_kprintf(" 0x%08x 0x%08x 0x%08x 0x%08x %03d\n",
+            thread->stack_size + ((rt_uint32_t)thread->stack_addr - (rt_uint32_t)thread->sp),
+            thread->stack_size,
+            thread->stack_size - ((rt_uint32_t) ptr - (rt_uint32_t)thread->stack_addr),
+            thread->remaining_tick,
+            thread->error);
+    }
+	
+    return 0;
+}
+
+long list_thread(void)
+{
+    return _list_thread(&rt_object_container[RT_Object_Class_Thread].object_list);
+}
 
 void common_w(void* parameter)
 {
@@ -796,6 +834,10 @@ void common_w(void* parameter)
 				print_config();
 				flag=0;
 				socket_ctl(RT_TRUE);
+				rt_thread_delay(10);
+				list_thread();
+				//list_tcps1();
+				list_mem1();
 			}
 			
 			/*socket data transfer,use dma*/
@@ -808,7 +850,10 @@ void common_w(void* parameter)
 			{
 				flag=1;
 				/*config data parser*/
-				socket_ctl(RT_FALSE);
+				socket_ctl(RT_FALSE);				
+				list_thread();
+				list_tcps1();
+				list_mem1();
 			}
 			common_rw_config(dev);
 		}
