@@ -86,19 +86,11 @@ void socket_ip6_r(void *paramter)
 				rt_kprintf("socket_ip6_r %d to accept %d\n",dev,g_ip6[dev].sockfd);
 				rt_uint32_t  sin_size = sizeof(struct sockaddr_in6);
 				g_ip6[dev].clientfd = accept(g_ip6[dev].sockfd, (struct sockaddr *)&client_addr6, &sin_size);
-				if(g_ip6[dev].clientfd!=-1)
-				{
-					rt_kprintf("socket_ip6_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,inet6_ntoa(client_addr6.sin6_addr), ntohs(client_addr6.sin6_port),g_ip6[dev].clientfd);
-					g_ip6[dev].connected=true;
-					cnn_out(dev,1);
-					char a=1;
-					setsockopt(g_ip6[dev].clientfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
-				}
-				else
-				{
-					rt_kprintf("%d socket_ip6_r accept exiting\n",dev);
-					while(1);
-				}
+				rt_kprintf("socket_ip6_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,inet6_ntoa(client_addr6.sin6_addr), ntohs(client_addr6.sin6_port),g_ip6[dev].clientfd);
+				g_ip6[dev].connected=true;
+				cnn_out(dev,1);
+				char a=1;
+				setsockopt(g_ip6[dev].clientfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
 			}
 			else
 			{
@@ -107,7 +99,7 @@ void socket_ip6_r(void *paramter)
 				{
 					closesocket(g_ip6[dev].sockfd);
 					g_ip6[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);				
-					rt_kprintf("%d socket_ip6_r connect ...\n",dev);					
+					//rt_kprintf("%d socket_ip6_r connect ...\n",dev);					
 				}
 				else
 				{
@@ -357,18 +349,11 @@ void socket_ip4_r(void *paramter)
 				rt_kprintf("socket_ip4_r %d to accept %d\n",dev,g_ip4[dev].sockfd);
 				rt_uint32_t  sin_size = sizeof(struct sockaddr_in);
 				g_ip4[dev].clientfd = accept(g_ip4[dev].sockfd, (struct sockaddr *)&client_addr, &sin_size);
-				if(g_ip4[dev].clientfd==-1)
-				{
-					rt_kprintf("socket_ip4_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),g_ip4[dev].clientfd);
-					g_ip4[dev].connected=true;
-					cnn_out(dev,1);
-					char a=1;
-					setsockopt(g_ip4[dev].clientfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
-				}
-				else
-				{
-					rt_kprintf("%d socket_ip4_r accept exiting\n",dev);
-				}
+				rt_kprintf("socket_ip4_r %d I got a connection from (IP:%s, PORT:%d\n) fd %d\n", dev,inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port),g_ip4[dev].clientfd);
+				g_ip4[dev].connected=true;
+				cnn_out(dev,1);
+				char a=1;
+				setsockopt(g_ip4[dev].clientfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
 			}
 			else
 			{
@@ -377,7 +362,7 @@ void socket_ip4_r(void *paramter)
 				{
 					closesocket(g_ip4[dev].sockfd);
 					g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
-					rt_kprintf("%d socket_ip4_r connect ...",dev);		
+					//rt_kprintf("%d socket_ip4_r connect ...",dev);		
 				}
 				else
 				{
@@ -569,12 +554,13 @@ void socket_ctl(bool open)
 	thread_string=(rt_uint8_t *)rt_malloc(20*sizeof(rt_uint8_t));
 	for(i=0;i<4;i++)
 	{
-		g_ip6[i].connected=false;
-		g_ip4[i].connected=false;
+		
 		rt_memset(thread_string,'\0',20);
 		rt_kprintf("%s Socket==> %d , %s mode, %s , %s . Thread Enter\r\n",open?"Create":"Delete",i,is_right(g_conf.config[i],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[i],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[i],CONFIG_TCP)?"TCP":"UDP");
 		if(open)
 		{
+			g_ip6[i].connected=false;
+			g_ip4[i].connected=false;
 			if(tid_w[i]==RT_NULL && tid_r[i]==RT_NULL)
 			{
 				if(is_right(g_conf.config[i],CONFIG_IPV6))
@@ -633,24 +619,55 @@ void socket_ctl(bool open)
 
 				}
 				else
-				{
+				{				
 					if(is_right(g_conf.config[i],CONFIG_IPV6))
 					{
-						closesocket(g_ip6[i].clientfd);
-						closesocket(g_ip6[i].sockfd); 
-						rt_free(g_ip6[i].recv_data);
+						if(g_ip6[i].connected==false)
+						{
+							closesocket(g_ip6[i].clientfd);
+							closesocket(g_ip6[i].sockfd); 
+							rt_free(g_ip6[i].recv_data);
+							rt_thread_delete(tid_w[i]);
+							rt_thread_delete(tid_r[i]);
+							tid_w[i]=RT_NULL;
+							tid_r[i]=RT_NULL;
+						}
+						else
+						{
+							rt_thread_delete(tid_w[i]);
+							rt_thread_delete(tid_r[i]);
+							tid_w[i]=RT_NULL;
+							tid_r[i]=RT_NULL;
+							closesocket(g_ip6[i].clientfd);
+							closesocket(g_ip6[i].sockfd); 
+							rt_free(g_ip6[i].recv_data);
+						}
 						
 					}
 					else
 					{
-						closesocket(g_ip4[i].clientfd);
-						closesocket(g_ip4[i].sockfd); 
-						rt_free(g_ip4[i].recv_data);
+						if(g_ip4[i].connected==false)
+						{
+							closesocket(g_ip4[i].clientfd);
+							closesocket(g_ip4[i].sockfd); 
+							rt_free(g_ip4[i].recv_data);
+							rt_thread_delete(tid_w[i]);
+							rt_thread_delete(tid_r[i]);
+							tid_w[i]=RT_NULL;
+							tid_r[i]=RT_NULL;
+						}
+						else
+						{
+							rt_thread_delete(tid_w[i]);
+							rt_thread_delete(tid_r[i]);
+							tid_w[i]=RT_NULL;
+							tid_r[i]=RT_NULL;
+								closesocket(g_ip4[i].clientfd);
+							closesocket(g_ip4[i].sockfd); 
+							rt_free(g_ip4[i].recv_data);
+						}
 					}
-					rt_thread_delete(tid_w[i]);
-					rt_thread_delete(tid_r[i]);
-					tid_w[i]=RT_NULL;
-					tid_r[i]=RT_NULL;
+					
 				}
 			}
 		}
