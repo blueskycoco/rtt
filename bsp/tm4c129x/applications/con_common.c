@@ -143,6 +143,9 @@ void default_config()
 	strcpy(g_conf.remote_ip6[2],"fe80::5867:8730:e9e6:d5c5%11");
 	memset(g_conf.remote_ip6[3],'\0',64);
 	strcpy(g_conf.remote_ip6[3],"fe80::5867:8730:e9e6:d5c5%11");
+	
+	memset(g_conf.local_ip,'\0',16);
+	strcpy(g_conf.local_ip,"192.168.1.32");	
 	memset(g_conf.gw,'\0',16);
 	strcpy(g_conf.gw,"192.168.1.1");	
 	memset(g_conf.sub_msk,'\0',16);
@@ -154,7 +157,7 @@ void default_config()
 	g_conf.remote_port[2]=1236;
 	g_conf.remote_port[3]=1237;
 	set_if6("e0","fe80::1");
-	set_if("e0","192.168.1.30","255.255.255.0","192.168.1.1");
+	set_if("e0",g_conf.local_ip,g_conf.sub_msk,g_conf.gw);
 }
 void set_config(rt_uint8_t *data,int ipv6_len)
 {
@@ -850,7 +853,8 @@ void common_w(void* parameter)
 			{
 				flag=1;
 				/*config data parser*/
-				socket_ctl(RT_FALSE);				
+				socket_ctl(RT_FALSE);
+				rt_thread_delay(10);
 				list_thread();
 				list_tcps1();
 				list_mem1();
