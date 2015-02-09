@@ -66,6 +66,8 @@ void socket_ip6_w(void *paramter)
 					//server&tcp mode need closesocket clientfd
 						closesocket(g_ip6[dev].sockfd);
 						g_ip6[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);
+						int timeout = 100;
+						lwip_setsockopt(g_ip6[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 				}
 				g_ip6[dev].connected=false;
 				cnn_out(dev,0);
@@ -97,7 +99,7 @@ void socket_ip6_r(void *paramter)
 			}
 			else
 			{
-				rt_kprintf("to connect ipv6\n");
+				//rt_kprintf("to connect ipv6\n");
 				status = connect(g_ip6[dev].sockfd, (struct sockaddr *)&g_ip6[dev].server_addr6, sizeof(g_ip6[dev].server_addr6));
 				if(status < 0)
 				{
@@ -106,10 +108,12 @@ void socket_ip6_r(void *paramter)
 					int timeout = 100;
 					lwip_setsockopt(g_ip6[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 
-					rt_kprintf("%d socket_ip6_r connect ...\n",dev);					
+					//rt_kprintf("%d socket_ip6_r connect ...\n",dev);					
 				}
 				else
 				{
+					int timeout = 0;
+					lwip_setsockopt(g_ip6[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 					g_ip6[dev].connected=true;
 					cnn_out(dev,1);					
 				}
@@ -148,7 +152,9 @@ void socket_ip6_r(void *paramter)
 				else
 				{
 						closesocket(g_ip6[dev].sockfd);
-						g_ip6[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);
+						g_ip6[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);						
+						int timeout = 100;
+						lwip_setsockopt(g_ip6[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 				}
 				g_ip6[dev].connected=false;
 				cnn_out(dev,0);
@@ -257,7 +263,7 @@ bool socket_ip6(int dev,bool init)
 				lwip_setsockopt(g_ip6[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 			}
 		}
-		/*mall receive buffer*/
+		/*mall receive buffer*/		
 		g_ip6[dev].recv_data = rt_malloc(BUF_SIZE);
 		if(g_ip6[dev].recv_data == RT_NULL)
 		{
@@ -333,14 +339,16 @@ void socket_ip4_w(void *paramter)
 			{
 				if(is_right(g_conf.config[dev],CONFIG_SERVER))
 				{	
-					//server&tcp mode need closesocket clientfd
+						//server&tcp mode need closesocket clientfd
 						closesocket(g_ip4[dev].clientfd);
 				}
 				else
 				{	
-					//server&tcp mode need closesocket clientfd
+						//server&tcp mode need closesocket clientfd
 						closesocket(g_ip4[dev].sockfd);
-						g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
+						g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);						
+						int timeout = 100;
+						lwip_setsockopt(g_ip4[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 				}
 				cnn_out(dev,0);
 			}
@@ -376,13 +384,15 @@ void socket_ip4_r(void *paramter)
 				{
 					closesocket(g_ip4[dev].sockfd);
 					g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
-					
 					int timeout = 100;
 					lwip_setsockopt(g_ip4[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-					rt_kprintf("%d socket_ip4_r connect ...",dev);		
+					//rt_kprintf("%d socket_ip4_r connect ...",dev);		
 				}
 				else
 				{
+					
+					int timeout = 0;
+					lwip_setsockopt(g_ip4[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 					g_ip4[dev].connected=true;
 					cnn_out(dev,1);
 				}
@@ -424,6 +434,8 @@ void socket_ip4_r(void *paramter)
 						rt_kprintf("to close socket\n");
 						closesocket(g_ip4[dev].sockfd);
 						g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
+						int timeout = 100;
+						lwip_setsockopt(g_ip4[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 				}
 				g_ip4[dev].connected=false;
 				cnn_out(dev,0);
@@ -530,7 +542,6 @@ bool socket_ip4(int dev,bool init)
 			{
 				char a=1;
 				setsockopt(g_ip4[dev].sockfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
-				
 				int timeout = 100;
 				lwip_setsockopt(g_ip4[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 			}
@@ -583,10 +594,10 @@ void socket_ctl(bool open,int i)
 		rt_kprintf("%s Socket==> %d , %s mode, %s , %s . Thread Enter\r\n",open?"Create":"Delete",i,is_right(g_conf.config[i],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[i],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[i],CONFIG_TCP)?"TCP":"UDP");
 		if(open)
 		{
-			g_ip6[i].connected=false;
-			g_ip4[i].connected=false;
 			if(tid_w[i]==RT_NULL && tid_r[i]==RT_NULL)
 			{
+				g_ip6[i].connected=false;
+				g_ip4[i].connected=false;
 				if(is_right(g_conf.config[i],CONFIG_IPV6))
 				{//udp client ipv6
 					if(socket_ip6(i,true))
@@ -627,7 +638,7 @@ void socket_ctl(bool open,int i)
 				if(is_right(g_conf.config[i],CONFIG_IPV6))
 				{
 					connected=g_ip6[i].connected;
-					ipv6_flag[i]=false;
+					
 					ptr=g_ip6[i].recv_data;
 					socket1=g_ip6[i].clientfd;
 					socket2=g_ip6[i].sockfd;
@@ -635,7 +646,7 @@ void socket_ctl(bool open,int i)
 				else
 				{	
 					connected=g_ip4[i].connected;				
-					ipv4_flag[i]=false;
+					//ipv4_flag[i]=false;
 					ptr=g_ip4[i].recv_data;
 					socket1=g_ip4[i].clientfd;
 					socket2=g_ip4[i].sockfd;
@@ -650,13 +661,28 @@ void socket_ctl(bool open,int i)
 				}
 				else
 				{
+					if(is_right(g_conf.config[i],CONFIG_IPV6))
+						ipv6_flag[i]=false;
+					else
+						ipv4_flag[i]=false;
 					while(tid_r[i]->stat!=RT_THREAD_CLOSE)
-						rt_thread_delay(10);
+						rt_thread_delay(1);
+					//rt_thread_delete(tid_r[i]);
 				}
 				rt_kprintf("<==tid_w%d stat %d\n",i,tid_w[i]->stat);
 				rt_kprintf("<==tid_r%d stat %d\n",i,tid_r[i]->stat);
 				cnn_out(i,0);
-				free(ptr);
+				if(is_right(g_conf.config[i],CONFIG_IPV6))
+				{
+					rt_free(g_ip6[i].recv_data);
+					g_ip6[i].recv_data=RT_NULL;
+				}
+				else
+				{
+					rt_free(g_ip4[i].recv_data);
+					g_ip4[i].recv_data=RT_NULL;
+
+				}
 				tid_w[i]=RT_NULL;
 				tid_r[i]=RT_NULL;
 			#if 0
