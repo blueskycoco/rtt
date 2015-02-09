@@ -6,6 +6,9 @@
 #define BUF_SIZE 1024
 rt_thread_t tid_w[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL},tid_r[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL};
 extern struct rt_semaphore fifo_sem;
+int ipv6_flag[4]={false,false,false,false};
+int ipv4_flag[4]={false,false,false,false};
+
 bool is_right(char config,char flag)
 {
 	if((config&flag)==flag)
@@ -77,7 +80,7 @@ void socket_ip6_r(void *paramter)
 	int status;
 	struct sockaddr_in6 client_addr6;
 	rt_kprintf("socket_ip6_r==> %d , %s mode, %s , %s . Thread Enter\r\n",dev,is_right(g_conf.config[dev],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[dev],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[dev],CONFIG_TCP)?"TCP":"UDP");
-	while(1)
+	while(ipv6_flag[dev])
 	{
 		if(g_ip6[dev].connected==false)
 		{
@@ -94,17 +97,21 @@ void socket_ip6_r(void *paramter)
 			}
 			else
 			{
+				rt_kprintf("to connect ipv6\n");
 				status = connect(g_ip6[dev].sockfd, (struct sockaddr *)&g_ip6[dev].server_addr6, sizeof(g_ip6[dev].server_addr6));
 				if(status < 0)
 				{
 					closesocket(g_ip6[dev].sockfd);
-					g_ip6[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);				
-					//rt_kprintf("%d socket_ip6_r connect ...\n",dev);					
+					g_ip6[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);
+					int timeout = 100;
+					lwip_setsockopt(g_ip6[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+
+					rt_kprintf("%d socket_ip6_r connect ...\n",dev);					
 				}
 				else
 				{
 					g_ip6[dev].connected=true;
-					cnn_out(dev,1);
+					cnn_out(dev,1);					
 				}
 			}			
 		}
@@ -162,10 +169,14 @@ void socket_ip6_r(void *paramter)
 			}
 		}		    
 	}
+	closesocket(g_ip6[dev].clientfd);
+	closesocket(g_ip6[dev].sockfd);
+	rt_kprintf("socket_ip6_r close\n");
 }
 
 bool socket_ip6(int dev,bool init)
 {	
+	
 	if(init)
 	{
 		/*create socket*/
@@ -173,7 +184,7 @@ bool socket_ip6(int dev,bool init)
 			g_ip6[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);
 		else
 			g_ip6[dev].sockfd= socket(PF_INET6, SOCK_DGRAM, 0);
-
+		g_ip6[dev].clientfd=10000;
 		if(g_ip6[dev].sockfd == -1)
 		{
 			rt_kprintf("Socket error\n");
@@ -241,6 +252,9 @@ bool socket_ip6(int dev,bool init)
 			{
 				char a=1;
 				setsockopt(g_ip6[dev].sockfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
+				
+				int timeout = 100;
+				lwip_setsockopt(g_ip6[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 			}
 		}
 		/*mall receive buffer*/
@@ -340,7 +354,7 @@ void socket_ip4_r(void *paramter)
 	int status;
 	struct sockaddr_in client_addr;
 	rt_kprintf("socket_ip4_r==> %d , %s mode, %s , %s . Thread Enter\r\n",dev,is_right(g_conf.config[dev],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[dev],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[dev],CONFIG_TCP)?"TCP":"UDP");
-	while(1)
+	while(ipv4_flag[dev])
 	{
 		if(g_ip4[dev].connected==false)
 		{
@@ -362,7 +376,10 @@ void socket_ip4_r(void *paramter)
 				{
 					closesocket(g_ip4[dev].sockfd);
 					g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
-					//rt_kprintf("%d socket_ip4_r connect ...",dev);		
+					
+					int timeout = 100;
+					lwip_setsockopt(g_ip4[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+					rt_kprintf("%d socket_ip4_r connect ...",dev);		
 				}
 				else
 				{
@@ -426,6 +443,9 @@ void socket_ip4_r(void *paramter)
 			}
 		}
 	}
+	closesocket(g_ip4[dev].clientfd);
+	closesocket(g_ip4[dev].sockfd);
+	rt_kprintf("socket_ip4_r close\n");
 }
 
 bool socket_ip4(int dev,bool init)
@@ -437,6 +457,7 @@ bool socket_ip4(int dev,bool init)
 			g_ip4[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
 		else
 			g_ip4[dev].sockfd= socket(PF_INET, SOCK_DGRAM, 0);
+		g_ip4[dev].clientfd=10000;
 
 		if(g_ip4[dev].sockfd == -1)
 		{
@@ -508,7 +529,10 @@ bool socket_ip4(int dev,bool init)
 			else
 			{
 				char a=1;
-				setsockopt(g_ip6[dev].sockfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
+				setsockopt(g_ip4[dev].sockfd, SOL_SOCKET, SO_KEEPALIVE, &a, sizeof(char));
+				
+				int timeout = 100;
+				lwip_setsockopt(g_ip4[dev].sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 			}
 		}
 		/*mall receive buffer*/
@@ -546,13 +570,13 @@ bool socket_ip4(int dev,bool init)
 }
 
 /*init socket 1,2,3,4*/
-void socket_ctl(bool open)
+void socket_ctl(bool open,int i)
 {
 	rt_uint8_t *thread_string;
-	int i;
-	rt_kprintf("g_conf.config %x,%x,%x,%x\r\n",g_conf.config[0],g_conf.config[1],g_conf.config[2],g_conf.config[3]);
+	//int i;
+	//rt_kprintf("g_conf.config %x,%x,%x,%x\r\n",g_conf.config[0],g_conf.config[1],g_conf.config[2],g_conf.config[3]);
 	thread_string=(rt_uint8_t *)rt_malloc(20*sizeof(rt_uint8_t));
-	for(i=0;i<4;i++)
+	//for(i=0;i<4;i++)
 	{
 		
 		rt_memset(thread_string,'\0',20);
@@ -567,6 +591,7 @@ void socket_ctl(bool open)
 				{//udp client ipv6
 					if(socket_ip6(i,true))
 					{
+						ipv6_flag[i]=true;
 						rt_sprintf(thread_string,"socket_%d_6_w",i);
 						tid_w[i] = rt_thread_create(thread_string,socket_ip6_w, (void *)i,2048, 20, 10);
 						rt_sprintf(thread_string,"socket_%d_6_r",i);
@@ -574,9 +599,10 @@ void socket_ctl(bool open)
 					}
 				}
 				else
-				{//udp client ipv4	
+				{//udp client ipv4						
 					if(socket_ip4(i,true))
 					{
+						ipv4_flag[i]=true;	
 						rt_sprintf(thread_string,"socket_%d_4_w",i);
 						tid_w[i] = rt_thread_create(thread_string,socket_ip4_w, (void *)i,2048, 20, 10);
 						rt_sprintf(thread_string,"socket_%d_4_r",i);
@@ -594,10 +620,50 @@ void socket_ctl(bool open)
 		{
 			if(tid_w[i]!=RT_NULL && tid_r[i]!=RT_NULL)
 			{
+				int connected=0,socket1,socket2;
+				char *ptr;
+				
+				rt_thread_delete(tid_w[i]);
+				if(is_right(g_conf.config[i],CONFIG_IPV6))
+				{
+					connected=g_ip6[i].connected;
+					ipv6_flag[i]=false;
+					ptr=g_ip6[i].recv_data;
+					socket1=g_ip6[i].clientfd;
+					socket2=g_ip6[i].sockfd;
+				}
+				else
+				{	
+					connected=g_ip4[i].connected;				
+					ipv4_flag[i]=false;
+					ptr=g_ip4[i].recv_data;
+					socket1=g_ip4[i].clientfd;
+					socket2=g_ip4[i].sockfd;
+				}
+				rt_kprintf("==>tid_w%d stat %d\n",i,tid_w[i]->stat);
+				rt_kprintf("==>tid_r%d stat %d\n",i,tid_r[i]->stat);
+				if(connected||is_right(g_conf.config[i],CONFIG_SERVER))
+				{
+					rt_thread_delete(tid_r[i]);
+					closesocket(socket1);
+					closesocket(socket2);
+				}
+				else
+				{
+					while(tid_r[i]->stat!=RT_THREAD_CLOSE)
+						rt_thread_delay(10);
+				}
+				rt_kprintf("<==tid_w%d stat %d\n",i,tid_w[i]->stat);
+				rt_kprintf("<==tid_r%d stat %d\n",i,tid_r[i]->stat);
+				cnn_out(i,0);
+				free(ptr);
+				tid_w[i]=RT_NULL;
+				tid_r[i]=RT_NULL;
+			#if 0
 				int set=1;
 				if(is_right(g_conf.config[i],CONFIG_SERVER))
 				{
-	
+					
 					rt_thread_delete(tid_w[i]);
 					rt_thread_delete(tid_r[i]);
 					tid_w[i]=RT_NULL;
@@ -622,12 +688,24 @@ void socket_ctl(bool open)
 				{				
 					if(is_right(g_conf.config[i],CONFIG_IPV6))
 					{
+						ipv6_flag=false;
 						if(g_ip6[i].connected==false)
 						{
+							ioctlsocket(g_ip6[i].clientfd,FIONBIO,&set);
+							ioctlsocket(g_ip6[i].sockfd,FIONBIO,&set);
+							rt_kprintf("to closesocket clinetfd\n");
 							closesocket(g_ip6[i].clientfd);
+							while(tid_r[i]->stat!=RT_THREAD_CLOSE)
+							{
+								rt_kprintf("to closesocket sockfd\n");
+								rt_thread_delay(10);
+							}
 							closesocket(g_ip6[i].sockfd); 
+							rt_kprintf("to free recv data\n");
 							rt_free(g_ip6[i].recv_data);
+							rt_kprintf("to delete tid_w\n");
 							rt_thread_delete(tid_w[i]);
+							rt_kprintf("to delete tid_r\n");
 							rt_thread_delete(tid_r[i]);
 							tid_w[i]=RT_NULL;
 							tid_r[i]=RT_NULL;
@@ -669,6 +747,7 @@ void socket_ctl(bool open)
 					}
 					
 				}
+				#endif
 			}
 		}
 	}

@@ -59,7 +59,7 @@ typedef struct ip4
 ip6_t g_ip6[4];
 ip4_t g_ip4[4];
 void cnn_out(int index,int level);
-void socket_ctl(bool open);
+void socket_ctl(bool open,int i);
 
 //void socket_send(int index,rt_uint8_t *data,int len);
 #define debug 1

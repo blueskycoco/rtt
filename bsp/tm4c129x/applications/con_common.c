@@ -65,7 +65,8 @@ unsigned char config_tcp0[1+7]					={0xF5,0x8A,0x21,0xff,0x26,0xfa,0x00,0x00};/*
 unsigned char config_tcp1[1+7]					={0xF5,0x8A,0x22,0xff,0x26,0xfa,0x00,0x00};/*protol1*/
 unsigned char config_tcp2[1+7]					={0xF5,0x8A,0x23,0xff,0x26,0xfa,0x00,0x00};/*protol2*/
 unsigned char config_tcp3[1+7]					={0xF5,0x8A,0x24,0xff,0x26,0xfa,0x00,0x00};/*protol3*/
-
+#define COMMAND_FAIL "Command crc fail"
+#define COMMAND_OK "Command exec OK"
 void print_config();
 
 unsigned char get_config[35];//			={0xF5,0x8B,0x0f,0xff,0xff,0xff,0xff,0x27,0xfa,0x00,0x00};/*get config 0xf5,0x8b,********0x27,0xfa,0x00,0x00*/
@@ -159,9 +160,10 @@ void default_config()
 	set_if6("e0","fe80::1");
 	set_if("e0",g_conf.local_ip,g_conf.sub_msk,g_conf.gw);
 }
-void set_config(rt_uint8_t *data,int ipv6_len)
+int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local socket need reconfig ,2 all socket need reconfig
 {
 	bool ipv6_changed=false,ipv4_changed=false;
+	int need_reconfig=0;
 	int i;
 	switch(data[0])
 	{
@@ -171,6 +173,7 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 			ipv4_changed=true;
 			rt_memset(g_conf.local_ip,'\0',16);
 			rt_sprintf(g_conf.local_ip,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			need_reconfig=2;
 		}
 		break;
 		case 1:
@@ -179,7 +182,11 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 		case 4:
 		{
 			//set local port
-			g_conf.local_port[data[0]-1]=(data[1]<<8|data[2]);
+			if((data[0]-1)==dev)
+			{
+				g_conf.local_port[data[0]-1]=(data[1]<<8|data[2]);
+				need_reconfig=1;
+			}
 		}
 		break;
 		case 5:
@@ -188,6 +195,7 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 			ipv4_changed=true;
 			rt_memset(g_conf.sub_msk,'\0',16);
 			rt_sprintf(g_conf.sub_msk,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			need_reconfig=2;
 		}
 		break;
 		case 6:
@@ -196,6 +204,7 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 			ipv4_changed=true;
 			rt_memset(g_conf.gw,'\0',16);
 			rt_sprintf(g_conf.gw,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			need_reconfig=2;
 		}
 		break;
 		case 7:
@@ -210,8 +219,12 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 		case 11:
 		{
 			//set remote ipv4 ip
-			rt_memset(g_conf.remote_ip[data[0]-8],'\0',16);
-			rt_sprintf(g_conf.remote_ip[data[0]-8],"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			if((data[0]-8)==dev)
+			{
+				rt_memset(g_conf.remote_ip[data[0]-8],'\0',16);
+				rt_sprintf(g_conf.remote_ip[data[0]-8],"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+				need_reconfig=1;
+			}
 		}
 		break;
 		case 12:
@@ -220,9 +233,13 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 		case 15:
 		{
 			//set remote ipv6 ip
-			rt_memset(g_conf.remote_ip6[data[0]-12],'\0',64);
-			for(i=0;i<ipv6_len;i++)
-				g_conf.remote_ip6[data[0]-12][i]=data[i+1];
+			if((data[0]-12)==dev)
+			{
+				rt_memset(g_conf.remote_ip6[data[0]-12],'\0',64);
+				for(i=0;i<ipv6_len;i++)
+					g_conf.remote_ip6[data[0]-12][i]=data[i+1];
+				need_reconfig=1;
+			}
 		}
 		break;
 		case 16:
@@ -231,7 +248,11 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 		case 19:
 		{
 			//set remote port
-			g_conf.remote_port[data[0]-16]=(data[1]<<8|data[2]);
+			if((data[0]-16)==dev)
+			{
+				g_conf.remote_port[data[0]-16]=(data[1]<<8|data[2]);
+				need_reconfig=1;
+			}
 		}
 		break;
 		case 20:
@@ -240,10 +261,14 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 		case 23:
 		{
 			//set net protol ipv4 or ipv6
-			if(data[1])
-				g_conf.config[data[0]-20]|=CONFIG_IPV6;
-			else
-				g_conf.config[data[0]-20]&=~CONFIG_IPV6;
+			if((data[0]-20)==dev)
+			{
+				if(data[1])
+					g_conf.config[data[0]-20]|=CONFIG_IPV6;
+				else
+					g_conf.config[data[0]-20]&=~CONFIG_IPV6;
+				need_reconfig=1;
+			}
 		}
 		break;
 		case 24:
@@ -252,10 +277,14 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 		case 27:
 		{
 			//set server or client mode
-			if(data[1])
-				g_conf.config[data[0]-24]|=CONFIG_SERVER;
-			else
-				g_conf.config[data[0]-24]&=~CONFIG_SERVER;
+			if((data[0]-24)==dev)
+			{
+				if(data[1])
+					g_conf.config[data[0]-24]|=CONFIG_SERVER;
+				else
+					g_conf.config[data[0]-24]&=~CONFIG_SERVER;
+				need_reconfig=1;
+			}
 		}
 		break;
 		case 28:
@@ -264,7 +293,11 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 		case 31:
 		{
 			//set uart baud
-			g_conf.config[data[0]-28]=((g_conf.config[data[0]-20]&0x07)|(data[1]<<3));
+			if((data[0]-28)==dev)
+			{
+				g_conf.config[data[0]-28]=((g_conf.config[data[0]-20]&0x07)|(data[1]<<3));
+				need_reconfig=1;
+			}
 		}
 		break;
 		case 32:
@@ -274,6 +307,7 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 			rt_memset(g_conf.local_ip6,'\0',64);
 			for(i=0;i<ipv6_len;i++)
 				g_conf.local_ip6[i]=data[i+1];
+			need_reconfig=2;
 		}
 		break;
 		case 33:
@@ -281,24 +315,32 @@ void set_config(rt_uint8_t *data,int ipv6_len)
 		case 35:
 		case 36:
 		{//set tcp or udp
-			if(data[1])
-				g_conf.config[data[0]-33]|=CONFIG_TCP;
-			else
-				g_conf.config[data[0]-33]&=~CONFIG_TCP;
+		if((data[0]-33)==dev)
+			{
+				if(data[1])
+					g_conf.config[data[0]-33]|=CONFIG_TCP;
+				else
+					g_conf.config[data[0]-33]&=~CONFIG_TCP;
+				need_reconfig=1;
+			}
 		}
 		break;
+		default:
+			need_reconfig=false;
 	}
 	if(ipv4_changed)
 		set_if("e0",g_conf.local_ip,g_conf.sub_msk,g_conf.gw);
 	if(ipv6_changed)
 		set_if6("e0",g_conf.local_ip6);
 	print_config();
+	rt_kprintf("set_config %d\n",need_reconfig);
+	return need_reconfig;
 }
-void common_rw_config(int dev)
+int common_rw_config(int dev)
 {
 
 	static rt_uint8_t buf[65];
-	rt_uint8_t i=0;
+	rt_uint8_t i=0;	
 	static int data_len,crc_len,longlen=0;
 	static unsigned char crc[2];
 	char ch;	
@@ -306,6 +348,8 @@ void common_rw_config(int dev)
 	static enum STATE_OP state=GET_F5;
 	DBG("enter common_rw_config\r\n");
 	rt_uint8_t *ptr=(rt_uint8_t *)buf;
+	int need_reconfig=0;
+	rt_thread_delay(10);
 	while((rt_device_read(common_dev[dev], 0, &ch, 1) == 1))
 	{
 		if(ch==0xf5 && state==GET_F5)
@@ -374,279 +418,22 @@ void common_rw_config(int dev)
 				}
 				rt_kprintf("crc is %2x %2x\n",crc[0],crc[1]);
 				if(verify!=(crc[0]<<8|crc[1]))
+				{
 					rt_kprintf("verify %d crc error\n",verify);
+					need_reconfig=-1;
+				}
 				else
 				{
 					rt_kprintf("Command OK\n");
-					set_config(ptr,longlen);
+					need_reconfig|=set_config(ptr,longlen,dev);
+					//rt_device_write(common_dev[dev], 0, (void *)COMMAND_OK, strlen(COMMAND_OK));
 				}
 				state=GET_F5;
 			}
 		}
 	}
-#if 0
-	while((rt_device_read(common_dev[dev], 0, &ch, 1) == 1))
-	{
-		DBG("%x ==> %d\r\n",ch,state);
-		switch(state)
-		{
-			case GET_F5:
-			{
-				if(ch==0xf5)
-				{
-					DBG("Dev %d , 0XF5 Got\r\n",which_common_dev(common_dev,dev));
-					state=GET_8A_8B;
-				}
-			}
-			break;
-			case GET_8A_8B:
-			{
-				if(ch==0x8a)
-				{
-					DBG("Dev %d , 0X8A Got\r\n",which_common_dev(common_dev,dev));
-					state=GET_DATA;
-					data_len=0;
-				}
-				else if(ch==0x8b)
-				{
-					/*send config data out*/
-					unsigned char i,*ptr,*ptr1;
-					int result=0;
-					int devices=which_common_dev(common_dev,dev);
-					DBG("Dev %d , 0X8B Got\r\n",devices);
-					get_config[0]=0xf5;
-					get_config[1]=0x8C;
-					result=0xf5+0x8c+0x27+0xfa;
-					for(i=0;i<4;i++)
-						get_config[2+i]=(g_conf.local_ip>>(i*8))&0xff;
-					for(i=0;i<2;i++)
-						get_config[6+i]=g_conf.local_port[i];					
-					for(i=0;i<4;i++)
-						get_config[8+i]=g_conf.sub_msk[i];					
-					for(i=0;i<4;i++)
-						get_config[12+i]=g_conf.gw[i];
-					for(i=0;i<6;i++)
-						get_config[16+i]=g_conf.mac[i];
-					switch(devices)
-					{
-						case 0:
-							ptr=g_conf.remote_ip0;
-							ptr1=g_conf.remote_port0;
-							break;
-						case 1:
-							ptr=g_conf.remote_ip1;
-							ptr1=g_conf.remote_port1;
-							break;
-						case 2:
-							ptr=g_conf.remote_ip2;
-							ptr1=g_conf.remote_port2;
-							break;
-						case 3:
-							ptr=g_conf.remote_ip3;
-							ptr1=g_conf.remote_port3;
-							break;
-													
-					}
-					
-					for(i=0;i<4;i++)
-						get_config[22+i]=ptr[i];					
-					for(i=0;i<2;i++)
-						get_config[26+i]=ptr1[i];
-					get_config[28]=g_conf.protol[devices];
-					get_config[29]=g_conf.server_mode[devices];
-					get_config[30]=g_conf.common_baud[devices];					
-					get_config[31]=0x27;
-					get_config[32]=0xfa;
-					for(i=2;i<31;i++)
-						result=result+get_config[i];
-					get_config[33]=(result&0xff00)>>8;
-					get_config[34]=result&0xff;
-					rt_device_write(dev,0,get_config,sizeof(get_config));
-					for(i=0;i<sizeof(get_config);i++)
-						DBG("==>%x \r\n",get_config[i]);
-					state=GET_F5;
-					print_config();
-				}
-				
-			}
-			break;
-			case GET_DATA:
-			{
-				if(data_len==0)
-				{
-					param=ch;
-					DBG("Dev %d , Command 0x%2x Got\r\n",which_common_dev(common_dev,dev),ch);
-					if(ch==0||ch==2||ch==3||ch==5||ch==6||ch==7||ch==8)
-						len=4;
-					else if(ch==1||ch==9||ch==10||ch==11||ch==12)
-						len=2;
-					else if(ch==4)
-						len=6;
-					else if(ch==13||ch==14||ch==15)
-						len=1;
-				}
-				else
-					buf[data_len-1]=ch;
-
-				if(data_len==len)
-					state=GET_26;
-				else
-				{
-					state=GET_DATA;
-					data_len++;
-				}
-			}
-			break;
-			case GET_26:
-			{
-				if(ch==0x26)
-				{
-					DBG("Dev %d , 0X26 Got\r\n",which_common_dev(common_dev,dev));
-					state=GET_FA;
-				}
-				else
-					state=GET_F5;
-			}
-			break;
-			case GET_FA:
-			{
-				if(ch==0xfa)
-				{
-					state=GET_CHECSUM;
-					crc_len=0;
-				}
-				else
-					state=GET_F5;
-			}
-			break;
-			case GET_CHECSUM:
-			{
-				crc[crc_len]=ch;
-				if(crc_len!=1)
-					crc_len++;
-				else
-				{
-					unsigned char *ptr;
-					DBG("Dev %d , 0XFA Got\r\n",which_common_dev(common_dev,dev));
-					int result=0xf5+0x8a+param+0x26+0xfa;
-					for(i=0;i<len;i++)
-						result=result+buf[i];
-					if(result==(crc[0]<<8|crc[1]))
-					{
-						switch(param)
-						{
-							case 0://local ip		
-								ptr=g_conf.local_ip;
-							break;
-							case 1://local port 	
-								ptr=g_conf.local_port;
-							break;
-							case 2://sub msk		
-								ptr=g_conf.sub_msk;
-							break;
-							case 3://gw ip		
-								ptr=g_conf.gw;
-							break;
-							case 4://mac		
-								ptr=g_conf.mac;
-								DBG("to write mac\r\n");
-							break;
-							case 5://socket 0 ip		
-							{
-								if(which_common_dev(common_dev,dev)==0)
-									ptr=g_conf.remote_ip0;	
-								else if(which_common_dev(common_dev,dev)==1)
-									ptr=g_conf.remote_ip1;
-								else if(which_common_dev(common_dev,dev)==2)
-									ptr=g_conf.remote_ip2;
-								else
-								{
-									ptr=g_conf.remote_ip3;
-									DBG("to write socket3 ip\r\n");
-								}
-							}
-							break;
-							case 9://socket 0 port										
-							{
-								if(which_common_dev(common_dev,dev)==0)
-									ptr=g_conf.remote_port0;
-								else if(which_common_dev(common_dev,dev)==1)
-									ptr=g_conf.remote_port1;
-								else if(which_common_dev(common_dev,dev)==2)
-									ptr=g_conf.remote_port2;
-								else
-								{
-									ptr=g_conf.remote_port3;
-									DBG("to write socket3 port\r\n");
-								}
-							}
-							break;									
-							case 13://protol	
-								i=which_common_dev(common_dev,dev);
-								g_conf.protol[i]=buf[0];
-							break;
-							case 14://server or client mode
-								i=which_common_dev(common_dev,dev);
-								g_conf.server_mode[i]=buf[0];
-							break;									
-							case 15://socket common baud
-							{
-
-								struct serial_configure config;
-								ptr=g_conf.common_baud+which_common_dev(common_dev,dev);
-								i=which_common_dev(common_dev,dev);
-								if(buf[0]==0)
-									config.baud_rate = 115200;
-								else if(buf[0]==1)
-									config.baud_rate = 406800;
-								else if(buf[0]==2)
-									config.baud_rate = 921600;
-								else if(buf[0]==3)
-									config.baud_rate = 2000000;
-								else if(buf[0]==4)
-									config.baud_rate = 4000000;
-								else if(buf[0]==5)
-									config.baud_rate = 6000000;
-
-								config.bit_order = BIT_ORDER_LSB;
-								config.data_bits = DATA_BITS_8;
-								config.parity	 = PARITY_NONE;
-								config.stop_bits = STOP_BITS_1;
-								config.invert	 = NRZ_NORMAL;
-								config.bufsz	 = RT_SERIAL_RB_BUFSZ;
-								rt_device_control(dev,RT_DEVICE_CTRL_CONFIG,&config);								
-								g_conf.common_baud[i]=buf[0];
-								//rt_kprintf("set common %d buf[%d] %d to %x baud\r\n",i,i,buf[0],config.baud_rate);
-							}
-							break;
-							default:
-								ptr=NULL;
-						}
-					if(ptr!=NULL && param!=13 &&param!=14 &&param!=15)
-						for(i=0;i<len;i++)
-						{
-							ptr[i]=buf[i];
-							DBG("set %d %d\r\n",ptr[i],buf[i]);
-						}
-					if(param==4)
-						DBG("mac %x %x %x %x %x %x \r\n",g_conf.mac[0],g_conf.mac[1],g_conf.mac[2],g_conf.mac[3],g_conf.mac[4],g_conf.mac[5]);
-				}
-					else
-						DBG("Dev %d , crc fault %x!=%x\r\n",which_common_dev(common_dev,dev),result,(crc[0]<<8)|crc[1]);
-				state=GET_F5;
-				}
-			
-			}
-			break;
-			default:
-			{
-				DBG("Invaild %x\r\n",ch);
-				state=GET_F5;
-			}
-			break;
-		}
-	}
-#endif
+	rt_kprintf("common_rw_config %d\n",need_reconfig);
+	return need_reconfig;
 }
 static bool flag_cnn[4]={false,false,false,false};
 void all_cut()
@@ -822,7 +609,7 @@ long list_thread(void)
 void common_w(void* parameter)
 {
 	int dev=((int)parameter)/2;
-	static int flag=0;
+	static int flag=0,need_reconfig=0;
 	DBG("common_w %d Enter\r\n",dev);
 	while (1)
 	{
@@ -836,7 +623,17 @@ void common_w(void* parameter)
 			{
 				print_config();
 				flag=0;
-				socket_ctl(RT_TRUE);
+				rt_kprintf("%d common_w %d\n",dev,need_reconfig);
+				if(need_reconfig==1)
+					socket_ctl(RT_TRUE,dev);
+				else if(need_reconfig==2||need_reconfig==3)
+				{
+					socket_ctl(RT_TRUE,0);
+					socket_ctl(RT_TRUE,1);
+					socket_ctl(RT_TRUE,2);
+					socket_ctl(RT_TRUE,3);
+				}
+				need_reconfig=0;
 				rt_thread_delay(10);
 				list_thread();
 				//list_tcps1();
@@ -848,18 +645,33 @@ void common_w(void* parameter)
 		}
 		else
 		{
-			DBG("dev %d in config data flag %d\n",dev,flag);
-			if(flag==0)
+			DBG("dev %d in config data flag %d\n",dev,flag);					
+			int tmp=0;
+			tmp=common_rw_config(dev);	
+			if(tmp!=-1)
 			{
-				flag=1;
-				/*config data parser*/
-				socket_ctl(RT_FALSE);
-				rt_thread_delay(10);
-				list_thread();
-				list_tcps1();
-				list_mem1();
+				need_reconfig|=tmp;
+				if(flag==0)
+				{
+					flag=1;
+					socket_ctl(RT_FALSE,dev);
+					/*config data parser*/
+					if(need_reconfig==2||need_reconfig==3)
+					{	
+						socket_ctl(RT_FALSE,0);
+						socket_ctl(RT_FALSE,1);
+						socket_ctl(RT_FALSE,2);
+						socket_ctl(RT_FALSE,3);
+					}
+					rt_thread_delay(10);
+					list_thread();
+					list_tcps1();
+					list_mem1();
+				}
+				rt_device_write(common_dev[dev], 0, (void *)COMMAND_OK, strlen(COMMAND_OK));
 			}
-			common_rw_config(dev);
+			else
+				rt_device_write(common_dev[dev], 0, (void *)COMMAND_FAIL, strlen(COMMAND_FAIL));
 		}
 	}
 }
@@ -909,7 +721,6 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 	MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_5,0);	
 	MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_2,0);	
 	default_config();
-	ind[0]=0;
 
 	for(i=3;i<67;i++)
 	{
@@ -973,7 +784,10 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 			if(tid_common_r[i]!=RT_NULL)
 				rt_thread_startup(tid_common_r[i]);
 		}
-	}	
+	}
+	for(i=0;i<4;i++)
+	socket_ctl(RT_TRUE,i);
+	list_mem1();
 	DBG("common_init ok\n");
 	return 1;
 }
