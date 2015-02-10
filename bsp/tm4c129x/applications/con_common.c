@@ -458,7 +458,7 @@ void all_cut()
 void cnn_out(int index,int level)
 {
 	
-	rt_kprintf("dev %d , level %d, phy_link %d\n",index,level,phy_link);
+	
 	if(phy_link)
 	{
 		if(level&&(flag_cnn[index]==false))
@@ -467,6 +467,7 @@ void cnn_out(int index,int level)
 			flag_cnn[index]=false;
 		else
 			return;
+		rt_kprintf("dev %d , level %d, phy_link %d\n",index,level,phy_link);
 		switch(index)
 		{
 			case 0:
