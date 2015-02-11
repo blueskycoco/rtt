@@ -40,9 +40,12 @@ static void led_thread_entry(void* parameter)
 	while(1)
 	{
 		rt_hw_led_on();
-		rt_thread_delay(RT_TICK_PER_SECOND);
+		rt_thread_delay(RT_TICK_PER_SECOND/2);
 		rt_hw_led_off();
-		rt_thread_delay(RT_TICK_PER_SECOND);
+		rt_thread_delay(RT_TICK_PER_SECOND/2);
+		//list_thread();
+		list_mem1();
+		//list_tcps1();
 	}
 }
 #if 0
@@ -172,8 +175,9 @@ void rt_init_thread_entry(void *parameter)
 		else
 			rt_data_queue_init(&g_data_queue[i], 2048, 80, RT_NULL);
 	}
-	//common_init(DEV_UART);
-	test_select_connect();
+	common_init(DEV_UART);
+	//test_select_connect();
+	//test_select_accept();
 	netio_init();
 	//socket_init();
 	//ping_test6("fe80::5867:8730:e9e6:d5c5%11",5,32);
@@ -194,7 +198,7 @@ int rt_application_init(void)
     /* Create led thread */
     led_thread = rt_thread_create("led",
 			    led_thread_entry, RT_NULL,
-			    256, 20, 20);
+			    2048, 20, 20);
     if(led_thread != RT_NULL)
 		  rt_thread_startup(led_thread);
 	#if 0

@@ -121,7 +121,7 @@ void IntGpioB()
 void default_config()
 {
 	struct netif * netif=netif_list;
-	g_conf.config[0]=CONFIG_IPV6|CONFIG_TCP;
+	g_conf.config[0]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[1]=CONFIG_TCP;
 	g_conf.config[2]=CONFIG_TCP;
 	g_conf.config[3]=CONFIG_TCP;
@@ -633,21 +633,22 @@ void common_w(void* parameter)
 			{
 				print_config();
 				flag=0;
-				rt_kprintf("%d common_w %d\n",dev,need_reconfig);
-				if(need_reconfig==1)
-					socket_ctl(RT_TRUE,dev);
-				else if(need_reconfig!=0)
+				rt_kprintf("%d common_w %d\n",dev,need_reconfig);				
+				socket_ctl(RT_TRUE,dev);
+				if(need_reconfig!=0&&need_reconfig!=1)
 				{
-					socket_ctl(RT_TRUE,0);
-					socket_ctl(RT_TRUE,1);
-					socket_ctl(RT_TRUE,2);
-					socket_ctl(RT_TRUE,3);
+					int i;
+					for(i=0;i<4;i++)
+					if(i!=dev)
+					socket_ctl(RT_TRUE,i);
 				}
 				need_reconfig=0;
-				rt_thread_delay(1);
-				list_thread();
+				//rt_thread_delay(100);
+				//list_mem1();
 				//list_tcps1();
-				list_mem1();
+				//list_thread();
+				
+				
 			}
 			
 			/*socket data transfer,use dma*/
@@ -672,18 +673,25 @@ void common_w(void* parameter)
 						for(i=0;i<4;i++)
 						{
 							if(((tmp==4)&&is_right(g_conf.config[i],CONFIG_IPV6))||((tmp==2)&&!is_right(g_conf.config[i],CONFIG_IPV6)))
-							socket_ctl(RT_FALSE,i);
+							{
+								if(i!=dev)
+								socket_ctl(RT_FALSE,i);
+							}
 						}
 					}
-					rt_thread_delay(1);
-					list_thread();
-					list_tcps1();
+					/*rt_thread_delay(100);
 					list_mem1();
+					list_tcps1();
+					list_thread();*/
+					
 				}
 				rt_device_write(common_dev[dev], 0, (void *)COMMAND_OK, strlen(COMMAND_OK));
 			}
 			else
+			{
 				rt_device_write(common_dev[dev], 0, (void *)COMMAND_FAIL, strlen(COMMAND_FAIL));
+				flag=1;
+			}
 		}
 	}
 }
@@ -800,10 +808,16 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 				rt_thread_startup(tid_common_r[i]);
 		}
 	}
+	//list_mem1();	
 	for(i=0;i<4;i++)
-	socket_ctl(RT_TRUE,i);
-	list_mem1();
+		socket_ctl(RT_TRUE,i);
+	//rt_thread_delay(100);
+	//list_mem1();	
+	//list_tcps1();
+	//list_thread();
+	
 	DBG("common_init ok\n");
+	list_mem1();	
 	return 1;
 }
 #endif
