@@ -718,7 +718,7 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 	}
 	//list_mem1();	
 	for(i=0;i<4;i++)
-		socket_ctl(RT_TRUE,i);
+		socket_init(i);
 	//rt_thread_delay(100);
 	//list_mem1();	
 	//list_tcps1();
