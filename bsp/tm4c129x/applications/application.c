@@ -175,10 +175,10 @@ void rt_init_thread_entry(void *parameter)
 		else
 			rt_data_queue_init(&g_data_queue[i], 2048, 80, RT_NULL);
 	}
-	//common_init(DEV_UART);
+	common_init(DEV_UART);
 	//test_select_connect();
 	//test_select_accept();
-	//netio_init();
+	netio_init();
 	//socket_init();
 	//ping_test6("fe80::5867:8730:e9e6:d5c5%11",5,32);
 	//ping_test6("fe80::483:d903:e2ee:d05e%12",5,32);

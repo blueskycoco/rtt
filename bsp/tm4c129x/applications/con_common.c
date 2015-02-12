@@ -121,7 +121,7 @@ void IntGpioB()
 void default_config()
 {
 	struct netif * netif=netif_list;
-	g_conf.config[0]=CONFIG_TCP|CONFIG_SERVER;
+	g_conf.config[0]=CONFIG_TCP|CONFIG_SERVER|CONFIG_SERVER;
 	g_conf.config[1]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[2]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[3]=CONFIG_TCP|CONFIG_SERVER;
@@ -145,7 +145,8 @@ void default_config()
 	strcpy(g_conf.remote_ip6[2],"fe80::5867:8730:e9e6:d5c5%11");
 	memset(g_conf.remote_ip6[3],'\0',64);
 	strcpy(g_conf.remote_ip6[3],"fe80::5867:8730:e9e6:d5c5%11");
-	
+	memset(g_conf.local_ip6,'\0',64);
+	strcpy(g_conf.local_ip6,"fe80::1");
 	memset(g_conf.local_ip,'\0',16);
 	strcpy(g_conf.local_ip,"192.168.1.32");	
 	memset(g_conf.gw,'\0',16);
@@ -159,13 +160,12 @@ void default_config()
 	g_conf.remote_port[2]=1236;
 	g_conf.remote_port[3]=1237;
 	set_if6("e0","fe80::1");
-	set_if("e0",g_conf.local_ip,g_conf.sub_msk,g_conf.gw);
+	set_if("e0",g_conf.local_ip,g_conf.gw,g_conf.sub_msk);
 }
 void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local socket need reconfig ,2 all socket need reconfig
 {
 	
 	bool ipv6_changed=false,ipv4_changed=false;
-	int need_reconfig=-1;
 	int i;
 	switch(data[0])
 	{
@@ -319,10 +319,9 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 			rt_kprintf("wrong cmd\n");
 	}
 	if(ipv4_changed)
-		set_if("e0",g_conf.local_ip,g_conf.sub_msk,g_conf.gw);
+		set_if("e0",g_conf.local_ip,g_conf.gw,g_conf.sub_msk);
 	if(ipv6_changed)
 		set_if6("e0",g_conf.local_ip6);
-	//print_config();
 }
 void common_rw_config(int dev)
 {
@@ -336,7 +335,6 @@ void common_rw_config(int dev)
 	static enum STATE_OP state=GET_F5;
 	DBG("enter common_rw_config\r\n");
 	rt_uint8_t *ptr=(rt_uint8_t *)buf;
-	int need_reconfig=-1;
 	rt_thread_delay(10);
 	while((rt_device_read(common_dev[dev], 0, &ch, 1) == 1))
 	{
@@ -404,17 +402,13 @@ void common_rw_config(int dev)
 					rt_kprintf("%2x ",ptr[i]);	
 					verify+=ptr[i];
 				}
-				rt_kprintf("crc is %2x %2x\n",crc[0],crc[1]);
+				rt_kprintf("crc is %2x %2x,verify is %x\n",crc[0],crc[1],verify);
 				if(verify!=(crc[0]<<8|crc[1]))
 				{
-					//rt_kprintf("verify %d crc error\n",verify);
-					
 					rt_device_write(common_dev[dev], 0, (void *)COMMAND_FAIL, strlen(COMMAND_FAIL));
 				}
 				else
 				{
-					//rt_kprintf("Command OK\n");
-					
 					rt_device_write(common_dev[dev], 0, (void *)COMMAND_OK, strlen(COMMAND_OK));
 					set_config(ptr,longlen,dev);
 					break;
@@ -429,7 +423,6 @@ void common_rw_config(int dev)
 			break;
 		}
 	}
-	//rt_kprintf("common_rw_config %d\n",need_reconfig);
 	return ;
 }
 static bool flag_cnn[4]={false,false,false,false};
@@ -523,6 +516,7 @@ void print_config(config g)
 {
 	rt_kprintf("\n============================================================================>\n");
 	rt_kprintf("local_ip %s\n",g.local_ip);
+	rt_kprintf("local_ip6 %s\n",g.local_ip6);
 	rt_kprintf("local_port0 %d\n",g.local_port[0]);
 	rt_kprintf("local_port1 %d\n",g.local_port[1]);
 	rt_kprintf("local_port2 %d\n",g.local_port[2]);
@@ -564,44 +558,6 @@ static rt_err_t common_rx_ind(rt_device_t dev, rt_size_t size)
 	//DBG("dev %d common_rx_ind %d\r\n",which_common_dev(common_dev,dev),size);
     rt_sem_release(&(rx_sem[which_common_dev(common_dev,dev)]));
     return RT_EOK;
-}
-extern struct rt_object_information rt_object_container[];
-
-static long _list_thread1(struct rt_list_node *list)
-{
-    struct rt_thread *thread;
-    struct rt_list_node *node;
-    rt_uint8_t *ptr;
-
-    rt_kprintf(" thread  pri  status      sp     stack size max used   left tick  error\n");
-    rt_kprintf("-------- ---- ------- ---------- ---------- ---------- ---------- ---\n");
-    for (node = list->next; node != list; node = node->next)
-    {
-        thread = rt_list_entry(node, struct rt_thread, list);
-        rt_kprintf("%-8.*s 0x%02x", RT_NAME_MAX, thread->name, thread->current_priority);
-
-        if (thread->stat == RT_THREAD_READY)        rt_kprintf(" ready  ");
-        else if (thread->stat == RT_THREAD_SUSPEND) rt_kprintf(" suspend");
-        else if (thread->stat == RT_THREAD_INIT)    rt_kprintf(" init   ");
-        else if (thread->stat == RT_THREAD_CLOSE)   rt_kprintf(" close  ");
-
-        ptr = (rt_uint8_t*)thread->stack_addr;
-        while (*ptr == '#')ptr ++;
-
-        rt_kprintf(" 0x%08x 0x%08x 0x%08x 0x%08x %03d\n",
-            thread->stack_size + ((rt_uint32_t)thread->stack_addr - (rt_uint32_t)thread->sp),
-            thread->stack_size,
-            thread->stack_size - ((rt_uint32_t) ptr - (rt_uint32_t)thread->stack_addr),
-            thread->remaining_tick,
-            thread->error);
-    }
-	
-    return 0;
-}
-
-long list_thread1(void)
-{
-    return _list_thread1(&rt_object_container[RT_Object_Class_Thread].object_list);
 }
 
 void common_w(void* parameter)
@@ -769,7 +725,7 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 	//list_thread();
 	
 	DBG("common_init ok\n");
-	list_mem1();	
+	//list_mem1();	
 	return 1;
 }
 #endif

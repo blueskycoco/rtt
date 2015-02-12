@@ -570,12 +570,6 @@ void rt_memory_info(rt_uint32_t *total,
     if (max_used != RT_NULL)
         *max_used = max_mem;
 }
-void list_mem1(void)
-{
-    rt_kprintf("total memory: %d\n", mem_size_aligned);
-    rt_kprintf("used memory : %d\n", used_mem);
-    rt_kprintf("maximum allocated memory: %d\n", max_mem);
-}
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
