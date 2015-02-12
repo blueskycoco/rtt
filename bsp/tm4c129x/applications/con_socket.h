@@ -20,7 +20,7 @@ typedef struct {
 	rt_uint8_t config[4];//bit0 ipv4 or ipv6 	,bit1 tcp or udp , bit2 server or client ,bit 3 to bit 7 uart baud
 }config,*pconfig;
 
-config g_conf;
+config g_conf,g_confb;
 #define CONFIG_IPV6 			0x01
 #define CONFIG_TCP 				0x02
 #define CONFIG_SERVER 			0x04

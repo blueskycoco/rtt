@@ -68,7 +68,7 @@ unsigned char config_tcp3[1+7]					={0xF5,0x8A,0x24,0xff,0x26,0xfa,0x00,0x00};/*
 #define COMMAND_FAIL "Command crc fail"
 #define COMMAND_OK "Command exec OK"
 
-void print_config();
+void print_config(config g);
 
 unsigned char get_config[35];//			={0xF5,0x8B,0x0f,0xff,0xff,0xff,0xff,0x27,0xfa,0x00,0x00};/*get config 0xf5,0x8b,********0x27,0xfa,0x00,0x00*/
 rt_thread_t tid_common_w[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL},tid_common_r[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL};
@@ -122,9 +122,9 @@ void default_config()
 {
 	struct netif * netif=netif_list;
 	g_conf.config[0]=CONFIG_TCP|CONFIG_SERVER;
-	g_conf.config[1]=CONFIG_TCP;
-	g_conf.config[2]=CONFIG_TCP;
-	g_conf.config[3]=CONFIG_TCP;
+	g_conf.config[1]=CONFIG_TCP|CONFIG_SERVER;
+	g_conf.config[2]=CONFIG_TCP|CONFIG_SERVER;
+	g_conf.config[3]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.local_port[0]=1234;
 	g_conf.local_port[1]=1235;
 	g_conf.local_port[2]=1236;
@@ -161,7 +161,7 @@ void default_config()
 	set_if6("e0","fe80::1");
 	set_if("e0",g_conf.local_ip,g_conf.sub_msk,g_conf.gw);
 }
-int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local socket need reconfig ,2 all socket need reconfig
+void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local socket need reconfig ,2 all socket need reconfig
 {
 	
 	bool ipv6_changed=false,ipv4_changed=false;
@@ -175,7 +175,6 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 			ipv4_changed=true;
 			rt_memset(g_conf.local_ip,'\0',16);
 			rt_sprintf(g_conf.local_ip,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
-			need_reconfig=2;
 		}
 		break;
 		case 1:
@@ -187,7 +186,6 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 			if((data[0]-1)==dev)
 			{
 				g_conf.local_port[data[0]-1]=(data[1]<<8|data[2]);
-				need_reconfig=1;
 			}
 		}
 		break;
@@ -197,7 +195,6 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 			ipv4_changed=true;
 			rt_memset(g_conf.sub_msk,'\0',16);
 			rt_sprintf(g_conf.sub_msk,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
-			need_reconfig=2;
 		}
 		break;
 		case 6:
@@ -206,7 +203,6 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 			ipv4_changed=true;
 			rt_memset(g_conf.gw,'\0',16);
 			rt_sprintf(g_conf.gw,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
-			need_reconfig=2;
 		}
 		break;
 		case 7:
@@ -225,7 +221,6 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 			{
 				rt_memset(g_conf.remote_ip[data[0]-8],'\0',16);
 				rt_sprintf(g_conf.remote_ip[data[0]-8],"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
-				need_reconfig=1;
 			}
 		}
 		break;
@@ -240,7 +235,6 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 				rt_memset(g_conf.remote_ip6[data[0]-12],'\0',64);
 				for(i=0;i<ipv6_len;i++)
 					g_conf.remote_ip6[data[0]-12][i]=data[i+1];
-				need_reconfig=1;
 			}
 		}
 		break;
@@ -253,7 +247,6 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 			if((data[0]-16)==dev)
 			{
 				g_conf.remote_port[data[0]-16]=(data[1]<<8|data[2]);
-				need_reconfig=1;
 			}
 		}
 		break;
@@ -269,7 +262,6 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 					g_conf.config[data[0]-20]|=CONFIG_IPV6;
 				else
 					g_conf.config[data[0]-20]&=~CONFIG_IPV6;
-				need_reconfig=1;
 			}
 		}
 		break;
@@ -285,7 +277,6 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 					g_conf.config[data[0]-24]|=CONFIG_SERVER;
 				else
 					g_conf.config[data[0]-24]&=~CONFIG_SERVER;
-				need_reconfig=1;
 			}
 		}
 		break;
@@ -298,7 +289,6 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 			if((data[0]-28)==dev)
 			{
 				g_conf.config[data[0]-28]=((g_conf.config[data[0]-20]&0x07)|(data[1]<<3));
-				need_reconfig=1;
 			}
 		}
 		break;
@@ -309,7 +299,6 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 			rt_memset(g_conf.local_ip6,'\0',64);
 			for(i=0;i<ipv6_len;i++)
 				g_conf.local_ip6[i]=data[i+1];
-			need_reconfig=4;
 		}
 		break;
 		case 33:
@@ -323,22 +312,19 @@ int set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local sock
 					g_conf.config[data[0]-33]|=CONFIG_TCP;
 				else
 					g_conf.config[data[0]-33]&=~CONFIG_TCP;
-				need_reconfig=1;
 			}
 		}
 		break;
 		default:
-			need_reconfig=-1;
+			rt_kprintf("wrong cmd\n");
 	}
 	if(ipv4_changed)
 		set_if("e0",g_conf.local_ip,g_conf.sub_msk,g_conf.gw);
 	if(ipv6_changed)
 		set_if6("e0",g_conf.local_ip6);
-	print_config();
-	rt_kprintf("set_config %d\n",need_reconfig);
-	return need_reconfig;
+	//print_config();
 }
-int common_rw_config(int dev)
+void common_rw_config(int dev)
 {
 
 	static rt_uint8_t buf[65];
@@ -421,15 +407,17 @@ int common_rw_config(int dev)
 				rt_kprintf("crc is %2x %2x\n",crc[0],crc[1]);
 				if(verify!=(crc[0]<<8|crc[1]))
 				{
-					rt_kprintf("verify %d crc error\n",verify);
-					need_reconfig=-1;
+					//rt_kprintf("verify %d crc error\n",verify);
+					
+					rt_device_write(common_dev[dev], 0, (void *)COMMAND_FAIL, strlen(COMMAND_FAIL));
 				}
 				else
 				{
-					rt_kprintf("Command OK\n");
-					need_reconfig=set_config(ptr,longlen,dev);
+					//rt_kprintf("Command OK\n");
+					
+					rt_device_write(common_dev[dev], 0, (void *)COMMAND_OK, strlen(COMMAND_OK));
+					set_config(ptr,longlen,dev);
 					break;
-					//rt_device_write(common_dev[dev], 0, (void *)COMMAND_OK, strlen(COMMAND_OK));
 				}
 				state=GET_F5;
 			}
@@ -437,12 +425,12 @@ int common_rw_config(int dev)
 		else
 		{
 			state=GET_F5;
-			need_reconfig=-1;
+			
 			break;
 		}
 	}
-	rt_kprintf("common_rw_config %d\n",need_reconfig);
-	return need_reconfig;
+	//rt_kprintf("common_rw_config %d\n",need_reconfig);
+	return ;
 }
 static bool flag_cnn[4]={false,false,false,false};
 void all_cut()
@@ -531,33 +519,33 @@ int baud(int type)
 		}
 	return 0;
 }
-void print_config()
+void print_config(config g)
 {
 	rt_kprintf("\n============================================================================>\n");
-	rt_kprintf("local_ip %s\n",g_conf.local_ip);
-	rt_kprintf("local_port0 %d\n",g_conf.local_port[0]);
-	rt_kprintf("local_port1 %d\n",g_conf.local_port[1]);
-	rt_kprintf("local_port2 %d\n",g_conf.local_port[2]);
-	rt_kprintf("local_port3 %d\n",g_conf.local_port[3]);
-	rt_kprintf("sub_msk %s\n",g_conf.sub_msk);
-	rt_kprintf("gw %s\n",g_conf.gw);
-	rt_kprintf("mac %s\n",g_conf.mac);
-	rt_kprintf("remote_ip0 %s\n",g_conf.remote_ip[0]);
-	rt_kprintf("remote_ip1 %s\n",g_conf.remote_ip[1]);
-	rt_kprintf("remote_ip2 %s\n",g_conf.remote_ip[2]);
-	rt_kprintf("remote_ip3 %s\n",g_conf.remote_ip[3]);
-	rt_kprintf("remote_ip60 %s\n",g_conf.remote_ip6[0]);
-	rt_kprintf("remote_ip61 %s\n",g_conf.remote_ip6[1]);
-	rt_kprintf("remote_ip62 %s\n",g_conf.remote_ip6[2]);
-	rt_kprintf("remote_ip63 %s\n",g_conf.remote_ip6[3]);
-	rt_kprintf("remote_port0 %d\n",g_conf.remote_port[0]);
-	rt_kprintf("remote_port1 %d\n",g_conf.remote_port[1]);
-	rt_kprintf("remote_port2 %d\n",g_conf.remote_port[2]);
-	rt_kprintf("remote_port3 %d\n",g_conf.remote_port[3]);
-	rt_kprintf("IP socket0 %s socket1 %s socket2 %s socket3 %s\n",((g_conf.config[0]&0x01)==0)?"IPV4":"IPV6",((g_conf.config[1]&0x01)==0)?"IPV4":"IPV6",((g_conf.config[2]&0x01)==0)?"IPV4":"IPV6",((g_conf.config[3]&0x01)==0)?"IPV4":"IPV6");
-	rt_kprintf("protol socket0 %s socket1 %s socket2 %s socket3 %s\n",((g_conf.config[0]&0x02)==0x02)?"TCP":"UDP",((g_conf.config[1]&0x02)==0x02)?"TCP":"UDP",((g_conf.config[2]&0x02)==0x02)?"TCP":"UDP",((g_conf.config[3]&0x02)==0x02)?"TCP":"UDP");
-	rt_kprintf("mode socket0 %s socket1 %s socket2 %s socket3 %s\n",((g_conf.config[0]&0x04)==0x04)?"SERVER":"CLIENT",((g_conf.config[1]&0x04)==0x04)?"SERVER":"CLIENT",((g_conf.config[2]&0x04)==0x04)?"SERVER":"CLIENT",((g_conf.config[3]&0x04)==0x04)?"SERVER":"CLIENT");
-	rt_kprintf("baud %d.%d.%d.%d\n",baud((g_conf.config[0]&0xf8)>>3),baud((g_conf.config[1]&0xf8)>>3),baud((g_conf.config[2]&0xf8)>>3),baud((g_conf.config[3]&0xf8)>>3));
+	rt_kprintf("local_ip %s\n",g.local_ip);
+	rt_kprintf("local_port0 %d\n",g.local_port[0]);
+	rt_kprintf("local_port1 %d\n",g.local_port[1]);
+	rt_kprintf("local_port2 %d\n",g.local_port[2]);
+	rt_kprintf("local_port3 %d\n",g.local_port[3]);
+	rt_kprintf("sub_msk %s\n",g.sub_msk);
+	rt_kprintf("gw %s\n",g.gw);
+	rt_kprintf("mac %s\n",g.mac);
+	rt_kprintf("remote_ip0 %s\n",g.remote_ip[0]);
+	rt_kprintf("remote_ip1 %s\n",g.remote_ip[1]);
+	rt_kprintf("remote_ip2 %s\n",g.remote_ip[2]);
+	rt_kprintf("remote_ip3 %s\n",g.remote_ip[3]);
+	rt_kprintf("remote_ip60 %s\n",g.remote_ip6[0]);
+	rt_kprintf("remote_ip61 %s\n",g.remote_ip6[1]);
+	rt_kprintf("remote_ip62 %s\n",g.remote_ip6[2]);
+	rt_kprintf("remote_ip63 %s\n",g.remote_ip6[3]);
+	rt_kprintf("remote_port0 %d\n",g.remote_port[0]);
+	rt_kprintf("remote_port1 %d\n",g.remote_port[1]);
+	rt_kprintf("remote_port2 %d\n",g.remote_port[2]);
+	rt_kprintf("remote_port3 %d\n",g.remote_port[3]);
+	rt_kprintf("IP socket0 %s socket1 %s socket2 %s socket3 %s\n",((g.config[0]&0x01)==0)?"IPV4":"IPV6",((g.config[1]&0x01)==0)?"IPV4":"IPV6",((g.config[2]&0x01)==0)?"IPV4":"IPV6",((g.config[3]&0x01)==0)?"IPV4":"IPV6");
+	rt_kprintf("protol socket0 %s socket1 %s socket2 %s socket3 %s\n",((g.config[0]&0x02)==0x02)?"TCP":"UDP",((g.config[1]&0x02)==0x02)?"TCP":"UDP",((g.config[2]&0x02)==0x02)?"TCP":"UDP",((g.config[3]&0x02)==0x02)?"TCP":"UDP");
+	rt_kprintf("mode socket0 %s socket1 %s socket2 %s socket3 %s\n",((g.config[0]&0x04)==0x04)?"SERVER":"CLIENT",((g.config[1]&0x04)==0x04)?"SERVER":"CLIENT",((g.config[2]&0x04)==0x04)?"SERVER":"CLIENT",((g.config[3]&0x04)==0x04)?"SERVER":"CLIENT");
+	rt_kprintf("baud %d.%d.%d.%d\n",baud((g.config[0]&0xf8)>>3),baud((g.config[1]&0xf8)>>3),baud((g.config[2]&0xf8)>>3),baud((g.config[3]&0xf8)>>3));
 	rt_kprintf("\n============================================================================>\n");
 }
 int common_w_socket(int dev)
@@ -579,7 +567,7 @@ static rt_err_t common_rx_ind(rt_device_t dev, rt_size_t size)
 }
 extern struct rt_object_information rt_object_container[];
 
-static long _list_thread(struct rt_list_node *list)
+static long _list_thread1(struct rt_list_node *list)
 {
     struct rt_thread *thread;
     struct rt_list_node *node;
@@ -611,9 +599,9 @@ static long _list_thread(struct rt_list_node *list)
     return 0;
 }
 
-long list_thread(void)
+long list_thread1(void)
 {
-    return _list_thread(&rt_object_container[RT_Object_Class_Thread].object_list);
+    return _list_thread1(&rt_object_container[RT_Object_Class_Thread].object_list);
 }
 
 void common_w(void* parameter)
@@ -631,24 +619,14 @@ void common_w(void* parameter)
 			DBG("dev %d in socket data flag %d\n",dev,flag);
 			if(flag==1)
 			{
-				print_config();
-				flag=0;
-				rt_kprintf("%d common_w %d\n",dev,need_reconfig);				
-				socket_ctl(RT_TRUE,dev);
-				if(need_reconfig!=0&&need_reconfig!=1)
+				print_config(g_conf);
+				flag=0;	
+				void *ptr1=(void *)&g_confb;
+				void *ptr2=(void *)&g_conf;
+				if(rt_memcmp(ptr1,ptr2,sizeof(config))!=0)
 				{
-					int i;
-					for(i=0;i<4;i++)
-					if(i!=dev)
-					socket_ctl(RT_TRUE,i);
+					print_config(g_confb);
 				}
-				need_reconfig=0;
-				//rt_thread_delay(100);
-				//list_mem1();
-				//list_tcps1();
-				//list_thread();
-				
-				
 			}
 			
 			/*socket data transfer,use dma*/
@@ -656,42 +634,16 @@ void common_w(void* parameter)
 		}
 		else
 		{
-			DBG("dev %d in config data flag %d\n",dev,flag);					
-			int tmp=0;
-			socket_ctl(RT_FALSE,dev);
-			tmp=common_rw_config(dev);	
-			if(tmp!=-1)
+			DBG("dev %d in config data flag %d\n",dev,flag);
+			if(flag==0)
 			{
-				need_reconfig|=tmp;
-				if(flag==0)
-				{
-					flag=1;
-					/*config data parser*/
-					if(need_reconfig==2||need_reconfig==3)
-					{	
-						int i=0;
-						for(i=0;i<4;i++)
-						{
-							if(((tmp==4)&&is_right(g_conf.config[i],CONFIG_IPV6))||((tmp==2)&&!is_right(g_conf.config[i],CONFIG_IPV6)))
-							{
-								if(i!=dev)
-								socket_ctl(RT_FALSE,i);
-							}
-						}
-					}
-					/*rt_thread_delay(100);
-					list_mem1();
-					list_tcps1();
-					list_thread();*/
-					
-				}
-				rt_device_write(common_dev[dev], 0, (void *)COMMAND_OK, strlen(COMMAND_OK));
-			}
-			else
-			{
-				rt_device_write(common_dev[dev], 0, (void *)COMMAND_FAIL, strlen(COMMAND_FAIL));
 				flag=1;
+				void *ptr1=(void *)&g_confb;
+				void *ptr2=(void *)&g_conf;
+				rt_memcpy(ptr1,ptr2,sizeof(config));
 			}
+			common_rw_config(dev);
+			
 		}
 	}
 }
