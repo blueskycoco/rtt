@@ -29,7 +29,7 @@ typedef struct {
 	rt_uint8_t mode;    //tcp or udp changed
 	rt_uint8_t cs;		//client or server
 }change;
-
+change g_chang[4];
 config g_conf,g_confb;
 #define CONFIG_IPV6 			0x01
 #define CONFIG_TCP 				0x02

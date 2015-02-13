@@ -9,8 +9,8 @@ rt_thread_t tid_w[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL},tid_r[4]={RT_NULL,RT_NULL
 extern struct rt_semaphore fifo_sem;
 struct rt_mutex mutex[4];
 extern bool ind[4];
-bool socket_ip6(int dev);
-bool socket_ip4(int dev);
+bool socket_config(int dev);
+
 bool is_right(char config,char flag)
 {
 	if((config&flag)==flag)
@@ -442,6 +442,15 @@ void socket_r(void *paramter)
 	rt_kprintf("socket_ip4_r==> %d , %s mode, %s , %s . Thread Enter\r\n",dev,is_right(g_conf.config[dev],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[dev],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[dev],CONFIG_TCP)?"TCP":"UDP");
 	while(1)
 	{
+		if(need_reconfig(dev))
+		{
+			rt_free(g_socket[dev].recv_data);
+			lock(dev);
+			closesocket(g_socket[dev].sockfd);
+			closesocket(g_socket[dev].clientfd);
+			unlock(dev);
+			socket_config(dev);			
+		}
 		if(g_socket[dev].connected==false)
 		{
 			if(is_right(g_conf.config[dev],CONFIG_SERVER))
@@ -912,7 +921,7 @@ bool socket_config(int dev)
 	g_socket[dev].recv_data = rt_malloc(BUF_SIZE);
 	if(g_socket[dev].recv_data == RT_NULL)
 	{
-		rt_kprintf(" socket_ip4 %d No memory\n",dev);
+		rt_kprintf(" socket %d No memory\n",dev);
 		lock(dev);
 		closesocket(g_socket[dev].sockfd);
 		unlock(dev);
@@ -959,6 +968,5 @@ void socket_thread_start(int i)
 }
 #ifdef RT_USING_FINSH
 #include <finsh.h>
-/* 输出udpclient函数到finsh shell中 */
-FINSH_FUNCTION_EXPORT(socket_ctl, ctl socket);
+FINSH_FUNCTION_EXPORT(socket_thread_start, ctl socket);
 #endif

@@ -195,6 +195,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 				if(g_conf.local_port[data[0]-1]!=(data[1]<<8|data[2]))
 				{
 					g_conf.local_port[data[0]-1]=(data[1]<<8|data[2]);
+					g_chang[dev].lpc=1;
 				}
 			}
 		}
@@ -250,6 +251,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 				{
 					rt_memset(g_conf.remote_ip[data[0]-8],'\0',16);
 					rt_sprintf(g_conf.remote_ip[data[0]-8],"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+					g_chang[dev].rip4c=1;
 				}
 				rt_free(tmp);
 			}
@@ -272,6 +274,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 					rt_memset(g_conf.remote_ip6[data[0]-12],'\0',64);
 					for(i=0;i<ipv6_len;i++)
 						g_conf.remote_ip6[data[0]-12][i]=data[i+1];
+					g_chang[dev].rip6c=1;
 				}
 				rt_free(tmp);
 			}
@@ -288,6 +291,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 				if(g_conf.remote_port[data[0]-16]!=(data[1]<<8|data[2]))
 				{
 					g_conf.remote_port[data[0]-16]=(data[1]<<8|data[2]);
+					g_chang[dev].rpc=1;
 				}
 			}
 		}
@@ -305,6 +309,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 					if((g_conf.config[data[0]-20]&CONFIG_IPV6)!=CONFIG_IPV6)
 					{
 						g_conf.config[data[0]-20]|=CONFIG_IPV6;
+						g_chang[dev].protol=1;
 					}
 				}
 				else
@@ -312,6 +317,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 					if((g_conf.config[data[0]-20]&CONFIG_IPV6)==CONFIG_IPV6)
 					{
 						g_conf.config[data[0]-20]&=~CONFIG_IPV6;
+						g_chang[dev].protol=1;
 					}
 				}
 			}
@@ -330,6 +336,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 					if((g_conf.config[data[0]-24]&CONFIG_SERVER)!=CONFIG_SERVER)
 					{
 						g_conf.config[data[0]-24]|=CONFIG_SERVER;
+						g_chang[dev].cs=1;
 					}
 				}
 				else
@@ -337,6 +344,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 					if((g_conf.config[data[0]-24]&CONFIG_SERVER)==CONFIG_SERVER)
 					{
 						g_conf.config[data[0]-24]&=~CONFIG_SERVER;
+						g_chang[dev].cs=1;
 					}
 				}
 			}
@@ -367,6 +375,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 				rt_memset(g_conf.local_ip6,'\0',64);
 				for(i=0;i<ipv6_len;i++)
 					g_conf.local_ip6[i]=data[i+1];
+				g_chang[dev].lip6c=1;
 			}
 			rt_free(tmp);
 		}
@@ -383,6 +392,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 					if((g_conf.config[data[0]-33]&CONFIG_TCP)!=CONFIG_TCP)
 					{
 						g_conf.config[data[0]-33]|=CONFIG_TCP;
+						g_chang[dev].mode=1;
 					}
 				}
 				else
@@ -390,6 +400,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 					if((g_conf.config[data[0]-33]&CONFIG_TCP)==CONFIG_TCP)
 					{					
 						g_conf.config[data[0]-33]&=~CONFIG_TCP;
+						g_chang[dev].mode=1;
 					}
 				}
 			}
@@ -402,6 +413,35 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 		set_if("e0",g_conf.local_ip,g_conf.gw,g_conf.sub_msk);
 	if(ipv6_changed)
 		set_if6("e0",g_conf.local_ip6);
+}
+bool need_reconfig(int dev)
+{
+	if(g_chang[dev].cs||g_chang[dev].lip6c||g_chang[dev].lpc||g_chang[dev].mode||
+	   g_chang[dev].protol||g_chang[dev].rip4c||g_chang[dev].rip6c||g_chang[dev].rpc)
+	{
+		if(g_chang[dev].cs)
+			rt_kprintf("%d client/server changed\n",dev);
+		if(g_chang[dev].lip6c)
+			rt_kprintf("%d local ip6 changed\n",dev);
+		if(g_chang[dev].lpc)
+			rt_kprintf("%d local port changed\n",dev);
+		if(g_chang[dev].mode)
+			rt_kprintf("%d tcp/udp changed\n",dev);
+		if(g_chang[dev].protol)
+			rt_kprintf("%d ipv4/ipv6 changed\n",dev);
+		if(g_chang[dev].rip4c)
+			rt_kprintf("%d remote ip4 changed\n",dev);
+		if(g_chang[dev].rip6c)
+			rt_kprintf("%d remote ip6 changed\n",dev);
+		if(g_chang[dev].rpc)
+			rt_kprintf("%d remote port changed\n",dev);
+		rt_uint8_t *ptr=(rt_uint8_t *)(&g_chang[dev]);
+		rt_memset(ptr,0,sizeof(change));
+		return true;
+	}
+	else
+		return false;
+	
 }
 void common_rw_config(int dev)
 {
