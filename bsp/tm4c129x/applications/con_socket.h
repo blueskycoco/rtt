@@ -19,6 +19,16 @@ typedef struct {
 	rt_uint16_t remote_port[4];
 	rt_uint8_t config[4];//bit0 ipv4 or ipv6 	,bit1 tcp or udp , bit2 server or client ,bit 3 to bit 7 uart baud
 }config,*pconfig;
+typedef struct {
+	rt_uint8_t lip6c;	//local ip6 addr changed
+	rt_uint8_t rip4c;	//remote ip4 addr changed
+	rt_uint8_t rip6c;	//remote ip6 addr changed
+	rt_uint8_t lpc;		//local port changed
+	rt_uint8_t rpc;		//remote port changed
+	rt_uint8_t protol;  //ipv4 or ipv6 changed
+	rt_uint8_t mode;    //tcp or udp changed
+	rt_uint8_t cs;		//client or server
+}change;
 
 config g_conf,g_confb;
 #define CONFIG_IPV6 			0x01
@@ -37,27 +47,19 @@ config g_conf,g_confb;
 
 void socket_init();
 struct rt_data_queue *g_data_queue;
-typedef struct ip6
+typedef struct socket_type
 {
 	struct sockaddr_in6 server_addr6;
 	struct sockaddr_in6 client_addr6;
-	int sockfd;
-	int clientfd;
-	char *recv_data;
-	bool connected;
-}ip6_t,*pip6_t;
-typedef struct ip4
-{
 	struct sockaddr_in server_addr;
 	struct sockaddr_in client_addr;
 	int sockfd;
 	int clientfd;
 	char *recv_data;
 	bool connected;
-}ip4_t,*pip4_t;
+}socket_t,*psocket_t;
 
-ip6_t g_ip6[4];
-ip4_t g_ip4[4];
+socket_t g_socket[4];
 void cnn_out(int index,int level);
 void socket_ctl(bool open,int i);
 

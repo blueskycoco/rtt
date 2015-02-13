@@ -121,7 +121,7 @@ void IntGpioB()
 void default_config()
 {
 	struct netif * netif=netif_list;
-	g_conf.config[0]=CONFIG_TCP|CONFIG_SERVER|CONFIG_SERVER;
+	g_conf.config[0]=CONFIG_IPV6;
 	g_conf.config[1]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[2]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[3]=CONFIG_TCP|CONFIG_SERVER;
@@ -172,9 +172,16 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 		case 0:
 		{
 			//set local ipv4 ip
-			ipv4_changed=true;
-			rt_memset(g_conf.local_ip,'\0',16);
-			rt_sprintf(g_conf.local_ip,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			rt_uint8_t *tmp=rt_malloc(16);
+			rt_memset(tmp,'\0',16);
+			rt_sprintf(tmp,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			if(memcmp(tmp,g_conf.local_ip,16)!=0)
+			{
+				ipv4_changed=true;
+				rt_memset(g_conf.local_ip,'\0',16);
+				rt_sprintf(g_conf.local_ip,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			}
+			rt_free(tmp);
 		}
 		break;
 		case 1:
@@ -185,24 +192,41 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 			//set local port
 			if((data[0]-1)==dev)
 			{
-				g_conf.local_port[data[0]-1]=(data[1]<<8|data[2]);
+				if(g_conf.local_port[data[0]-1]!=(data[1]<<8|data[2]))
+				{
+					g_conf.local_port[data[0]-1]=(data[1]<<8|data[2]);
+				}
 			}
 		}
 		break;
 		case 5:
 		{
 			//set sub msk
-			ipv4_changed=true;
-			rt_memset(g_conf.sub_msk,'\0',16);
-			rt_sprintf(g_conf.sub_msk,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			rt_uint8_t *tmp=rt_malloc(16);
+			rt_memset(tmp,'\0',16);
+			rt_sprintf(tmp,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			if(memcmp(tmp,g_conf.sub_msk,16)!=0)
+			{
+				ipv4_changed=true;
+				rt_memset(g_conf.sub_msk,'\0',16);
+				rt_sprintf(g_conf.sub_msk,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			}
+			rt_free(tmp);
 		}
 		break;
 		case 6:
 		{
 			//set gateway
-			ipv4_changed=true;
-			rt_memset(g_conf.gw,'\0',16);
-			rt_sprintf(g_conf.gw,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			rt_uint8_t *tmp=rt_malloc(16);
+			rt_memset(tmp,'\0',16);
+			rt_sprintf(tmp,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			if(memcmp(tmp,g_conf.gw,16)!=0)
+			{
+				ipv4_changed=true;
+				rt_memset(g_conf.gw,'\0',16);
+				rt_sprintf(g_conf.gw,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+			}
+			rt_free(tmp);
 		}
 		break;
 		case 7:
@@ -219,8 +243,15 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 			//set remote ipv4 ip
 			if((data[0]-8)==dev)
 			{
-				rt_memset(g_conf.remote_ip[data[0]-8],'\0',16);
-				rt_sprintf(g_conf.remote_ip[data[0]-8],"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+				rt_uint8_t *tmp=rt_malloc(16);
+				rt_memset(tmp,'\0',16);
+				rt_sprintf(tmp,"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+				if(memcmp(tmp,g_conf.remote_ip[data[0]-8],16)!=0)
+				{
+					rt_memset(g_conf.remote_ip[data[0]-8],'\0',16);
+					rt_sprintf(g_conf.remote_ip[data[0]-8],"%d.%d.%d.%d",data[1],data[2],data[3],data[4]);
+				}
+				rt_free(tmp);
 			}
 		}
 		break;
@@ -232,9 +263,17 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 			//set remote ipv6 ip
 			if((data[0]-12)==dev)
 			{
-				rt_memset(g_conf.remote_ip6[data[0]-12],'\0',64);
+				rt_uint8_t *tmp=rt_malloc(ipv6_len);
+				rt_memset(tmp,'\0',ipv6_len);
 				for(i=0;i<ipv6_len;i++)
-					g_conf.remote_ip6[data[0]-12][i]=data[i+1];
+					tmp[i]=data[i+1];
+				if(memcmp(tmp,g_conf.remote_ip6[data[0]-12],ipv6_len)!=0 || ipv6_len!=rt_strlen(g_conf.remote_ip6[data[0]-12]))
+				{
+					rt_memset(g_conf.remote_ip6[data[0]-12],'\0',64);
+					for(i=0;i<ipv6_len;i++)
+						g_conf.remote_ip6[data[0]-12][i]=data[i+1];
+				}
+				rt_free(tmp);
 			}
 		}
 		break;
@@ -246,7 +285,10 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 			//set remote port
 			if((data[0]-16)==dev)
 			{
-				g_conf.remote_port[data[0]-16]=(data[1]<<8|data[2]);
+				if(g_conf.remote_port[data[0]-16]!=(data[1]<<8|data[2]))
+				{
+					g_conf.remote_port[data[0]-16]=(data[1]<<8|data[2]);
+				}
 			}
 		}
 		break;
@@ -259,9 +301,19 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 			if((data[0]-20)==dev)
 			{
 				if(data[1])
-					g_conf.config[data[0]-20]|=CONFIG_IPV6;
+				{	
+					if((g_conf.config[data[0]-20]&CONFIG_IPV6)!=CONFIG_IPV6)
+					{
+						g_conf.config[data[0]-20]|=CONFIG_IPV6;
+					}
+				}
 				else
-					g_conf.config[data[0]-20]&=~CONFIG_IPV6;
+				{
+					if((g_conf.config[data[0]-20]&CONFIG_IPV6)==CONFIG_IPV6)
+					{
+						g_conf.config[data[0]-20]&=~CONFIG_IPV6;
+					}
+				}
 			}
 		}
 		break;
@@ -274,9 +326,19 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 			if((data[0]-24)==dev)
 			{
 				if(data[1])
-					g_conf.config[data[0]-24]|=CONFIG_SERVER;
+				{
+					if((g_conf.config[data[0]-24]&CONFIG_SERVER)!=CONFIG_SERVER)
+					{
+						g_conf.config[data[0]-24]|=CONFIG_SERVER;
+					}
+				}
 				else
-					g_conf.config[data[0]-24]&=~CONFIG_SERVER;
+				{
+					if((g_conf.config[data[0]-24]&CONFIG_SERVER)==CONFIG_SERVER)
+					{
+						g_conf.config[data[0]-24]&=~CONFIG_SERVER;
+					}
+				}
 			}
 		}
 		break;
@@ -295,10 +357,18 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 		case 32:
 		{
 			//set local ipv6 ip
-			ipv6_changed=true;
-			rt_memset(g_conf.local_ip6,'\0',64);
+			rt_uint8_t *tmp=rt_malloc(ipv6_len);
+			rt_memset(tmp,'\0',ipv6_len);
 			for(i=0;i<ipv6_len;i++)
-				g_conf.local_ip6[i]=data[i+1];
+				tmp[i]=data[i+1];
+			if(memcmp(tmp,g_conf.local_ip6,ipv6_len)!=0 || ipv6_len!=rt_strlen(g_conf.local_ip6))
+			{
+				ipv6_changed=true;
+				rt_memset(g_conf.local_ip6,'\0',64);
+				for(i=0;i<ipv6_len;i++)
+					g_conf.local_ip6[i]=data[i+1];
+			}
+			rt_free(tmp);
 		}
 		break;
 		case 33:
@@ -306,12 +376,22 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 		case 35:
 		case 36:
 		{//set tcp or udp
-		if((data[0]-33)==dev)
+			if((data[0]-33)==dev)
 			{
 				if(data[1])
-					g_conf.config[data[0]-33]|=CONFIG_TCP;
+				{
+					if((g_conf.config[data[0]-33]&CONFIG_TCP)!=CONFIG_TCP)
+					{
+						g_conf.config[data[0]-33]|=CONFIG_TCP;
+					}
+				}
 				else
-					g_conf.config[data[0]-33]&=~CONFIG_TCP;
+				{
+					if((g_conf.config[data[0]-33]&CONFIG_TCP)==CONFIG_TCP)
+					{					
+						g_conf.config[data[0]-33]&=~CONFIG_TCP;
+					}
+				}
 			}
 		}
 		break;
@@ -572,7 +652,7 @@ void common_w(void* parameter)
 		//DBG("to read in_low %d\r\n",ind_low(dev));
 		if(ind[dev])
 		{	
-			DBG("dev %d in socket data flag %d\n",dev,flag);
+			//DBG("dev %d in socket data flag %d\n",dev,flag);
 			if(flag==1)
 			{
 				print_config(g_conf);
@@ -581,7 +661,7 @@ void common_w(void* parameter)
 				void *ptr2=(void *)&g_conf;
 				if(rt_memcmp(ptr1,ptr2,sizeof(config))!=0)
 				{
-					print_config(g_confb);
+					print_config(g_conf);
 				}
 			}
 			
@@ -718,7 +798,7 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 	}
 	//list_mem1();	
 	for(i=0;i<4;i++)
-		socket_init(i);
+		socket_thread_start(i);
 	//rt_thread_delay(100);
 	//list_mem1();	
 	//list_tcps1();
