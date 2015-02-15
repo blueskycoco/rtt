@@ -121,7 +121,7 @@ void IntGpioB()
 void default_config()
 {
 	struct netif * netif=netif_list;
-	g_conf.config[0]=CONFIG_IPV6;
+	g_conf.config[0]=CONFIG_TCP;
 	g_conf.config[1]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[2]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[3]=CONFIG_TCP|CONFIG_SERVER;
@@ -196,6 +196,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 				{
 					g_conf.local_port[data[0]-1]=(data[1]<<8|data[2]);
 					g_chang[dev].lpc=1;
+					rt_kprintf("local port changed %d\n",dev);
 				}
 			}
 		}
@@ -435,8 +436,9 @@ bool need_reconfig(int dev)
 			rt_kprintf("%d remote ip6 changed\n",dev);
 		if(g_chang[dev].rpc)
 			rt_kprintf("%d remote port changed\n",dev);
-		rt_uint8_t *ptr=(rt_uint8_t *)(&g_chang[dev]);
-		rt_memset(ptr,0,sizeof(change));
+		//rt_uint8_t *ptr=(rt_uint8_t *)(&g_chang[dev]);
+		//rt_memset(ptr,0,sizeof(change));
+		g_chang[dev].cs=g_chang[dev].lip6c=g_chang[dev].lpc=g_chang[dev].mode=g_chang[dev].protol=g_chang[dev].rip4c=g_chang[dev].rip6c=g_chang[dev].rpc=0;
 		return true;
 	}
 	else
@@ -446,18 +448,20 @@ bool need_reconfig(int dev)
 void common_rw_config(int dev)
 {
 
-	static rt_uint8_t buf[65];
-	rt_uint8_t i=0;	
-	static int data_len,crc_len,longlen=0;
-	static unsigned char crc[2];
+	rt_uint8_t buf[65];
+	rt_uint8_t i=0,delay=0;	
+	int data_len,crc_len,longlen=0;
+	unsigned char crc[2];
 	char ch;	
-	static rt_uint8_t len=0,param;
-	static enum STATE_OP state=GET_F5;
+	rt_uint8_t len=0,param;
+	enum STATE_OP state=GET_F5;
 	DBG("enter common_rw_config\r\n");
 	rt_uint8_t *ptr=(rt_uint8_t *)buf;
-	rt_thread_delay(10);
-	while((rt_device_read(common_dev[dev], 0, &ch, 1) == 1))
+	//rt_thread_delay(10);
+	while(1)
 	{
+		if(rt_device_read(common_dev[dev], 0, &ch, 1)==1)
+		{
 		if(ch==0xf5 && state==GET_F5)
 		{
 			DBG("GET_F5\n");
@@ -507,13 +511,15 @@ void common_rw_config(int dev)
 		}
 		else if(state==GET_CHECSUM)
 		{
-			if(crc_len!=2)
+			if(crc_len!=1)
 			{
 				crc[crc_len++]=ch;
+				DBG("GET_SUM %2x\n",ch);
 			}
-
-			if(crc_len==2)
+			else
 			{
+				crc[crc_len++]=ch;
+				DBG("GET_SUM %2x\n",ch);
 				//verify checksum
 				int verify=0xf5+0x8a+0xfa+0x26+longlen;
 				rt_kprintf("command is \n");
@@ -530,18 +536,25 @@ void common_rw_config(int dev)
 				else
 				{
 					rt_device_write(common_dev[dev], 0, (void *)COMMAND_OK, strlen(COMMAND_OK));
-					set_config(ptr,longlen,dev);
-					break;
+					set_config(ptr,longlen,dev);					
 				}
 				state=GET_F5;
+				break;
 			}
 		}
 		else
 		{
-			state=GET_F5;
-			
+			state=GET_F5;			
 			break;
 		}
+	}
+		else
+			{
+				rt_thread_delay(1);
+				delay++;
+				if(delay>10)
+					break;
+			}
 	}
 	return ;
 }
@@ -836,9 +849,12 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 				rt_thread_startup(tid_common_r[i]);
 		}
 	}
-	//list_mem1();	
+	//rt_thread_delay(300);	
 	for(i=0;i<4;i++)
+	{
+		g_chang[i].cs=g_chang[i].lip6c=g_chang[i].lpc=g_chang[i].mode=g_chang[i].protol=g_chang[i].rip4c=g_chang[i].rip6c=g_chang[i].rpc=0;
 		socket_thread_start(i);
+	}
 	//rt_thread_delay(100);
 	//list_mem1();	
 	//list_tcps1();
