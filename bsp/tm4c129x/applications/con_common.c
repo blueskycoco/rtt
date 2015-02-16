@@ -121,7 +121,7 @@ void IntGpioB()
 void default_config()
 {
 	struct netif * netif=netif_list;
-	g_conf.config[0]=0;
+	g_conf.config[0]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[1]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[2]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[3]=CONFIG_TCP|CONFIG_SERVER;

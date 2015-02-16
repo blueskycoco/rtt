@@ -20,9 +20,9 @@ class MiniClient:
         while True:
             #time.sleep(1)
             tcpT4Client.send('hello')
-            #buf = tcpT4Client.recv(1024)
+            buf = tcpT4Client.recv(1024)
             #print "Receive  ", buf
-            #self.c = self.c + len(buf)
+            self.c = self.c + len(buf)
             self.d = self.d + len('hello')
             print "Received length = ", self.c, ",Sent length = ", self.d, " "
 
@@ -31,9 +31,9 @@ class MiniClient:
         print "UDP TCP IPv4 Mode connecting..."
         while True:
             udpT4Client.sendto("hello", (self.h, self.p))
-            #udpT4Data, udpT6ServerInfo = udpT4Client.recvfrom(1024)
+            udpT4Data, udpT6ServerInfo = udpT4Client.recvfrom(1024)
             #print "Receive  ", udpT4Data
-            #self.c = self.c + len(udpT4Data)
+            self.c = self.c + len(udpT4Data)
             #time.sleep(0.0001)
             self.d = self.d + len('hello')
             print "Received length = ", self.c, "Sent length = ", self.d+5
@@ -56,12 +56,12 @@ class MiniClient:
         udpU6Client.bind(('fe80::5867:8730:e9e6:d5c5%11', self.p))
         print "UDP TCP IPv6 Mode connecting..."
         while True:
-            #udpT4Data, udpT6ServerInfo = udpU6Client.recvfrom(1024)			
+            udpT4Data, udpT6ServerInfo = udpU6Client.recvfrom(1024)			
             udpU6Client.sendto("hello", (self.h, self.p))
             self.d = self.d + len('hello')
-            time.sleep(0.0001)
-            #print "Receive  ", udpT4Data
-            #self.c = self.c + len(udpT4Data)
+            #time.sleep(0.0001)
+            print "Receive  ", udpT4Data
+            self.c = self.c + len(udpT4Data)
             print "Received length = ", self.c, "Sent length = ", self.d
             
 if __name__ == "__main__":

@@ -377,13 +377,11 @@ void socket_w(void *paramter)
 			continue;
 		}
 		cnn_out(dev,1);	
-		
+		rt_data_queue_pop(&g_data_queue[dev*2], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
 		lock(dev);
 		FD_ZERO(&myset);
-		int sock;		
-		rt_data_queue_pop(&g_data_queue[dev*2], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
-		
-		if(is_right(g_conf.config[dev],CONFIG_SERVER))
+		int sock;
+		if(is_right(g_conf.config[dev],CONFIG_SERVER)&&is_right(g_conf.config[dev],CONFIG_TCP))
         	sock=g_socket[dev].clientfd;
 		else
 			sock=g_socket[dev].sockfd;

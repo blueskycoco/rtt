@@ -63,7 +63,7 @@ class MiniServer:
         while True:
             udpT6Server.sendto('Congratulations........',('fe80::1', self.p))
             udpT4Data, udpT6ServerInfo = udpT6Server.recvfrom(1024)
-            #print "Receive from ", udpT6ServerInfo, " and The Data send from The Client is :", udpT4Data
+            print "Receive from ", udpT6ServerInfo, " and The Data send from The Client is :", udpT4Data
             self.c = self.c + len(udpT4Data)
             #time.sleep(0.001)
             self.d = self.d + len('Congratulations........')
