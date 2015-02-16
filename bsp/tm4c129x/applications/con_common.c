@@ -121,7 +121,7 @@ void IntGpioB()
 void default_config()
 {
 	struct netif * netif=netif_list;
-	g_conf.config[0]=CONFIG_TCP;
+	g_conf.config[0]=0;
 	g_conf.config[1]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[2]=CONFIG_TCP|CONFIG_SERVER;
 	g_conf.config[3]=CONFIG_TCP|CONFIG_SERVER;
@@ -681,7 +681,7 @@ int common_w_socket(int dev)
 	rt_uint8_t common_buf[1024],*ptr;
 	ptr=common_buf;
 	len=rt_device_read(common_dev[dev], 0, ptr, 1024);
-	if(phy_link&&(len>0))
+	if(phy_link&&(len>0)&&g_socket[dev].connected)
 		rt_data_queue_push(&g_data_queue[dev*2], ptr, len, RT_WAITING_FOREVER);
 	return 0;
 }
