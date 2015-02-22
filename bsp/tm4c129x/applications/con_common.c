@@ -28,43 +28,49 @@ void IntGpioD()
 }
 
 #else
-unsigned char config_local_ip[4+7]				={0xF5,0x8A,0x00,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip*/
-unsigned char config_socket0_local_port[2+7]	={0xF5,0x8A,0x01,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port0*/
-unsigned char config_socket1_local_port[2+7]	={0xF5,0x8A,0x02,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port1*/
-unsigned char config_socket2_local_port[2+7]	={0xF5,0x8A,0x03,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port2*/
-unsigned char config_socket3_local_port[2+7]	={0xF5,0x8A,0x04,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port3*/
-unsigned char config_sub_msk[4+7]				={0xF5,0x8A,0x05,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*sub msk*/
-unsigned char config_gw[4+7]					={0xF5,0x8A,0x06,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*gw*/
-unsigned char config_mac[6+7]					={0xF5,0x8A,0x07,0xff,0xff,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*mac*/
-unsigned char config_socket0_ip[4+7]			={0xF5,0x8A,0x08,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 0 ip*/
-unsigned char config_socket1_ip[4+7]			={0xF5,0x8A,0x09,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 1 ip*/
-unsigned char config_socket2_ip[4+7]			={0xF5,0x8A,0x0a,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 2 ip*/
-unsigned char config_socket3_ip[4+7]			={0xF5,0x8A,0x0b,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 3 ip*/
-unsigned char config_socket0_ip6[64+7]			={0xF5,0x8A,0x0c,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 0 ip6*/
-unsigned char config_socket1_ip6[64+7]			={0xF5,0x8A,0x0d,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 1 ip6*/
-unsigned char config_socket2_ip6[64+7]			={0xF5,0x8A,0x0e,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 2 ip6*/
-unsigned char config_socket3_ip6[64+7]			={0xF5,0x8A,0x0f,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 3 ip6*/
-unsigned char config_socket0_remote_port[2+7]	={0xF5,0x8A,0x10,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 0 port*/
-unsigned char config_socket1_remote_port[2+7]	={0xF5,0x8A,0x11,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 1 port*/
-unsigned char config_socket2_remote_port[2+7]	={0xF5,0x8A,0x12,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 2 port*/
-unsigned char config_socket3_remote_port[2+7]	={0xF5,0x8A,0x13,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 3 port*/
-unsigned char config_net_protol0[1+7]			={0xF5,0x8A,0x14,0xff,0x26,0xfa,0x00,0x00};/*protol0*/
-unsigned char config_net_protol1[1+7]			={0xF5,0x8A,0x15,0xff,0x26,0xfa,0x00,0x00};/*protol1*/
-unsigned char config_net_protol2[1+7]			={0xF5,0x8A,0x16,0xff,0x26,0xfa,0x00,0x00};/*protol2*/
-unsigned char config_net_protol3[1+7]			={0xF5,0x8A,0x17,0xff,0x26,0xfa,0x00,0x00};/*protol3*/
-unsigned char config_socket_mode0[1+7]			={0xF5,0x8A,0x18,0xff,0x26,0xfa,0x00,0x00};/*server mode0*/
-unsigned char config_socket_mode1[1+7]			={0xF5,0x8A,0x19,0xff,0x26,0xfa,0x00,0x00};/*server mode1*/
-unsigned char config_socket_mode2[1+7]			={0xF5,0x8A,0x1a,0xff,0x26,0xfa,0x00,0x00};/*server mode2*/
-unsigned char config_socket_mode3[1+7]			={0xF5,0x8A,0x1b,0xff,0x26,0xfa,0x00,0x00};/*server mode3*/
-unsigned char config_uart_baud0[1+7]			={0xF5,0x8A,0x1c,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
-unsigned char config_uart_baud1[1+7]			={0xF5,0x8A,0x1d,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
-unsigned char config_uart_baud2[1+7]			={0xF5,0x8A,0x1e,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
-unsigned char config_uart_baud3[1+7]			={0xF5,0x8A,0x1f,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
-unsigned char config_local_ip6[64+7]			={0xF5,0x8A,0x20,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip6*/
-unsigned char config_tcp0[1+7]					={0xF5,0x8A,0x21,0xff,0x26,0xfa,0x00,0x00};/*protol0*/
-unsigned char config_tcp1[1+7]					={0xF5,0x8A,0x22,0xff,0x26,0xfa,0x00,0x00};/*protol1*/
-unsigned char config_tcp2[1+7]					={0xF5,0x8A,0x23,0xff,0x26,0xfa,0x00,0x00};/*protol2*/
-unsigned char config_tcp3[1+7]					={0xF5,0x8A,0x24,0xff,0x26,0xfa,0x00,0x00};/*protol3*/
+unsigned char config_local_ip[4+8]				={0xF5,0x8A,0x00,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip*/
+unsigned char config_socket0_local_port[2+8]	={0xF5,0x8A,0x01,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port0*/
+unsigned char config_socket1_local_port[2+8]	={0xF5,0x8A,0x02,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port1*/
+unsigned char config_socket2_local_port[2+8]	={0xF5,0x8A,0x03,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port2*/
+unsigned char config_socket3_local_port[2+8]	={0xF5,0x8A,0x04,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port3*/
+unsigned char config_sub_msk[4+8]				={0xF5,0x8A,0x05,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*sub msk*/
+unsigned char config_gw[4+8]					={0xF5,0x8A,0x06,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*gw*/
+unsigned char config_mac[6+8]					={0xF5,0x8A,0x07,0xff,0xff,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*mac*/
+unsigned char config_socket0_ip[4+8]			={0xF5,0x8A,0x08,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 0 ip*/
+unsigned char config_socket1_ip[4+8]			={0xF5,0x8A,0x09,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 1 ip*/
+unsigned char config_socket2_ip[4+8]			={0xF5,0x8A,0x0a,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 2 ip*/
+unsigned char config_socket3_ip[4+8]			={0xF5,0x8A,0x0b,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 3 ip*/
+unsigned char config_socket0_ip6[64+8]			={0xF5,0x8A,0x0c,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 0 ip6*/
+unsigned char config_socket1_ip6[64+8]			={0xF5,0x8A,0x0d,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 1 ip6*/
+unsigned char config_socket2_ip6[64+8]			={0xF5,0x8A,0x0e,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 2 ip6*/
+unsigned char config_socket3_ip6[64+8]			={0xF5,0x8A,0x0f,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 3 ip6*/
+unsigned char config_socket0_remote_port[2+8]	={0xF5,0x8A,0x10,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 0 port*/
+unsigned char config_socket1_remote_port[2+8]	={0xF5,0x8A,0x11,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 1 port*/
+unsigned char config_socket2_remote_port[2+8]	={0xF5,0x8A,0x12,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 2 port*/
+unsigned char config_socket3_remote_port[2+8]	={0xF5,0x8A,0x13,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 3 port*/
+unsigned char config_net_protol0[1+8]			={0xF5,0x8A,0x14,0xff,0x26,0xfa,0x00,0x00};/*protol0*/
+unsigned char config_net_protol1[1+8]			={0xF5,0x8A,0x15,0xff,0x26,0xfa,0x00,0x00};/*protol1*/
+unsigned char config_net_protol2[1+8]			={0xF5,0x8A,0x16,0xff,0x26,0xfa,0x00,0x00};/*protol2*/
+unsigned char config_net_protol3[1+8]			={0xF5,0x8A,0x17,0xff,0x26,0xfa,0x00,0x00};/*protol3*/
+unsigned char config_socket_mode0[1+8]			={0xF5,0x8A,0x18,0xff,0x26,0xfa,0x00,0x00};/*server mode0*/
+unsigned char config_socket_mode1[1+8]			={0xF5,0x8A,0x19,0xff,0x26,0xfa,0x00,0x00};/*server mode1*/
+unsigned char config_socket_mode2[1+8]			={0xF5,0x8A,0x1a,0xff,0x26,0xfa,0x00,0x00};/*server mode2*/
+unsigned char config_socket_mode3[1+8]			={0xF5,0x8A,0x1b,0xff,0x26,0xfa,0x00,0x00};/*server mode3*/
+unsigned char config_uart_baud0[1+8]			={0xF5,0x8A,0x1c,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
+unsigned char config_uart_baud1[1+8]			={0xF5,0x8A,0x1d,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
+unsigned char config_uart_baud2[1+8]			={0xF5,0x8A,0x1e,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
+unsigned char config_uart_baud3[1+8]			={0xF5,0x8A,0x1f,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
+unsigned char config_local_ip6[64+8]			={0xF5,0x8A,0x20,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip6*/
+unsigned char config_tcp0[1+8]					={0xF5,0x8A,0x21,0xff,0x26,0xfa,0x00,0x00};/*protol0*/
+unsigned char config_tcp1[1+8]					={0xF5,0x8A,0x22,0xff,0x26,0xfa,0x00,0x00};/*protol1*/
+unsigned char config_tcp2[1+8]					={0xF5,0x8A,0x23,0xff,0x26,0xfa,0x00,0x00};/*protol2*/
+unsigned char config_tcp3[1+8]					={0xF5,0x8A,0x24,0xff,0x26,0xfa,0x00,0x00};/*protol3*/
+struct rt_mutex mconfigutex;
+
+
+
+
+
 #define COMMAND_FAIL "Command crc fail"
 #define COMMAND_OK "Command exec OK"
 
@@ -85,6 +91,20 @@ enum STATE_OP{
 	GET_CHECSUM
 };
 struct rt_semaphore rx_sem[4];
+void configlock()
+{
+    rt_err_t result;
+
+    result = rt_mutex_take(&mconfigutex, RT_WAITING_FOREVER);
+    if (result != RT_EOK)
+    {
+        RT_ASSERT(0);
+    }
+}
+void configunlock()
+{
+    rt_mutex_release(&mconfigutex);
+}
 
 int which_common_dev(rt_device_t *dev,rt_device_t dev2)
 {
@@ -154,7 +174,7 @@ void default_config()
 	memset(g_conf.sub_msk,'\0',16);
 	strcpy(g_conf.sub_msk,"255.255.255.0");
 	memset(g_conf.mac,'\0',16);
-	rt_sprintf(g_conf.mac,"%02x:%02x:%02x:%02x:%02x:%02x",netif->hwaddr[0],netif->hwaddr[1],netif->hwaddr[2],netif->hwaddr[3],netif->hwaddr[4],netif->hwaddr[5]);
+	rt_sprintf(g_conf.mac,"%d.%d.%d.%d.%d.%d",netif->hwaddr[0],netif->hwaddr[1],netif->hwaddr[2],netif->hwaddr[3],netif->hwaddr[4],netif->hwaddr[5]);
 	g_conf.remote_port[0]=1234;
 	g_conf.remote_port[1]=1235;
 	g_conf.remote_port[2]=1236;
@@ -270,7 +290,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 				rt_memset(tmp,'\0',ipv6_len);
 				for(i=0;i<ipv6_len;i++)
 					tmp[i]=data[i+1];
-				if(memcmp(tmp,g_conf.remote_ip6[data[0]-12],ipv6_len)!=0 || ipv6_len!=rt_strlen(g_conf.remote_ip6[data[0]-12]))
+				if(memcmp(tmp,g_conf.remote_ip6[data[0]-12],ipv6_len)!=0 || ipv6_len!=sizeof(g_conf.remote_ip6[data[0]-12]))
 				{
 					rt_memset(g_conf.remote_ip6[data[0]-12],'\0',64);
 					for(i=0;i<ipv6_len;i++)
@@ -360,6 +380,15 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 			if((data[0]-28)==dev)
 			{
 				g_conf.config[data[0]-28]=((g_conf.config[data[0]-20]&0x07)|(data[1]<<3));
+				struct serial_configure config;
+				config.baud_rate=baud(g_conf.config[data[0]-28]);
+				config.bit_order = BIT_ORDER_LSB;
+				config.data_bits = DATA_BITS_8;
+				config.parity	 = PARITY_NONE;
+				config.stop_bits = STOP_BITS_1;
+				config.invert	 = NRZ_NORMAL;
+				config.bufsz	 = RT_SERIAL_RB_BUFSZ;
+				rt_device_control(dev,RT_DEVICE_CTRL_CONFIG,&config);	
 			}
 		}
 		break;
@@ -370,7 +399,7 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 			rt_memset(tmp,'\0',ipv6_len);
 			for(i=0;i<ipv6_len;i++)
 				tmp[i]=data[i+1];
-			if(memcmp(tmp,g_conf.local_ip6,ipv6_len)!=0 || ipv6_len!=rt_strlen(g_conf.local_ip6))
+			if(memcmp(tmp,g_conf.local_ip6,ipv6_len)!=0 || ipv6_len!=sizeof(g_conf.local_ip6))
 			{
 				ipv6_changed=true;
 				rt_memset(g_conf.local_ip6,'\0',64);
@@ -445,6 +474,351 @@ bool need_reconfig(int dev)
 		return false;
 	
 }
+char *send_out(int dev,int cmd,int *lenout)
+{
+	#if 0
+	unsigned char config_local_ip[4+7]				={0xF5,0x8A,0x00,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip*/
+	unsigned char config_socket0_local_port[2+7]	={0xF5,0x8A,0x01,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port0*/
+	unsigned char config_socket1_local_port[2+7]	={0xF5,0x8A,0x02,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port1*/
+	unsigned char config_socket2_local_port[2+7]	={0xF5,0x8A,0x03,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port2*/
+	unsigned char config_socket3_local_port[2+7]	={0xF5,0x8A,0x04,0xff,0xff,0x26,0xfa,0x00,0x00};/*local port3*/
+	unsigned char config_sub_msk[4+7]				={0xF5,0x8A,0x05,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*sub msk*/
+	unsigned char config_gw[4+7]					={0xF5,0x8A,0x06,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*gw*/
+	unsigned char config_mac[6+7]					={0xF5,0x8A,0x07,0xff,0xff,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*mac*/
+	unsigned char config_socket0_ip[4+7]			={0xF5,0x8A,0x08,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 0 ip*/
+	unsigned char config_socket1_ip[4+7]			={0xF5,0x8A,0x09,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 1 ip*/
+	unsigned char config_socket2_ip[4+7]			={0xF5,0x8A,0x0a,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 2 ip*/
+	unsigned char config_socket3_ip[4+7]			={0xF5,0x8A,0x0b,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 3 ip*/
+	unsigned char config_socket0_ip6[64+7]			={0xF5,0x8A,0x0c,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 0 ip6*/
+	unsigned char config_socket1_ip6[64+7]			={0xF5,0x8A,0x0d,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 1 ip6*/
+	unsigned char config_socket2_ip6[64+7]			={0xF5,0x8A,0x0e,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 2 ip6*/
+	unsigned char config_socket3_ip6[64+7]			={0xF5,0x8A,0x0f,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 3 ip6*/
+	unsigned char config_socket0_remote_port[2+7]	={0xF5,0x8A,0x10,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 0 port*/
+	unsigned char config_socket1_remote_port[2+7]	={0xF5,0x8A,0x11,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 1 port*/
+	unsigned char config_socket2_remote_port[2+7]	={0xF5,0x8A,0x12,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 2 port*/
+	unsigned char config_socket3_remote_port[2+7]	={0xF5,0x8A,0x13,0xff,0xff,0x26,0xfa,0x00,0x00};/*socket 3 port*/
+	unsigned char config_net_protol0[1+7]			={0xF5,0x8A,0x14,0xff,0x26,0xfa,0x00,0x00};/*protol0*/
+	unsigned char config_net_protol1[1+7]			={0xF5,0x8A,0x15,0xff,0x26,0xfa,0x00,0x00};/*protol1*/
+	unsigned char config_net_protol2[1+7]			={0xF5,0x8A,0x16,0xff,0x26,0xfa,0x00,0x00};/*protol2*/
+	unsigned char config_net_protol3[1+7]			={0xF5,0x8A,0x17,0xff,0x26,0xfa,0x00,0x00};/*protol3*/
+	unsigned char config_socket_mode0[1+7]			={0xF5,0x8A,0x18,0xff,0x26,0xfa,0x00,0x00};/*server mode0*/
+	unsigned char config_socket_mode1[1+7]			={0xF5,0x8A,0x19,0xff,0x26,0xfa,0x00,0x00};/*server mode1*/
+	unsigned char config_socket_mode2[1+7]			={0xF5,0x8A,0x1a,0xff,0x26,0xfa,0x00,0x00};/*server mode2*/
+	unsigned char config_socket_mode3[1+7]			={0xF5,0x8A,0x1b,0xff,0x26,0xfa,0x00,0x00};/*server mode3*/
+	unsigned char config_uart_baud0[1+7]			={0xF5,0x8A,0x1c,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
+	unsigned char config_uart_baud1[1+7]			={0xF5,0x8A,0x1d,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
+	unsigned char config_uart_baud2[1+7]			={0xF5,0x8A,0x1e,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
+	unsigned char config_uart_baud3[1+7]			={0xF5,0x8A,0x1f,0xff,0x26,0xfa,0x00,0x00};/*uart baud*/
+	unsigned char config_local_ip6[64+7]			={0xF5,0x8A,0x20,0xff,0xff,0xff,0xff,0x26,0xfa,0x00,0x00};/*local ip6*/
+	unsigned char config_tcp0[1+7]					={0xF5,0x8A,0x21,0xff,0x26,0xfa,0x00,0x00};/*protol0*/
+	unsigned char config_tcp1[1+7]					={0xF5,0x8A,0x22,0xff,0x26,0xfa,0x00,0x00};/*protol1*/
+	unsigned char config_tcp2[1+7]					={0xF5,0x8A,0x23,0xff,0x26,0xfa,0x00,0x00};/*protol2*/
+	unsigned char config_tcp3[1+7]					={0xF5,0x8A,0x24,0xff,0x26,0xfa,0x00,0x00};/*protol3*/
+	#endif
+	char *ptr=NULL;
+	int crc=0,i=0,len;
+	char *p=NULL;
+	switch(cmd)
+	{
+		case 0:
+			{
+				ptr=config_local_ip;
+				p=g_conf.local_ip;
+				ptr[3]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[4]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[5]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[6]=atoi(p);
+				len=4;
+			}
+			break;
+		case 1:
+			{
+				if(dev==(cmd-1))
+				ptr=config_socket0_local_port;
+			}
+		case 2:
+			{
+				if(dev==(cmd-1))
+				ptr=config_socket1_local_port;
+			}
+		case 3:
+			{
+				if(dev==(cmd-1))
+				ptr=config_socket2_local_port;
+			}
+		case 4:
+			{
+				if(dev==(cmd-1))
+					ptr=config_socket3_local_port;
+				if(ptr!=NULL)
+				{
+					ptr[3]=(g_conf.local_port[cmd-1]>>8)&0xff;
+					ptr[4]=g_conf.local_port[cmd-1]&0xff;
+					len=2;
+				}				
+			}			
+			break;
+		case 5:
+			{
+				ptr=config_sub_msk;
+				p=g_conf.sub_msk;
+				ptr[3]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[4]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[5]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[6]=atoi(p);
+				len=4;
+			}
+			break;
+		case 6:
+			{
+				ptr=config_gw;
+				p=g_conf.gw;
+				ptr[3]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[4]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[5]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[6]=atoi(p);
+				len=4;
+			}
+			break;
+		case 7:
+			{
+				ptr=config_mac;				
+				p=g_conf.mac;
+				ptr[3]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[4]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[5]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[6]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[7]=atoi(p);
+				while(*p!='.')
+					p++;
+				p++;
+				ptr[8]=atoi(p);
+				len=6;
+			}
+			break;	
+		case 8:
+			if(dev==(cmd-8))				
+			ptr=config_socket0_ip;
+		case 9:
+			if(dev==(cmd-8))
+			ptr=config_socket1_ip;
+		case 10:
+			if(dev==(cmd-8))
+			ptr=config_socket2_ip;
+		case 11:
+			{
+				if(dev==(cmd-8))
+				ptr=config_socket3_ip;
+				if(ptr!=NULL)
+				{
+					p=g_conf.remote_ip[cmd-8];
+					ptr[3]=atoi(p);
+					while(*p!='.')
+						p++;
+					p++;
+					ptr[4]=atoi(p);
+					while(*p!='.')
+						p++;
+					p++;
+					ptr[5]=atoi(p);
+					while(*p!='.')
+						p++;
+					p++;
+					ptr[6]=atoi(p);
+					len=4;
+				}
+			}
+			break;
+		case 12:
+			if(dev==(cmd-12))
+			ptr=config_socket0_ip6;
+		case 13:
+			if(dev==(cmd-12))
+			ptr=config_socket1_ip6;
+		case 14:
+			if(dev==(cmd-12))
+			ptr=config_socket2_ip6;
+		case 15:
+			{
+				if(dev==(cmd-12))
+				ptr=config_socket3_ip6;
+				if(ptr!=NULL)
+				{
+					p=g_conf.remote_ip6[cmd-12];
+					for(i=0;i<sizeof(g_conf.remote_ip6[cmd-12]);i++)
+						ptr[3+i]=p[i];
+					len=64;
+				}
+			}
+			break;
+		case 16:
+			if(dev==(cmd-16))
+			ptr=config_socket0_remote_port;
+		case 17:
+			if(dev==(cmd-16))
+			ptr=config_socket1_remote_port;
+		case 18:
+			if(dev==(cmd-16))
+			ptr=config_socket2_remote_port;
+		case 19:
+			{
+				if(dev==(cmd-16))
+					ptr=config_socket3_remote_port;
+				if(ptr!=NULL)
+				{
+					ptr[3]=(g_conf.remote_port[cmd-16]>>8)&0xff;
+					ptr[4]=g_conf.remote_port[cmd-16]&0xff;
+					len=2;
+				}
+			}
+			break;
+		case 20:
+			if(dev==(cmd-20))
+			ptr=config_net_protol0;
+		case 21:
+			if(dev==(cmd-20))
+			ptr=config_net_protol1;
+		case 22:
+			if(dev==(cmd-20))
+			ptr=config_net_protol2;
+		case 23:
+			{
+				if(dev==(cmd-20))
+				ptr=config_net_protol3;
+				if(ptr!=NULL)
+				{
+					ptr[3]=(g_conf.config[cmd-20]&CONFIG_IPV6)?1:0;
+					len=1;
+				}
+			}
+			break;
+		case 24:
+			if(dev==(cmd-24))
+			ptr=config_socket_mode0;
+		case 25:
+			if(dev==(cmd-24))
+			ptr=config_socket_mode1;
+		case 26:
+			if(dev==(cmd-24))
+			ptr=config_socket_mode2;
+		case 27:
+			{
+				if(dev==(cmd-24))
+				ptr=config_socket_mode3;
+				if(ptr!=NULL)
+				{
+					ptr[3]=(g_conf.config[cmd-24]&CONFIG_SERVER)?1:0;
+					len=1;
+				}
+			}
+			break;
+		case 28:
+			if(dev==(cmd-28))
+			ptr=config_uart_baud0;
+		case 29:
+			if(dev==(cmd-28))
+			ptr=config_uart_baud1;
+		case 30:
+			if(dev==(cmd-28))
+			ptr=config_uart_baud2;
+		case 31:
+			{
+				if(dev==(cmd-28))
+				ptr=config_uart_baud3;
+				if(ptr!=NULL)
+				{
+					ptr[3]=g_conf.config[cmd-28]>>3;
+					len=1;
+				}
+			}
+			break;
+		case 32:
+			{
+				ptr=config_local_ip6;
+				if(ptr!=NULL)
+				{
+					p=g_conf.local_ip6;
+					for(i=0;i<sizeof(g_conf.local_ip6);i++)
+						ptr[3+i]=p[i];
+					len=64;
+				}
+			}
+			break;
+		case 33:
+			if(dev==(cmd-33))
+			ptr=config_tcp0;
+		case 34:
+			if(dev==(cmd-33))
+			ptr=config_tcp1;
+		case 35:
+			if(dev==(cmd-33))
+			ptr=config_tcp2;
+		case 36:
+			{
+				if(dev==(cmd-33))
+				ptr=config_tcp3;
+				if(ptr!=NULL)
+				{
+					ptr[3]=(g_conf.config[cmd-33]&CONFIG_TCP)?1:0;
+					len=1;
+				}
+			}
+			break;
+
+		default:
+			break;
+	}
+	if(ptr!=NULL)
+	{
+		ptr[0]=0xf5;ptr[1]=0x8b;ptr[2]=cmd;
+		ptr[len+3]=0x26;ptr[len+4]=0xfa;
+		for(i=0;i<len+5;i++)
+			crc=crc+ptr[i];
+		ptr[len+5]=(crc>>8)&0xff;
+		ptr[len+6]=(crc)&0xff;
+		*lenout=len+7;
+	}
+	return ptr;
+}
 void common_rw_config(int dev)
 {
 
@@ -453,11 +827,12 @@ void common_rw_config(int dev)
 	int data_len,crc_len,longlen=0;
 	unsigned char crc[2];
 	char ch;	
+	int lenout;
 	rt_uint8_t len=0,param;
 	enum STATE_OP state=GET_F5;
 	DBG("enter common_rw_config\r\n");
 	rt_uint8_t *ptr=(rt_uint8_t *)buf;
-	//rt_thread_delay(10);
+	configlock();
 	while(1)
 	{
 		if(rt_device_read(common_dev[dev], 0, &ch, 1)==1)
@@ -477,6 +852,18 @@ void common_rw_config(int dev)
 		else if(ch==0x8b && state==GET_8A_8B)
 		{
 			DBG("GET_8B\n");
+			rt_device_read(common_dev[dev], 0, &ch, 1);
+			DBG("GET %d\n",ch);
+			char *tmp=send_out(dev,ch,&lenout);
+			if(tmp!=NULL)
+			{
+				int ii=0;
+				for(ii=0;ii<lenout;ii++)
+					DBG("%2x ",tmp[ii]);
+				rt_device_write(common_dev[dev], 0, (void *)tmp, lenout);
+			}
+			else
+				DBG("some error\n");
 			break;
 		}
 		else if(state==GET_DATA)
@@ -556,6 +943,7 @@ void common_rw_config(int dev)
 					break;
 			}
 	}
+	configunlock();
 	return ;
 }
 static bool flag_cnn[4]={false,false,false,false};
@@ -696,7 +1084,7 @@ static rt_err_t common_rx_ind(rt_device_t dev, rt_size_t size)
 void common_w(void* parameter)
 {
 	int dev=((int)parameter)/2;
-	static int flag=0,need_reconfig=0;
+	static int flag[4]={0,0,0,0};
 	DBG("common_w %d Enter\r\n",dev);
 	while (1)
 	{
@@ -706,10 +1094,10 @@ void common_w(void* parameter)
 		if(ind[dev])
 		{	
 			//DBG("dev %d in socket data flag %d\n",dev,flag);
-			if(flag==1)
+			if(flag[dev]==1)
 			{
 				print_config(g_conf);
-				flag=0;	
+				flag[dev]=0;	
 				void *ptr1=(void *)&g_confb;
 				void *ptr2=(void *)&g_conf;
 				if(rt_memcmp(ptr1,ptr2,sizeof(config))!=0)
@@ -724,9 +1112,9 @@ void common_w(void* parameter)
 		else
 		{
 			DBG("dev %d in config data flag %d\n",dev,flag);
-			if(flag==0)
+			if(flag[dev]==0)
 			{
-				flag=1;
+				flag[dev]=1;
 				void *ptr1=(void *)&g_confb;
 				void *ptr2=(void *)&g_conf;
 				rt_memcpy(ptr1,ptr2,sizeof(config));
@@ -785,7 +1173,45 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 	MAP_GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_5,0);	
 	MAP_GPIOPinWrite(GPIO_PORTK_BASE,GPIO_PIN_2,0);	
 	default_config();
-
+	memset(config_local_ip,0,11);config_local_ip[11]='\0';
+	memset(config_sub_msk,0,11);config_local_ip[11]='\0';
+	memset(config_gw,0,11);config_local_ip[11]='\0';
+	memset(config_socket3_ip,0,11);config_local_ip[11]='\0';
+	memset(config_socket0_ip,0,11);config_local_ip[11]='\0';
+	memset(config_socket1_ip,0,11);config_local_ip[11]='\0';
+	memset(config_socket2_ip,0,11);config_local_ip[11]='\0';
+	memset(config_socket0_local_port,0,9);config_local_ip[11]='\0';
+	memset(config_socket1_local_port,0,9);config_local_ip[11]='\0';
+	memset(config_socket2_local_port,0,9);config_local_ip[11]='\0';
+	memset(config_socket3_local_port,0,9);config_local_ip[11]='\0';
+	memset(config_socket0_remote_port,0,9);config_local_ip[11]='\0';
+	memset(config_socket1_remote_port,0,9);config_local_ip[11]='\0';
+	memset(config_socket2_remote_port,0,9);config_local_ip[11]='\0';
+	memset(config_socket3_remote_port,0,9);config_local_ip[11]='\0';
+	memset(config_mac,0,13);config_local_ip[11]='\0';
+	memset(config_socket0_ip6,0,71);config_local_ip[11]='\0';
+	memset(config_socket1_ip6,0,71);config_local_ip[11]='\0';
+	memset(config_socket2_ip6,0,71);config_local_ip[11]='\0';
+	memset(config_socket3_ip6,0,71);config_local_ip[11]='\0';
+	memset(config_local_ip6,0,71);config_local_ip6[71]='\0';
+	memset(config_net_protol0,0,8);config_net_protol0[8]='\0';
+	memset(config_net_protol1,0,8);config_net_protol1[8]='\0';
+	memset(config_net_protol2,0,8);config_net_protol2[8]='\0';
+	memset(config_net_protol3,0,8);config_net_protol3[8]='\0';
+	memset(config_socket_mode0,0,8);config_socket_mode0[8]='\0';
+	memset(config_socket_mode1,0,8);config_socket_mode1[8]='\0';
+	memset(config_socket_mode2,0,8);config_socket_mode2[8]='\0';
+	memset(config_socket_mode3,0,8);config_socket_mode3[8]='\0';
+	memset(config_uart_baud0,0,8);config_uart_baud0[8]='\0';
+	memset(config_uart_baud1,0,8);config_uart_baud1[8]='\0';
+	memset(config_uart_baud2,0,8);config_uart_baud2[8]='\0';
+	memset(config_uart_baud3,0,8);config_uart_baud3[8]='\0';
+	memset(config_tcp0,0,8);config_tcp0[8]='\0';
+	memset(config_tcp1,0,8);config_tcp1[8]='\0';
+	memset(config_tcp2,0,8);config_tcp2[8]='\0';
+	memset(config_tcp3,0,8);config_tcp3[8]='\0';
+	rt_mutex_init(&mconfigutex, "config_mutex", RT_IPC_FLAG_FIFO);
+/*
 	for(i=3;i<67;i++)
 	{
 		config_socket0_ip6[i]=0xff;
@@ -804,6 +1230,7 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 	config_socket2_ip6[68]=0xfa;
 	config_socket3_ip6[68]=0xfa;
 	config_local_ip6[68]=0xfa;
+*/
 	for(i=0;i<4;i++)
 	{
 		//config sem
