@@ -13,7 +13,7 @@ typedef struct {
 	rt_uint16_t local_port[4];
 	rt_uint8_t sub_msk[16];
 	rt_uint8_t gw[16];
-	rt_uint8_t mac[18];
+	rt_uint8_t mac[64];
 	rt_uint8_t remote_ip[4][16];
 	rt_uint8_t remote_ip6[4][64];
 	rt_uint16_t remote_port[4];

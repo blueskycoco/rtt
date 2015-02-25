@@ -12,6 +12,9 @@
 #include "driverlib/pin_map.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/rom_map.h"
+#define CONFIG_BIN 0
+#define CONFIG_IT 0
+
 #if 0
 void IntGpioD()
 {
@@ -69,6 +72,8 @@ struct rt_mutex mconfigutex;
 
 
 
+
+int times=0;
 
 
 #define COMMAND_FAIL "Command crc fail"
@@ -165,6 +170,7 @@ void default_config()
 	strcpy(g_conf.remote_ip6[2],"fe80::5867:8730:e9e6:d5c5%11");
 	memset(g_conf.remote_ip6[3],'\0',64);
 	strcpy(g_conf.remote_ip6[3],"fe80::5867:8730:e9e6:d5c5%11");
+	
 	memset(g_conf.local_ip6,'\0',64);
 	strcpy(g_conf.local_ip6,"fe80::1");
 	memset(g_conf.local_ip,'\0',16);
@@ -173,7 +179,7 @@ void default_config()
 	strcpy(g_conf.gw,"192.168.1.1");	
 	memset(g_conf.sub_msk,'\0',16);
 	strcpy(g_conf.sub_msk,"255.255.255.0");
-	memset(g_conf.mac,'\0',16);
+	memset(g_conf.mac,'\0',64);	
 	rt_sprintf(g_conf.mac,"%d.%d.%d.%d.%d.%d",netif->hwaddr[0],netif->hwaddr[1],netif->hwaddr[2],netif->hwaddr[3],netif->hwaddr[4],netif->hwaddr[5]);
 	g_conf.remote_port[0]=1234;
 	g_conf.remote_port[1]=1235;
@@ -181,7 +187,9 @@ void default_config()
 	g_conf.remote_port[3]=1237;
 	set_if6("e0","fe80::1");
 	set_if("e0",g_conf.local_ip,g_conf.gw,g_conf.sub_msk);
+	
 }
+#if CONFIG_BIN
 void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local socket need reconfig ,2 all socket need reconfig
 {
 	
@@ -379,16 +387,16 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 			//set uart baud
 			if((data[0]-28)==dev)
 			{
-				g_conf.config[data[0]-28]=((g_conf.config[data[0]-20]&0x07)|(data[1]<<3));
+				g_conf.config[data[0]-28]=((g_conf.config[data[0]-28]&0x07)|(data[1]<<3));
 				struct serial_configure config;
-				config.baud_rate=baud(g_conf.config[data[0]-28]);
+				config.baud_rate=baud(g_conf.config[data[0]-28]>>3);
 				config.bit_order = BIT_ORDER_LSB;
 				config.data_bits = DATA_BITS_8;
 				config.parity	 = PARITY_NONE;
 				config.stop_bits = STOP_BITS_1;
 				config.invert	 = NRZ_NORMAL;
 				config.bufsz	 = RT_SERIAL_RB_BUFSZ;
-				rt_device_control(dev,RT_DEVICE_CTRL_CONFIG,&config);	
+				rt_device_control(common_dev[dev],RT_DEVICE_CTRL_CONFIG,&config);	
 			}
 		}
 		break;
@@ -444,8 +452,10 @@ void set_config(rt_uint8_t *data,int ipv6_len,int dev)//0 no change ,1 local soc
 	if(ipv6_changed)
 		set_if6("e0",g_conf.local_ip6);
 }
+#endif
 bool need_reconfig(int dev)
 {
+#if CONFIG_BIN
 	if(g_chang[dev].cs||g_chang[dev].lip6c||g_chang[dev].lpc||g_chang[dev].mode||
 	   g_chang[dev].protol||g_chang[dev].rip4c||g_chang[dev].rip6c||g_chang[dev].rpc)
 	{
@@ -472,8 +482,11 @@ bool need_reconfig(int dev)
 	}
 	else
 		return false;
-	
+#else
+	return false;
+#endif
 }
+#if CONFIG_BIN
 char *send_out(int dev,int cmd,int *lenout)
 {
 	#if 0
@@ -946,6 +959,8 @@ void common_rw_config(int dev)
 	configunlock();
 	return ;
 }
+#endif
+
 static bool flag_cnn[4]={false,false,false,false};
 void all_cut()
 {
@@ -1014,21 +1029,26 @@ void cnn_out(int index,int level)
 }
 int baud(int type)
 {
+	rt_kprintf("intput %d\n",type);
 	switch(type)
 	{
 		case 0:
 			return 115200;
 		case 1:
-			return 460800;
+			return 128000;
 		case 2:
-			return 921600;
+			return 256000;
 		case 3:
-			return 1000000;
+			return 460800;
 		case 4:
-			return 2000000;
+			return 921600;
 		case 5:
-			return 4000000;
+			return 1000000;
 		case 6:
+			return 2000000;
+		case 7:
+			return 4000000;
+		case 8:
 			return 6000000;
 		}
 	return 0;
@@ -1069,8 +1089,12 @@ int common_w_socket(int dev)
 	rt_uint8_t common_buf[1024],*ptr;
 	ptr=common_buf;
 	len=rt_device_read(common_dev[dev], 0, ptr, 1024);
+	#if CONFIG_IT				
+	int i;
+	for(i=0;i<10;i++)
+	#endif
 	if(phy_link&&(len>0)&&g_socket[dev].connected)
-		rt_data_queue_push(&g_data_queue[dev*2], ptr, len, RT_WAITING_FOREVER);
+		rt_data_queue_push(&g_data_queue[dev*2], ptr, len, RT_WAITING_FOREVER);	
 	return 0;
 }
 static rt_err_t common_rx_ind(rt_device_t dev, rt_size_t size)
@@ -1090,6 +1114,7 @@ void common_w(void* parameter)
 	{
 		/* wait receive */
 		if (rt_sem_take(&(rx_sem[dev]), RT_WAITING_FOREVER) != RT_EOK) continue;
+		#if CONFIG_BIN
 		//DBG("to read in_low %d\r\n",ind_low(dev));
 		if(ind[dev])
 		{	
@@ -1102,16 +1127,25 @@ void common_w(void* parameter)
 				void *ptr2=(void *)&g_conf;
 				if(rt_memcmp(ptr1,ptr2,sizeof(config))!=0)
 				{
+					#if CONFIG_IT					
+					common_w_socket(dev);
+					times=0;
+					#endif
 					print_config(g_conf);
 				}
 			}
 			
 			/*socket data transfer,use dma*/
+			#if !CONFIG_IT
 			common_w_socket(dev);
+			#else
+			char cha;
+			while(rt_device_read(common_dev[dev], &cha, &cha, 1)==1);
+			#endif
 		}
 		else
 		{
-			DBG("dev %d in config data flag %d\n",dev,flag);
+			DBG("dev %d in config data flag %d\n",dev,flag[dev]);
 			if(flag[dev]==0)
 			{
 				flag[dev]=1;
@@ -1122,6 +1156,9 @@ void common_w(void* parameter)
 			common_rw_config(dev);
 			
 		}
+		#else
+		common_w_socket(dev);
+		#endif
 	}
 }
 static void common_r(void* parameter)
@@ -1135,7 +1172,15 @@ static void common_r(void* parameter)
 		if(data_size!=0 && last_data_ptr)
 		{		
 			if(dev==1)
+			{
+				#if CONFIG_IT
+				if(times<=10){
+				#endif
 				rt_device_write(common_dev[(dev-1)/2], 0, last_data_ptr, data_size);
+				#if CONFIG_IT
+				times++;}
+				#endif
+			}
 			else
 				rt_data_queue_push(&g_data_queue[dev-1], last_data_ptr, data_size, RT_WAITING_FOREVER);
 		}
