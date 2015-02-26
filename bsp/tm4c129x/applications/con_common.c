@@ -12,8 +12,8 @@
 #include "driverlib/pin_map.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/rom_map.h"
-#define CONFIG_BIN 0
-#define CONFIG_IT 0
+#define CONFIG_BIN 1 //test socket 1
+#define CONFIG_IT 1 //test  config 1
 
 #if 0
 void IntGpioD()
@@ -1086,9 +1086,9 @@ void print_config(config g)
 int common_w_socket(int dev)
 {	
 	int len;
-	rt_uint8_t common_buf[1024],*ptr;
+	rt_uint8_t common_buf[2048],*ptr;
 	ptr=common_buf;
-	len=rt_device_read(common_dev[dev], 0, ptr, 1024);
+	len=rt_device_read(common_dev[dev], 0, ptr, 2048);
 	#if CONFIG_IT				
 	int i;
 	for(i=0;i<10;i++)
@@ -1309,7 +1309,7 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 			//create common_w,r thread to read data from socket write to uart,parallel,usb
 			//or read from uart,parallel,usb write to socket
 			rt_sprintf(common,"common_wx%d",i);
-			tid_common_w[i] = rt_thread_create(common,common_w, (void *)(i*2),2048, 20, 10);
+			tid_common_w[i] = rt_thread_create(common,common_w, (void *)(i*2),4096, 20, 10);
 			rt_sprintf(common,"common_rx%d",i);
 			tid_common_r[i] = rt_thread_create(common,common_r, (void *)(i*2+1),2048, 20, 10);
 

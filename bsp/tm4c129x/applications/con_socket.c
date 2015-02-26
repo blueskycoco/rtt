@@ -378,7 +378,7 @@ void socket_w(void *paramter)
 		}
 		cnn_out(dev,1);	
 		rt_data_queue_pop(&g_data_queue[dev*2], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
-		lock(dev);
+		
 		FD_ZERO(&myset);
 		int sock;
 		if(is_right(g_conf.config[dev],CONFIG_SERVER)&&is_right(g_conf.config[dev],CONFIG_TCP))
@@ -392,6 +392,7 @@ void socket_w(void *paramter)
 		{ 		
 			if(data_size>0)
 			{
+				lock(dev);
 				if(is_right(g_conf.config[dev],CONFIG_TCP))
 				{
 					status=send(sock, last_data_ptr, data_size, 0);
@@ -414,6 +415,7 @@ void socket_w(void *paramter)
 							status=sendto(g_socket[dev].sockfd, last_data_ptr, data_size, 0, (struct sockaddr *)&g_socket[dev].server_addr, sizeof(g_socket[dev].server_addr));
 					}
 				}
+				unlock(dev);
 				if( status< 0)
 				{
 					if(is_right(g_conf.config[dev],CONFIG_TCP))
@@ -428,7 +430,7 @@ void socket_w(void *paramter)
 		
 				
 			}
-		unlock(dev);
+		
 	}
 	rt_kprintf("socket_ip_w %d close\n",dev);
 }
@@ -542,6 +544,7 @@ void socket_r(void *paramter)
 			rt_thread_delay(10);			
 			continue;
 		}
+		
 		cnn_out(dev,1);
 		socklen_t clientlen;
 		if(is_right(g_conf.config[dev],CONFIG_IPV6))
@@ -557,10 +560,11 @@ void socket_r(void *paramter)
 		FD_SET(sock, &myset);
         if(select(sock+1, &myset, NULL, NULL, &tv) > 0) 
 		{ 
+			lock(dev);
 			if(is_right(g_conf.config[dev],CONFIG_TCP))
 			{
 				status=recv(sock, g_socket[dev].recv_data, BUF_SIZE, 0);					
-				
+				unlock(dev);
 				if(status>0)
 				{
 					if(ind[dev])
@@ -572,24 +576,24 @@ void socket_r(void *paramter)
 					if(is_right(g_conf.config[dev],CONFIG_SERVER))
 					{
 						rt_kprintf("Thread ip4_r%d recv error %d\n",dev,errno);	
-						lock(dev);
+						//lock(dev);
 						closesocket(g_socket[dev].clientfd);
 						g_socket[dev].clientfd=-1;
-						unlock(dev);
+						//unlock(dev);
 						g_socket[dev].connected=false;
 						cnn_out(dev,0);
 					}
 					else
 					{
 						rt_kprintf("Thread ip4_r%d recv error %d\n",dev,errno);	
-						lock(dev);
+						//lock(dev);
 						closesocket(g_socket[dev].sockfd);
 						g_socket[dev].sockfd=-1;
 						if(is_right(g_conf.config[dev],CONFIG_IPV6))
 							g_socket[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);		
 						else
 							g_socket[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
-						unlock(dev);
+						//unlock(dev);
 						int imode = 1;
 						setsockopt(g_socket[dev].sockfd,SOL_SOCKET,SO_KEEPALIVE,&imode,sizeof(imode));
 						ioctlsocket(g_socket[dev].sockfd, FIONBIO, &imode);
@@ -617,6 +621,7 @@ void socket_r(void *paramter)
 					else
 						status=recvfrom(g_socket[dev].sockfd, g_socket[dev].recv_data, BUF_SIZE, 0, (struct sockaddr *)&g_socket[dev].client_addr, &clientlen);
 				}
+				unlock(dev);
 				#else
 				if(is_right(g_conf.config[dev],CONFIG_IPV6))
 					status=recvfrom(g_socket[dev].sockfd, g_socket[dev].recv_data, BUF_SIZE, 0, (struct sockaddr *)&g_socket[dev].server_addr6, &clientlen);
@@ -634,6 +639,7 @@ void socket_r(void *paramter)
 				}
 			}
 		}
+		
 	}
 }
 void test_select_connect()
