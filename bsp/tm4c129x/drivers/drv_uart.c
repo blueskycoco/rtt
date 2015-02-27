@@ -111,11 +111,11 @@ static rt_err_t hw_control(struct rt_serial_device *serial, int cmd, void *arg)
     {
     case RT_DEVICE_CTRL_CLR_INT:
         /* disable rx irq */
-        MAP_UARTIntDisable(uart->hw_base, UART_INT_RX | UART_INT_RT);
+        MAP_UARTIntDisable(uart->hw_base, UART_INT_RX | UART_INT_RT |UART_INT_TX);
         break;
     case RT_DEVICE_CTRL_SET_INT:
         /* enable rx irq */
-        MAP_UARTIntEnable(uart->hw_base, UART_INT_RX | UART_INT_RT);
+        MAP_UARTIntEnable(uart->hw_base, UART_INT_RX | UART_INT_RT |UART_INT_TX);
         break;
     }
 
@@ -174,7 +174,11 @@ void UART0_IRQHandler(void)
         MAP_UARTIntClear(uart->hw_base, intsrc);
         rt_hw_serial_isr(&serial0, RT_SERIAL_EVENT_RX_IND);
     }
-		
+	if (intsrc & (UART_INT_TX))
+    {
+        MAP_UARTIntClear(uart->hw_base, intsrc);
+        rt_hw_serial_isr(&serial0, RT_SERIAL_EVENT_TX_DONE);
+    }	
     /* leave interrupt */
     rt_interrupt_leave();
 }
@@ -363,7 +367,7 @@ int rt_hw_uart_init(int use_uart)
 	MAP_IntEnable(INT_UART0);
 	MAP_UARTEnable(uart->hw_base);
 	/* register UART0 device */
-	rt_hw_serial_register(&serial0, "uart0",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
+	rt_hw_serial_register(&serial0, "uart0",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX| RT_DEVICE_FLAG_INT_TX,uart);
 #endif
 	if(use_uart){
 #ifdef RT_USING_UART1

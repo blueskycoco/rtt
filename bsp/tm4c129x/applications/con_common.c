@@ -13,7 +13,7 @@
 #include "driverlib/interrupt.h"
 #include "driverlib/rom_map.h"
 #define CONFIG_BIN 1 //test socket 1
-#define CONFIG_IT 1 //test  config 1
+#define CONFIG_IT 0 //test  config 1
 
 #if 0
 void IntGpioD()
@@ -1086,8 +1086,8 @@ void print_config(config g)
 int common_w_socket(int dev)
 {	
 	int len;
-	rt_uint8_t common_buf[2048],*ptr;
-	ptr=common_buf;
+	rt_uint8_t /*common_buf[2048],*/*ptr;
+	ptr=rt_malloc(2048);
 	len=rt_device_read(common_dev[dev], 0, ptr, 2048);
 	#if CONFIG_IT				
 	int i;
@@ -1095,6 +1095,8 @@ int common_w_socket(int dev)
 	#endif
 	if(phy_link&&(len>0)&&g_socket[dev].connected)
 		rt_data_queue_push(&g_data_queue[dev*2], ptr, len, RT_WAITING_FOREVER);	
+	else
+		rt_free(ptr);
 	return 0;
 }
 static rt_err_t common_rx_ind(rt_device_t dev, rt_size_t size)
@@ -1177,12 +1179,14 @@ static void common_r(void* parameter)
 				if(times<=10){
 				#endif
 				rt_device_write(common_dev[(dev-1)/2], 0, last_data_ptr, data_size);
+				
 				#if CONFIG_IT
 				times++;}
 				#endif
 			}
 			else
 				rt_data_queue_push(&g_data_queue[dev-1], last_data_ptr, data_size, RT_WAITING_FOREVER);
+			rt_free(last_data_ptr);
 		}
 	}
 }
@@ -1304,7 +1308,7 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 			DBG("app_common: can not find device: %s\n",common);
 			return 0;
 		}
-		if (rt_device_open(common_dev[i], RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)
+		if (rt_device_open(common_dev[i], RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_INT_TX) == RT_EOK)
 		{
 			//create common_w,r thread to read data from socket write to uart,parallel,usb
 			//or read from uart,parallel,usb write to socket

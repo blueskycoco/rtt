@@ -392,7 +392,7 @@ void socket_w(void *paramter)
 		{ 		
 			if(data_size>0)
 			{
-				lock(dev);
+			//	lock(dev);
 				if(is_right(g_conf.config[dev],CONFIG_TCP))
 				{
 					status=send(sock, last_data_ptr, data_size, 0);
@@ -415,7 +415,7 @@ void socket_w(void *paramter)
 							status=sendto(g_socket[dev].sockfd, last_data_ptr, data_size, 0, (struct sockaddr *)&g_socket[dev].server_addr, sizeof(g_socket[dev].server_addr));
 					}
 				}
-				unlock(dev);
+				//unlock(dev);
 				if( status< 0)
 				{
 					if(is_right(g_conf.config[dev],CONFIG_TCP))
@@ -430,7 +430,7 @@ void socket_w(void *paramter)
 		
 				
 			}
-		
+		rt_free(last_data_ptr);
 	}
 	rt_kprintf("socket_ip_w %d close\n",dev);
 }
@@ -560,11 +560,12 @@ void socket_r(void *paramter)
 		FD_SET(sock, &myset);
         if(select(sock+1, &myset, NULL, NULL, &tv) > 0) 
 		{ 
-			lock(dev);
+		//	lock(dev);			
+			g_socket[dev].recv_data=rt_malloc(BUF_SIZE);
 			if(is_right(g_conf.config[dev],CONFIG_TCP))
 			{
 				status=recv(sock, g_socket[dev].recv_data, BUF_SIZE, 0);					
-				unlock(dev);
+			//	unlock(dev);
 				if(status>0)
 				{
 					if(ind[dev])
@@ -572,6 +573,7 @@ void socket_r(void *paramter)
 				}
 				else
 				{
+					rt_free(g_socket[dev].recv_data);
 					rt_kprintf("Thread ip4_r_%d recv error,connection lost %d %d\n",dev,status,errno);
 					if(is_right(g_conf.config[dev],CONFIG_SERVER))
 					{
@@ -621,7 +623,7 @@ void socket_r(void *paramter)
 					else
 						status=recvfrom(g_socket[dev].sockfd, g_socket[dev].recv_data, BUF_SIZE, 0, (struct sockaddr *)&g_socket[dev].client_addr, &clientlen);
 				}
-				unlock(dev);
+				//unlock(dev);
 				#else
 				if(is_right(g_conf.config[dev],CONFIG_IPV6))
 					status=recvfrom(g_socket[dev].sockfd, g_socket[dev].recv_data, BUF_SIZE, 0, (struct sockaddr *)&g_socket[dev].server_addr6, &clientlen);
@@ -951,7 +953,7 @@ bool socket_config(int dev)
 		}
 	}
 	/*mall receive buffer*/
-	g_socket[dev].recv_data = rt_malloc(BUF_SIZE);
+	/*g_socket[dev].recv_data = rt_malloc(BUF_SIZE);
 	if(g_socket[dev].recv_data == RT_NULL)
 	{
 		rt_kprintf(" socket %d No memory\n",dev);
@@ -959,7 +961,7 @@ bool socket_config(int dev)
 		closesocket(g_socket[dev].sockfd);
 		unlock(dev);
 		return false;
-	}
+	}*/
 	if(is_right(g_conf.config[dev],CONFIG_TCP))
 	{
 		g_socket[dev].connected=false;
