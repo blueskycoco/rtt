@@ -13,7 +13,7 @@
 #include "driverlib/interrupt.h"
 #include "driverlib/rom_map.h"
 #define CONFIG_BIN 1 //test socket 1
-#define CONFIG_IT 0 //test  config 1
+#define CONFIG_IT 1 //test  config 1
 
 #if 0
 void IntGpioD()
@@ -1089,14 +1089,25 @@ int common_w_socket(int dev)
 	rt_uint8_t /*common_buf[2048],*/*ptr;
 	ptr=rt_malloc(2048);
 	len=rt_device_read(common_dev[dev], 0, ptr, 2048);
-	#if CONFIG_IT				
-	int i;
-	for(i=0;i<10;i++)
-	#endif
+	#if CONFIG_IT	
+	if(phy_link&&(len>0)&&g_socket[dev].connected)
+	{
+		int i;
+		for(i=0;i<10;i++)
+		{
+			char *tmp=rt_malloc(len);
+			rt_memcpy(tmp,ptr,len);
+			rt_data_queue_push(&g_data_queue[dev*2], tmp, len, RT_WAITING_FOREVER);	
+		}
+	}
+	
+	rt_free(ptr);
+	#else
 	if(phy_link&&(len>0)&&g_socket[dev].connected)
 		rt_data_queue_push(&g_data_queue[dev*2], ptr, len, RT_WAITING_FOREVER);	
 	else
 		rt_free(ptr);
+	#endif
 	return 0;
 }
 static rt_err_t common_rx_ind(rt_device_t dev, rt_size_t size)
@@ -1186,6 +1197,7 @@ static void common_r(void* parameter)
 			}
 			else
 				rt_data_queue_push(&g_data_queue[dev-1], last_data_ptr, data_size, RT_WAITING_FOREVER);
+			if(dev==1)
 			rt_free(last_data_ptr);
 		}
 	}

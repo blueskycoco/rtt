@@ -62,7 +62,7 @@ class MiniServer:
         udpT6Server.bind((self.h, self.p))
         print "UDP Server Start"
         while True:
-            udpT6Server.sendto('Congratulations........',('fe80::1', self.p))
+            udpT6Server.sendto('Congratulations........',('fe80::1', 261))
             udpT4Data, udpT6ServerInfo = udpT6Server.recvfrom(1024)
             print "Receive from ", udpT6ServerInfo, " and The Data send from The Client is :", udpT4Data
             self.c = self.c + len(udpT4Data)

@@ -371,13 +371,14 @@ void socket_w(void *paramter)
 	rt_kprintf("socket_ip4_w==> %d , %s mode, %s , %s . Thread Enter\r\n",dev,is_right(g_conf.config[dev],CONFIG_SERVER)?"Server":"Client",is_right(g_conf.config[dev],CONFIG_IPV6)?"IPV6":"IPV4",is_right(g_conf.config[dev],CONFIG_TCP)?"TCP":"UDP");
 	while(1)
 	{
+		rt_data_queue_pop(&g_data_queue[dev*2], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
 		if(!g_socket[dev].connected)
 		{
 			rt_thread_delay(10);
+			rt_free(last_data_ptr);
 			continue;
 		}
 		cnn_out(dev,1);	
-		rt_data_queue_pop(&g_data_queue[dev*2], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
 		
 		FD_ZERO(&myset);
 		int sock;
@@ -392,7 +393,7 @@ void socket_w(void *paramter)
 		{ 		
 			if(data_size>0)
 			{
-			//	lock(dev);
+				//lock(dev);
 				if(is_right(g_conf.config[dev],CONFIG_TCP))
 				{
 					status=send(sock, last_data_ptr, data_size, 0);
@@ -451,19 +452,19 @@ void socket_r(void *paramter)
 	{
 		if(need_reconfig(dev))
 		{
-			rt_free(g_socket[dev].recv_data);
+			g_socket[dev].connected=false;			
 			lock(dev);
 			closesocket(g_socket[dev].sockfd);
 			closesocket(g_socket[dev].clientfd);
 			g_socket[dev].sockfd=-1;
 			g_socket[dev].clientfd=-1;
 			unlock(dev);
-			socket_config(dev);			
+			socket_config(dev);
 		}
 		if(g_socket[dev].connected==false)
 		{
 			if(is_right(g_conf.config[dev],CONFIG_SERVER))
-			{				
+			{
 				rt_uint32_t  sin_size;
 				if(is_right(g_conf.config[dev],CONFIG_IPV6))
 					sin_size=sizeof(struct sockaddr_in6);
@@ -569,7 +570,9 @@ void socket_r(void *paramter)
 				if(status>0)
 				{
 					if(ind[dev])
-					rt_data_queue_push(&g_data_queue[dev*2+1], g_socket[dev].recv_data, status, RT_WAITING_FOREVER);
+						rt_data_queue_push(&g_data_queue[dev*2+1], g_socket[dev].recv_data, status, RT_WAITING_FOREVER);
+					else
+						rt_free(g_socket[dev].recv_data);
 				}
 				else
 				{
@@ -634,6 +637,8 @@ void socket_r(void *paramter)
 				{		
 					if(ind[dev])
 					rt_data_queue_push(&g_data_queue[dev*2+1], g_socket[dev].recv_data, status, RT_WAITING_FOREVER);
+					else
+						rt_free(g_socket[dev].recv_data);
 				}
 				else
 				{
@@ -812,7 +817,8 @@ bool socket_config(int dev)
 		return false;
 	}
 	int imode = 1;
-    setsockopt(g_socket[dev].sockfd,SOL_SOCKET,SO_KEEPALIVE,&imode,sizeof(imode));	   
+    setsockopt(g_socket[dev].sockfd,SOL_SOCKET,SO_KEEPALIVE,&imode,sizeof(imode));	  
+	setsockopt(g_socket[dev].sockfd, SOL_SOCKET, SO_REUSEADDR, &imode, sizeof(imode) );
 	/*init sockaddr_in */
 	if(is_right(g_conf.config[dev],CONFIG_SERVER))
 	{//server mode
@@ -823,7 +829,7 @@ bool socket_config(int dev)
 			g_socket[dev].server_addr6.sin6_port = htons(g_conf.local_port[dev]);
 			if(bind(g_socket[dev].sockfd, (struct sockaddr *)&g_socket[dev].server_addr6, sizeof(struct sockaddr)) == -1)
 			{
-				rt_kprintf("Bind error\n");
+				rt_kprintf("Server Bind error\n");
 				lock(dev);
 				closesocket(g_socket[dev].sockfd);
 				unlock(dev);
@@ -865,7 +871,7 @@ bool socket_config(int dev)
 			rt_memset(&(g_socket[dev].server_addr.sin_zero),0, sizeof(g_socket[dev].server_addr.sin_zero));
 			if(bind(g_socket[dev].sockfd, (struct sockaddr *)&g_socket[dev].server_addr, sizeof(struct sockaddr)) == -1)
 			{
-				rt_kprintf("Bind error\n");
+				rt_kprintf("Server Bind %d error\n",g_conf.local_port[dev]);
 				lock(dev);
 				closesocket(g_socket[dev].sockfd);
 				unlock(dev);
@@ -916,7 +922,7 @@ bool socket_config(int dev)
 				g_socket[dev].client_addr6.sin6_port = htons(g_conf.local_port[dev]);
 				if(bind(g_socket[dev].sockfd, (struct sockaddr *)&g_socket[dev].client_addr6, sizeof(struct sockaddr)) == -1)
 				{
-					rt_kprintf("Bind error\n");
+					rt_kprintf("Client Bind %d error\n",g_conf.local_port[dev]);
 					lock(dev);
 					closesocket(g_socket[dev].sockfd);
 					unlock(dev);
@@ -941,7 +947,7 @@ bool socket_config(int dev)
 				rt_memset(&(g_socket[dev].client_addr.sin_zero),0, sizeof(g_socket[dev].client_addr.sin_zero));
 				if(bind(g_socket[dev].sockfd, (struct sockaddr *)&g_socket[dev].client_addr, sizeof(struct sockaddr)) == -1)
 				{
-					rt_kprintf("Bind error\n");
+					rt_kprintf("Client Bind %d error\n",g_conf.local_port[dev]);
 					lock(dev);
 					closesocket(g_socket[dev].sockfd);
 					unlock(dev);

@@ -208,7 +208,11 @@ void UART1_IRQHandler(void)
         MAP_UARTIntClear(uart->hw_base, intsrc);
         rt_hw_serial_isr(&serial1, RT_SERIAL_EVENT_RX_IND);
     }
-		
+	if (intsrc & (UART_INT_TX))
+    {
+        MAP_UARTIntClear(uart->hw_base, intsrc);
+        rt_hw_serial_isr(&serial1, RT_SERIAL_EVENT_TX_DONE);
+    }		
     /* leave interrupt */
     rt_interrupt_leave();
 }
@@ -238,7 +242,11 @@ void UART2_IRQHandler(void)
         MAP_UARTIntClear(uart->hw_base, intsrc);
         rt_hw_serial_isr(&serial2, RT_SERIAL_EVENT_RX_IND);
     }
-		
+	if (intsrc & (UART_INT_TX))
+    {
+        MAP_UARTIntClear(uart->hw_base, intsrc);
+        rt_hw_serial_isr(&serial2, RT_SERIAL_EVENT_TX_DONE);
+    }		
     /* leave interrupt */
     rt_interrupt_leave();
 }
@@ -268,7 +276,11 @@ void UART3_IRQHandler(void)
         MAP_UARTIntClear(uart->hw_base, intsrc);
         rt_hw_serial_isr(&serial3, RT_SERIAL_EVENT_RX_IND);
     }
-		
+	if (intsrc & (UART_INT_TX))
+    {
+        MAP_UARTIntClear(uart->hw_base, intsrc);
+        rt_hw_serial_isr(&serial3, RT_SERIAL_EVENT_TX_DONE);
+    }		
     /* leave interrupt */
     rt_interrupt_leave();
 }
@@ -298,7 +310,11 @@ void UART4_IRQHandler(void)
         MAP_UARTIntClear(uart->hw_base, intsrc);
         rt_hw_serial_isr(&serial4, RT_SERIAL_EVENT_RX_IND);
     }
-		
+	if (intsrc & (UART_INT_TX))
+    {
+        MAP_UARTIntClear(uart->hw_base, intsrc);
+        rt_hw_serial_isr(&serial4, RT_SERIAL_EVENT_TX_DONE);
+    }		
     /* leave interrupt */
     rt_interrupt_leave();
 }
@@ -328,7 +344,11 @@ void UART6_IRQHandler(void)
         MAP_UARTIntClear(uart->hw_base, intsrc);
         rt_hw_serial_isr(&serial6, RT_SERIAL_EVENT_RX_IND);
     }
-		
+	if (intsrc & (UART_INT_TX))
+    {
+        MAP_UARTIntClear(uart->hw_base, intsrc);
+        rt_hw_serial_isr(&serial6, RT_SERIAL_EVENT_TX_DONE);
+    }		
     /* leave interrupt */
     rt_interrupt_leave();
 }
@@ -392,7 +412,7 @@ int rt_hw_uart_init(int use_uart)
 	MAP_IntPrioritySet(INT_UART1, 0);
 
 	/* register UART0 device */
-	rt_hw_serial_register(&serial1, "uart1",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
+	rt_hw_serial_register(&serial1, "uart1",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX| RT_DEVICE_FLAG_INT_TX,uart);
 #endif
 #ifdef RT_USING_UART2
 	uart = &uart2;
@@ -416,7 +436,7 @@ int rt_hw_uart_init(int use_uart)
 	MAP_IntPrioritySet(INT_UART2, 0);
 
 	/* register UART0 device */
-	rt_hw_serial_register(&serial2, "uart2",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
+	rt_hw_serial_register(&serial2, "uart2",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX| RT_DEVICE_FLAG_INT_TX,uart);
 #endif
 #ifdef RT_USING_UART3
 	uart = &uart3;
@@ -440,7 +460,7 @@ int rt_hw_uart_init(int use_uart)
 	MAP_IntPrioritySet(INT_UART3, 0);
 
 	/* register UART0 device */
-	rt_hw_serial_register(&serial3, "uart3",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
+	rt_hw_serial_register(&serial3, "uart3",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX| RT_DEVICE_FLAG_INT_TX,uart);
 #endif
 #ifdef RT_USING_UART4
 	uart = &uart4;
@@ -464,7 +484,7 @@ int rt_hw_uart_init(int use_uart)
 	MAP_IntPrioritySet(INT_UART4, 0);
 
 	/* register UART0 device */
-	rt_hw_serial_register(&serial4, "uart4",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
+	rt_hw_serial_register(&serial4, "uart4",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX| RT_DEVICE_FLAG_INT_TX,uart);
 #endif
 #ifdef RT_USING_UART6
 		uart = &uart6;
@@ -487,7 +507,7 @@ int rt_hw_uart_init(int use_uart)
 		MAP_UARTEnable(uart->hw_base);
 		MAP_IntPrioritySet(INT_UART6, 0);
 		/* register UART0 device */
-		rt_hw_serial_register(&serial6, "uart6",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX,uart);
+		rt_hw_serial_register(&serial6, "uart6",RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_INT_RX| RT_DEVICE_FLAG_INT_TX,uart);
 #endif
 
 	}
