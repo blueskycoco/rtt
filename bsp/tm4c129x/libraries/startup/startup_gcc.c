@@ -50,6 +50,7 @@ extern void UART6_IRQHandler(void);
 extern void UART2_IRQHandler(void);
 extern void UART3_IRQHandler(void);
 extern void UART4_IRQHandler(void);
+extern void USB0DeviceIntHandler(void);
 extern void HardFault_Handler(void);
 //*****************************************************************************
 //
@@ -126,7 +127,7 @@ void (* const g_pfnVectors[])(void) =
     IntDefaultHandler,                      // CAN1
     IntDefaultHandler,                      // Ethernet
     IntDefaultHandler,                      // Hibernate
-    IntDefaultHandler,                      // USB0
+    USB0DeviceIntHandler,                      // USB0
     IntDefaultHandler,                      // PWM Generator 3
     IntDefaultHandler,                      // uDMA Software Transfer
     IntDefaultHandler,                      // uDMA Error

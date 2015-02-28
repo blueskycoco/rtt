@@ -166,7 +166,8 @@ void rt_init_thread_entry(void *parameter)
 	//uart_init();
 	//ring_buffer_init();
 	//ping_test("192.168.1.7",5,32);
-	
+	usbtest();
+	return;
 	g_data_queue=(struct rt_data_queue *)rt_malloc(sizeof(struct rt_data_queue)*8);
 	for(i=0;i<8;i++)//0,1 for socket0,2,3 for socket1,4,5 for socket2,6,7 for socket3
 	{
