@@ -293,6 +293,7 @@ TxHandler(void *pvCBData, uint32_t ui32Event, uint32_t ui32MsgValue,
     if(ui32Event == USB_EVENT_TX_COMPLETE)
     {
         g_ui32TxCount += ui32MsgValue;
+		rt_kprintf("packet sent\n");
     }
     return(0);
 }
@@ -401,10 +402,10 @@ usbtest(void)
     //
     // Run from the PLL at 120 MHz.
     //
-    ui32SysClock = MAP_SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ |
-                                           SYSCTL_OSC_MAIN |
-                                           SYSCTL_USE_PLL |
-                                           SYSCTL_CFG_VCO_480), 120000000);
+    //ui32SysClock = MAP_SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ |
+    //                                       SYSCTL_OSC_MAIN |
+    //                                       SYSCTL_USE_PLL |
+    //                                       SYSCTL_CFG_VCO_480), 120000000);
 
     //
     // Configure the device pins.
@@ -414,7 +415,7 @@ usbtest(void)
     //
     // Enable UART0
     //
-    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+    //MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
 
     //
     // Initialize the UART for console I/O.
@@ -429,9 +430,9 @@ usbtest(void)
     //
     // Enable the system tick.
     //
-    MAP_SysTickPeriodSet(ui32SysClock / SYSTICKS_PER_SECOND);
-    MAP_SysTickIntEnable();
-    MAP_SysTickEnable();
+    //MAP_SysTickPeriodSet(ui32SysClock / SYSTICKS_PER_SECOND);
+    //MAP_SysTickIntEnable();
+    //MAP_SysTickEnable();
 
     //
     // Show the application name on the display and UART output.
@@ -442,7 +443,7 @@ usbtest(void)
     //
     // Tell the user what we are up to.
     //
-   //dillon  UARTprintf("Configuring USB... \n");
+   rt_kprintf("Configuring USB... \n");
 
     //
     // Initialize the transmit and receive buffers.
@@ -494,7 +495,7 @@ usbtest(void)
             }
             else
             {
-               //dillon  UARTprintf("\n\nHost Disconnected.\n\n");
+               rt_kprintf("\n\nHost Disconnected.\n\n");
             }
         }
 
