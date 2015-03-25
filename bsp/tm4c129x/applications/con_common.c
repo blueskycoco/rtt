@@ -1303,6 +1303,31 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 				rt_sprintf(common,"uart%d",4);
 			else
 				rt_sprintf(common,"uart%d",i);
+		
+			DBG("To open ==>%s\n",common);
+			//open uart ,parallel ,usb
+			common_dev[i] = rt_device_find(common);
+			if (common_dev[i] == RT_NULL)
+			{
+				DBG("app_common: can not find device: %s\n",common);
+				return 0;
+			}
+			if (rt_device_open(common_dev[i], RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_INT_TX) == RT_EOK)
+			{
+				//create common_w,r thread to read data from socket write to uart,parallel,usb
+				//or read from uart,parallel,usb write to socket
+				rt_sprintf(common,"common_wx%d",i);
+				tid_common_w[i] = rt_thread_create(common,common_w, (void *)(i*2),4096, 20, 10);
+				rt_sprintf(common,"common_rx%d",i);
+				tid_common_r[i] = rt_thread_create(common,common_r, (void *)(i*2+1),2048, 20, 10);
+
+				rt_device_set_rx_indicate(common_dev[i], common_rx_ind);
+
+				if(tid_common_w[i]!=RT_NULL)
+					rt_thread_startup(tid_common_w[i]);			
+				if(tid_common_r[i]!=RT_NULL)
+					rt_thread_startup(tid_common_r[i]);
+			}
 		}
 		else if(dev==DEV_BUS)
 		{
@@ -1310,31 +1335,9 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 		}
 		else
 		{
-
-		}
-		DBG("To open ==>%s\n",common);
-		//open uart ,parallel ,usb
-		common_dev[i] = rt_device_find(common);
-		if (common_dev[i] == RT_NULL)
-		{
-			DBG("app_common: can not find device: %s\n",common);
-			return 0;
-		}
-		if (rt_device_open(common_dev[i], RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX | RT_DEVICE_FLAG_INT_TX) == RT_EOK)
-		{
-			//create common_w,r thread to read data from socket write to uart,parallel,usb
-			//or read from uart,parallel,usb write to socket
-			rt_sprintf(common,"common_wx%d",i);
-			tid_common_w[i] = rt_thread_create(common,common_w, (void *)(i*2),4096, 20, 10);
-			rt_sprintf(common,"common_rx%d",i);
-			tid_common_r[i] = rt_thread_create(common,common_r, (void *)(i*2+1),2048, 20, 10);
-
-			rt_device_set_rx_indicate(common_dev[i], common_rx_ind);
-
-			if(tid_common_w[i]!=RT_NULL)
-				rt_thread_startup(tid_common_w[i]);			
-			if(tid_common_r[i]!=RT_NULL)
-				rt_thread_startup(tid_common_r[i]);
+			//init usbbulk,read data from usb,and transfer data to 4 socket thread by 4 ctl line
+			//create 4 common_r thread read data from 4 socket thread,and put data to usb,control 4 ind line
+			
 		}
 	}
 	//rt_thread_delay(300);	
