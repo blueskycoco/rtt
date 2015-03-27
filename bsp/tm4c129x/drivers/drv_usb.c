@@ -25,6 +25,8 @@ static struct rt_device_usb _hw_usb;
 unsigned char *buf;
 uint32_t len;
 uint8_t g_pucDescriptorData[DESCRIPTOR_DATA_SIZE];
+extern uint8_t g_ppui8USBRxBuffer[NUM_BULK_DEVICES][UART_BUFFER_SIZE];
+extern uint8_t g_ppcUSBTxBuffer[NUM_BULK_DEVICES][UART_BUFFER_SIZE];
 
 rt_size_t _usb_init(rt_device_t dev)
 {
@@ -62,10 +64,141 @@ TxHandlerBulk(void *pvCBData, uint32_t ui32Event, uint32_t ui32MsgValue,
     if(ui32Event == USB_EVENT_TX_COMPLETE)
     {
         //g_ui32TxCount += ui32MsgValue;
-		rt_kprintf("packet sent\n");
+         int index=which_usb_device((tUSBDBulkDevice *)pvCBData);
+		rt_kprintf("packet sent %d,length %d\n",index,ui32MsgValue);
     }
     return(0);
 }
+
+//*****************************************************************************
+//
+// Receive new data and echo it back to the host.
+//
+// \param psDevice points to the instance data for the device whose data is to
+// be processed.
+// \param pi8Data points to the newly received data in the USB receive buffer.
+// \param ui32NumBytes is the number of bytes of data available to be
+// processed.
+//
+// This function is called whenever we receive a notification that data is
+// available from the host. We read the data, byte-by-byte and swap the case
+// of any alphabetical characters found then write it back out to be
+// transmitted back to the host.
+//
+// \return Returns the number of bytes of data processed.
+//
+//*****************************************************************************
+static uint32_t
+EchoNewDataToHost(int index, uint8_t *pi8Data,
+                  uint_fast32_t ui32NumBytes)
+{
+    uint_fast32_t ui32Loop, ui32Space, ui32Count;
+    uint_fast32_t ui32ReadIndex;
+    uint_fast32_t ui32WriteIndex;
+    tUSBRingBufObject sTxRing;
+
+    //
+    // Get the current buffer information to allow us to write directly to
+    // the transmit buffer (we already have enough information from the
+    // parameters to access the receive buffer directly).
+    //
+    USBBufferInfoGet(&(g_sTxBuffer[index]), &sTxRing);
+
+    //
+    // How much space is there in the transmit buffer?
+    //
+    ui32Space = USBBufferSpaceAvailable(&(g_sTxBuffer[index]));
+
+    //
+    // How many characters can we process this time round?
+    //
+    ui32Loop = (ui32Space < ui32NumBytes) ? ui32Space : ui32NumBytes;
+    ui32Count = ui32Loop;
+
+    //
+    // Update our receive counter.
+    //
+   // g_ui32RxCount += ui32NumBytes;
+
+    //
+    // Set up to process the characters by directly accessing the USB buffers.
+    //
+    ui32ReadIndex = (uint32_t)(pi8Data - g_ppui8USBRxBuffer[index]);
+    ui32WriteIndex = sTxRing.ui32WriteIndex;
+
+    while(ui32Loop)
+    {
+        //
+        // Copy from the receive buffer to the transmit buffer converting
+        // character case on the way.
+        //
+
+        //
+        // Is this a lower case character?
+        //
+        if((g_ppui8USBRxBuffer[index][ui32ReadIndex] >= 'a') &&
+           (g_ppui8USBRxBuffer[index][ui32ReadIndex] <= 'z'))
+        {
+            //
+            // Convert to upper case and write to the transmit buffer.
+            //
+            g_ppcUSBTxBuffer[index][ui32WriteIndex] =
+                (g_ppui8USBRxBuffer[index][ui32ReadIndex] - 'a') + 'A';
+        }
+        else
+        {
+            //
+            // Is this an upper case character?
+            //
+            if((g_ppui8USBRxBuffer[index][ui32ReadIndex] >= 'A') &&
+               (g_ppui8USBRxBuffer[index][ui32ReadIndex] <= 'Z'))
+            {
+                //
+                // Convert to lower case and write to the transmit buffer.
+                //
+                g_ppcUSBTxBuffer[index][ui32WriteIndex] =
+                    (g_ppui8USBRxBuffer[index][ui32ReadIndex] - 'Z') + 'z';
+            }
+            else
+            {
+                //
+                // Copy the received character to the transmit buffer.
+                //
+                g_ppcUSBTxBuffer[index][ui32WriteIndex] =
+                    g_ppui8USBRxBuffer[index][ui32ReadIndex];
+            }
+        }
+
+        //
+        // Move to the next character taking care to adjust the pointer for
+        // the buffer wrap if necessary.
+        //
+        ui32WriteIndex++;
+        ui32WriteIndex =
+            (ui32WriteIndex == UART_BUFFER_SIZE) ? 0 : ui32WriteIndex;
+
+        ui32ReadIndex++;
+
+        ui32ReadIndex = ((ui32ReadIndex == UART_BUFFER_SIZE) ?
+                         0 : ui32ReadIndex);
+
+        ui32Loop--;
+    }
+
+    //
+    // We've processed the data in place so now send the processed data
+    // back to the host.
+    //
+    USBBufferDataWritten(&(g_sTxBuffer[index]), ui32Count);
+
+    //
+    // We processed as much data as we can directly from the receive buffer so
+    // we need to return the number of bytes to allow the lower layer to
+    // update its read pointer appropriately.
+    //
+    return(ui32Count);
+}
+
 uint32_t
 RxHandlerBulk(void *pvCBData, uint32_t ui32Event, uint32_t ui32MsgValue,
           void *pvMsgData)
@@ -73,6 +206,8 @@ RxHandlerBulk(void *pvCBData, uint32_t ui32Event, uint32_t ui32MsgValue,
     //
     // Which event are we being sent?
     //
+    
+			unsigned char tmpbuf[1024];
      tUSBDBulkDevice *psDevice;
      psDevice = (tUSBDBulkDevice *)pvCBData;
 	 int index=which_usb_device(psDevice);
@@ -106,9 +241,18 @@ RxHandlerBulk(void *pvCBData, uint32_t ui32Event, uint32_t ui32MsgValue,
         //
         case USB_EVENT_RX_AVAILABLE:
         {
-			/*
-			uint32_t ui32ReadIndex = (uint32_t)(pvMsgData - g_ppui8USBRxBuffer[index]);
-			buf=rt_malloc(ui32MsgValue*sizeof(unsigned char));
+			//int i;
+			//uint32_t ui32ReadIndex = (uint32_t)(pvMsgData - (void *)(g_ppui8USBRxBuffer[index]));
+			//rt_kprintf("usb index %d rxd\n",index);
+			//for(i=ui32ReadIndex;i<ui32MsgValue;i++)
+			//	rt_kprintf("%d \n",g_ppui8USBRxBuffer[index][i]);
+			//USBBufferDataWritten(&(g_sTxBuffer[index]), 10);
+			//EchoNewDataToHost(index,pvMsgData,ui32MsgValue);
+			//USBBufferFlush(&g_sRxBuffer[index]);
+			int bytes=USBBufferRead(&g_sRxBuffer[index],tmpbuf,1024);
+			rt_kprintf("read index %d ,bytes %d\n",index,bytes);
+			USBBufferWrite(&g_sTxBuffer[index],tmpbuf,bytes);
+			/*buf=rt_malloc(ui32MsgValue*sizeof(unsigned char));
 			len=ui32MsgValue;
 			uint32_t count=ui32MsgValue;
 			int i=0;
@@ -144,9 +288,8 @@ RxHandlerBulk(void *pvCBData, uint32_t ui32Event, uint32_t ui32MsgValue,
 }
 
 static rt_size_t _usb_read(rt_device_t dev, rt_off_t pos, void *buffer, rt_size_t size)
-{
-    rt_memcpy(buffer,buf,len);
-    return len;
+{   
+    return USBBufferRead(&g_sRxBuffer[index],tmpbuf,1024);;
 }
 
 static rt_size_t _usb_write(rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size)

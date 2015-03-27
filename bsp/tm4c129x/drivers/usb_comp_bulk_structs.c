@@ -68,8 +68,8 @@ const uint8_t g_pui8ProductString[] =
 {
     2 + (16 * 2),
     USB_DTYPE_STRING,
-    'V', 0, 'i', 0, 'r', 0, 't', 0, 'u', 0, 'a', 0, 'l', 0, ' ', 0,
-    'C', 0, 'O', 0, 'M', 0, ' ', 0, 'P', 0, 'o', 0, 'r', 0, 't', 0
+    'T', 0, 'M', 0, '4', 0, 'C', 0, '1', 0, '2', 0, '9', 0, ' ', 0,
+    'U', 0, 'S', 0, 'B', 0, ' ', 0, 'P', 0, 'o', 0, 'r', 0, 't', 0
 };
 
 //*****************************************************************************
@@ -365,7 +365,7 @@ tUSBDCompositeDevice g_sCompDevice =
     //
     // Stellaris PID for composite serial device.
     //
-    /*USB_PID_COMP_SERIAL,*/0x0011,
+    /*USB_PID_COMP_SERIAL,*/USB_PID_BULK,
 
     //
     // This is in 2mA increments so 500mA.
