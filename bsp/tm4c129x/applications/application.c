@@ -167,9 +167,6 @@ void rt_init_thread_entry(void *parameter)
 	//ring_buffer_init();
 	//ping_test("192.168.1.7",5,32);
 	//usbtest();
-	_usb_init();
-
-	return;
 	g_data_queue=(struct rt_data_queue *)rt_malloc(sizeof(struct rt_data_queue)*8);
 	for(i=0;i<8;i++)//0,1 for socket0,2,3 for socket1,4,5 for socket2,6,7 for socket3
 	{
@@ -178,7 +175,7 @@ void rt_init_thread_entry(void *parameter)
 		else
 			rt_data_queue_init(&g_data_queue[i], 32, 4, RT_NULL);
 	}
-	common_init(DEV_UART);
+	common_init(DEV_USB);
 	//test_select_connect();
 	//test_select_accept();
 	netio_init();

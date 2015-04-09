@@ -279,7 +279,7 @@ const tUSBBuffer g_sRxBuffer[NUM_BULK_DEVICES] =
 // Transmit buffer (from the USB perspective).
 //
 //*****************************************************************************
-uint8_t g_ppcUSBTxBuffer[NUM_BULK_DEVICES][UART_BUFFER_SIZE];
+uint8_t g_ppcUSBTxBuffer[NUM_BULK_DEVICES][UART_BUFFER_SIZE_TX];
 uint8_t g_ppucTxBufferWorkspace[NUM_BULK_DEVICES][USB_BUFFER_WORKSPACE_SIZE];
 const tUSBBuffer g_sTxBuffer[NUM_BULK_DEVICES] =
 {
@@ -291,7 +291,7 @@ const tUSBBuffer g_sTxBuffer[NUM_BULK_DEVICES] =
         USBDBulkTxPacketAvailable,       // pfnAvailable
         (void *)&g_psBULKDevice[0],      // pvHandle
         g_ppcUSBTxBuffer[0],            // pcBuffer
-        UART_BUFFER_SIZE,               // ulBufferSize
+        UART_BUFFER_SIZE_TX,               // ulBufferSize
         g_ppucTxBufferWorkspace[0]      // pvWorkspace
     },
     {
@@ -302,7 +302,7 @@ const tUSBBuffer g_sTxBuffer[NUM_BULK_DEVICES] =
         USBDBulkTxPacketAvailable,       // pfnAvailable
         (void *)&g_psBULKDevice[1],      // pvHandle
         g_ppcUSBTxBuffer[1],            // pcBuffer
-        UART_BUFFER_SIZE,               // ulBufferSize
+        UART_BUFFER_SIZE_TX,               // ulBufferSize
         g_ppucTxBufferWorkspace[1]      // pvWorkspace
     },
     {
@@ -313,7 +313,7 @@ const tUSBBuffer g_sTxBuffer[NUM_BULK_DEVICES] =
         USBDBulkTxPacketAvailable,       // pfnAvailable
         (void *)&g_psBULKDevice[2],      // pvHandle
         g_ppcUSBTxBuffer[2],            // pcBuffer
-        UART_BUFFER_SIZE,               // ulBufferSize
+        UART_BUFFER_SIZE_TX,               // ulBufferSize
         g_ppucTxBufferWorkspace[2]      // pvWorkspace
     },
     {
@@ -324,7 +324,7 @@ const tUSBBuffer g_sTxBuffer[NUM_BULK_DEVICES] =
         USBDBulkTxPacketAvailable,       // pfnAvailable
         (void *)&g_psBULKDevice[3],      // pvHandle
         g_ppcUSBTxBuffer[3],            // pcBuffer
-        UART_BUFFER_SIZE,               // ulBufferSize
+        UART_BUFFER_SIZE_TX,               // ulBufferSize
         g_ppucTxBufferWorkspace[3]      // pvWorkspace
     },
     {
@@ -335,7 +335,7 @@ const tUSBBuffer g_sTxBuffer[NUM_BULK_DEVICES] =
         USBDBulkTxPacketAvailable,       // pfnAvailable
         (void *)&g_psBULKDevice[4],      // pvHandle
         g_ppcUSBTxBuffer[4],            // pcBuffer
-        UART_BUFFER_SIZE,               // ulBufferSize
+        UART_BUFFER_SIZE_TX,               // ulBufferSize
         g_ppucTxBufferWorkspace[4]      // pvWorkspace
     }
 };

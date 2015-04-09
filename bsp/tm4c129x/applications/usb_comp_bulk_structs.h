@@ -33,7 +33,9 @@
 // a maximum-sized USB packet.
 //
 //*****************************************************************************
-#define UART_BUFFER_SIZE        1024
+#define UART_BUFFER_SIZE        4096
+#define UART_BUFFER_SIZE_TX     1024
+
 #define NUM_BULK_DEVICES      5
 #define DESCRIPTOR_DATA_SIZE    (COMPOSITE_DBULK_SIZE*NUM_BULK_DEVICES)
 

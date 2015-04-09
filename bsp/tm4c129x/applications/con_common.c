@@ -13,7 +13,7 @@
 #include "driverlib/interrupt.h"
 #include "driverlib/rom_map.h"
 #define CONFIG_BIN 1 //test socket 1
-#define CONFIG_IT 1 //test  config 1
+#define CONFIG_IT 0 //test  config 1
 
 #if 0
 void IntGpioD()
@@ -96,6 +96,8 @@ enum STATE_OP{
 	GET_CHECSUM
 };
 struct rt_semaphore rx_sem[4];
+struct rt_semaphore usbrx_sem[4];
+
 void configlock()
 {
     rt_err_t result;
@@ -1174,6 +1176,18 @@ void common_w(void* parameter)
 		#endif
 	}
 }
+void common_w_usb(void* parameter)
+{
+	int dev=((int)parameter)/2;
+	rt_kprintf("common_w_usb %d\n",dev);
+	while(1)
+	{
+		if (rt_sem_take(&(rx_sem[dev]), RT_WAITING_FOREVER) != RT_EOK) continue;
+		_usb_read(dev);
+	}
+	
+}
+
 static void common_r(void* parameter)
 {
     rt_size_t data_size;
@@ -1184,20 +1198,21 @@ static void common_r(void* parameter)
 		rt_data_queue_pop(&g_data_queue[dev], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
 		if(data_size!=0 && last_data_ptr)
 		{		
-			if(dev==1)
+			//if(dev==1)
 			{
 				#if CONFIG_IT
 				if(times<=10){
 				#endif
-				rt_device_write(common_dev[(dev-1)/2], 0, last_data_ptr, data_size);
-				
+				//dillon rt_device_write(common_dev[(dev-1)/2], 0, last_data_ptr, data_size);
+				//rt_kprintf("write index %d,%d\n",dev,data_size);
+				_usb_write(dev,last_data_ptr,data_size);
 				#if CONFIG_IT
 				times++;}
 				#endif
 			}
-			else
-				rt_data_queue_push(&g_data_queue[dev-1], last_data_ptr, data_size, RT_WAITING_FOREVER);
-			if(dev==1)
+			//else
+				//rt_data_queue_push(&g_data_queue[dev-1], last_data_ptr, data_size, RT_WAITING_FOREVER);
+			//if(dev==1)
 			rt_free(last_data_ptr);
 		}
 	}
@@ -1297,6 +1312,8 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 		//config sem
 		rt_sprintf(common,"common_%d_rx",i);
 		rt_sem_init(&(rx_sem[i]), common, 0, 0);
+		rt_sprintf(common,"usb_%d_rx",i);
+		rt_sem_init(&(usbrx_sem[i]), common, 0, 0);
 		if(dev==DEV_UART)
 		{
 			if(i==1)
@@ -1337,6 +1354,17 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 		{
 			//init usbbulk,read data from usb,and transfer data to 4 socket thread by 4 ctl line
 			//create 4 common_r thread read data from 4 socket thread,and put data to usb,control 4 ind line
+			if(i==0)
+			_usb_init();
+			rt_kprintf("uub %d\n",i);
+				rt_sprintf(common,"common_wx%d",i);
+				tid_common_w[i] = rt_thread_create(common,common_w_usb, (void *)(i*2),4096, 20, 10);
+				rt_sprintf(common,"common_rx%d",i);
+				tid_common_r[i] = rt_thread_create(common,common_r, (void *)(i*2+1),2048, 20, 10);
+				if(tid_common_w[i]!=RT_NULL)
+					rt_thread_startup(tid_common_w[i]);	
+				if(tid_common_r[i]!=RT_NULL)
+					rt_thread_startup(tid_common_r[i]);
 			
 		}
 	}
