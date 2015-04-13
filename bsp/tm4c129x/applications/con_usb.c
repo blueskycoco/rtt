@@ -206,14 +206,15 @@ int _usb_write(int index, void *buffer, int size)
 	//rt_sem_take(&(usbrx_sem[index]), RT_WAITING_FOREVER);
 	//rt_kprintf("_usb_write %d %d %d\n",size,send_size,send_len);
 	//return 0;
-	len_out=USBBufferSpaceAvailable(&g_sTxBuffer[index]);
+	//len_out=USBBufferSpaceAvailable(&g_sTxBuffer[index]);
 	//rt_kprintf("===>%d %d\n",size,len_out);
 	while(tmp_size!=0)
 	{
 		len_out=USBBufferSpaceAvailable(&g_sTxBuffer[index]);
 		if(len_out==0)
 		{
-			rt_thread_delay(1);
+			//rt_thread_delay(1);
+			_delay_us(1);
 		}
 		else
 		{
@@ -222,7 +223,7 @@ int _usb_write(int index, void *buffer, int size)
 			else
 				send_size=tmp_size;
 			USBBufferWrite(&g_sTxBuffer[index],buffer+addr,send_size);
-			rt_sem_take(&(usbrx_sem[index]), RT_WAITING_FOREVER);
+			//rt_sem_take(&(usbrx_sem[index]), RT_WAITING_FOREVER);
 			addr=addr+send_size;
 			tmp_size=tmp_size-send_size;
 		//	rt_kprintf("tmp_size %d,send_size %d\n",tmp_size,send_size);

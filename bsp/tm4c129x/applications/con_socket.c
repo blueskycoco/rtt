@@ -4,7 +4,7 @@
 #include <lwip/sockets.h>
 
 /*client use socket,server use netconn*/
-#define BUF_SIZE 1024
+#define BUF_SIZE 2048
 rt_thread_t tid_w[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL},tid_r[4]={RT_NULL,RT_NULL,RT_NULL,RT_NULL};
 extern struct rt_semaphore fifo_sem;
 struct rt_mutex mutex[4];
@@ -393,7 +393,7 @@ void socket_w(void *paramter)
 		{ 		
 			if(data_size>0)
 			{
-				//lock(dev);
+				lock(dev);
 				if(is_right(g_conf.config[dev],CONFIG_TCP))
 				{
 					status=send(sock, last_data_ptr, data_size, 0);
@@ -416,7 +416,7 @@ void socket_w(void *paramter)
 							status=sendto(g_socket[dev].sockfd, last_data_ptr, data_size, 0, (struct sockaddr *)&g_socket[dev].server_addr, sizeof(g_socket[dev].server_addr));
 					}
 				}
-				//unlock(dev);
+				unlock(dev);
 				if( status< 0)
 				{
 					if(is_right(g_conf.config[dev],CONFIG_TCP))
@@ -542,7 +542,7 @@ void socket_r(void *paramter)
 		}
 		if(g_socket[dev].connected==false)
 		{
-			rt_thread_delay(10);			
+			rt_thread_delay(1);			
 			continue;
 		}
 		
@@ -561,12 +561,19 @@ void socket_r(void *paramter)
 		FD_SET(sock, &myset);
         if(select(sock+1, &myset, NULL, NULL, &tv) > 0) 
 		{ 
-		//	lock(dev);			
+			lock(dev);			
 			g_socket[dev].recv_data=rt_malloc(BUF_SIZE);
+			if(g_socket[dev].recv_data==NULL)
+			{
+				rt_kprintf("malloc recv_data failed\n");
+				//rt_thread_delay(10);
+				unlock(dev);
+				continue;
+			}
 			if(is_right(g_conf.config[dev],CONFIG_TCP))
 			{
 				status=recv(sock, g_socket[dev].recv_data, BUF_SIZE, 0);					
-			//	unlock(dev);
+				unlock(dev);
 				if(status>0)
 				{
 					if(ind[dev])
@@ -581,24 +588,24 @@ void socket_r(void *paramter)
 					if(is_right(g_conf.config[dev],CONFIG_SERVER))
 					{
 						rt_kprintf("Thread ip4_r%d recv error %d\n",dev,errno);	
-						//lock(dev);
+						lock(dev);
 						closesocket(g_socket[dev].clientfd);
 						g_socket[dev].clientfd=-1;
-						//unlock(dev);
+						unlock(dev);
 						g_socket[dev].connected=false;
 						cnn_out(dev,0);
 					}
 					else
 					{
 						rt_kprintf("Thread ip4_r%d recv error %d\n",dev,errno);	
-						//lock(dev);
+						lock(dev);
 						closesocket(g_socket[dev].sockfd);
 						g_socket[dev].sockfd=-1;
 						if(is_right(g_conf.config[dev],CONFIG_IPV6))
 							g_socket[dev].sockfd= socket(PF_INET6, SOCK_STREAM, 0);		
 						else
 							g_socket[dev].sockfd= socket(PF_INET, SOCK_STREAM, 0);
-						//unlock(dev);
+						unlock(dev);
 						int imode = 1;
 						setsockopt(g_socket[dev].sockfd,SOL_SOCKET,SO_KEEPALIVE,&imode,sizeof(imode));
 						ioctlsocket(g_socket[dev].sockfd, FIONBIO, &imode);
@@ -626,7 +633,7 @@ void socket_r(void *paramter)
 					else
 						status=recvfrom(g_socket[dev].sockfd, g_socket[dev].recv_data, BUF_SIZE, 0, (struct sockaddr *)&g_socket[dev].client_addr, &clientlen);
 				}
-				//unlock(dev);
+				unlock(dev);
 				#else
 				if(is_right(g_conf.config[dev],CONFIG_IPV6))
 					status=recvfrom(g_socket[dev].sockfd, g_socket[dev].recv_data, BUF_SIZE, 0, (struct sockaddr *)&g_socket[dev].server_addr6, &clientlen);
@@ -996,9 +1003,9 @@ void socket_thread_start(int i)
 		if(socket_config(i))
 		{
 			rt_sprintf(thread_string,"%d%d%c%c_w",i,is_right(g_conf.config[i],CONFIG_IPV6)?6:4,is_right(g_conf.config[i],CONFIG_TCP)?'T':'U',is_right(g_conf.config[i],CONFIG_SERVER)?'S':'C');
-			tid_w[i] = rt_thread_create(thread_string,socket_w, (void *)i,2048, 15, 10);
+			tid_w[i] = rt_thread_create(thread_string,socket_w, (void *)i,2048, 20, 10);
 			rt_sprintf(thread_string,"%d%d%c%c_r",i,is_right(g_conf.config[i],CONFIG_IPV6)?6:4,is_right(g_conf.config[i],CONFIG_TCP)?'T':'U',is_right(g_conf.config[i],CONFIG_SERVER)?'S':'C');
-			tid_r[i] = rt_thread_create(thread_string,socket_r, (void *)i,2048, 15, 10);
+			tid_r[i] = rt_thread_create(thread_string,socket_r, (void *)i,2048, 20, 10);
 		}		
 		if (tid_w[i] != RT_NULL)
 			rt_thread_startup(tid_w[i]);

@@ -1192,29 +1192,39 @@ static void common_r(void* parameter)
 {
     rt_size_t data_size;
     const void *last_data_ptr;
+	void *data_ptr;
 	int dev=(int)parameter;
+	rt_err_t r;
 	while(1)
 	{
-		rt_data_queue_pop(&g_data_queue[dev], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
-		if(data_size!=0 && last_data_ptr)
-		{		
-			//if(dev==1)
-			{
-				#if CONFIG_IT
-				if(times<=10){
-				#endif
-				//dillon rt_device_write(common_dev[(dev-1)/2], 0, last_data_ptr, data_size);
-				//rt_kprintf("write index %d,%d\n",dev,data_size);
-				_usb_write(dev,last_data_ptr,data_size);
-				#if CONFIG_IT
-				times++;}
-				#endif
+		r=rt_data_queue_pop(&g_data_queue[dev], &last_data_ptr, &data_size, 100*5);
+		//rt_data_queue_pop(&(g_data_queue[dev]), &last_data_ptr, &data_size, 0);
+       // if (rt_data_queue_peak(&(g_data_queue[dev]), &data_ptr, &data_size) == RT_EOK)
+       // {
+			if(r==RT_EOK && data_size!=0 && last_data_ptr)
+			{		
+				//if(dev==1)
+				{
+					#if CONFIG_IT
+					if(times<=10){
+					#endif
+					//dillon rt_device_write(common_dev[(dev-1)/2], 0, last_data_ptr, data_size);
+					//rt_kprintf("write index %d,%d\n",dev,data_size);
+					_usb_write(dev,last_data_ptr,data_size);
+					#if CONFIG_IT
+					times++;}
+					#endif
+				}
+				//else
+					//rt_data_queue_push(&g_data_queue[dev-1], last_data_ptr, data_size, RT_WAITING_FOREVER);
+				//if(dev==1)
+				rt_free(last_data_ptr);
 			}
-			//else
-				//rt_data_queue_push(&g_data_queue[dev-1], last_data_ptr, data_size, RT_WAITING_FOREVER);
-			//if(dev==1)
-			rt_free(last_data_ptr);
-		}
+        //}
+		//else
+			//rt_thread_delay(1);
+		//if(last_data_ptr)
+		//	rt_free(last_data_ptr);
 	}
 }
 
