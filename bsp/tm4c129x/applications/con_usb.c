@@ -173,7 +173,7 @@ int _usb_read(int index)
 		{
 			if(index!=0)
 			{
-				//rt_kprintf("read index %d ,bytes %d\n",index,bytes);
+			//	rt_kprintf("read index %d ,bytes %d\n",index,bytes);
 				//USBBufferWrite(&g_sTxBuffer[index],tmpbuf,bytes); 	
 				if(phy_link&&(bytes>0)&&g_socket[index-1].connected)
 					rt_data_queue_push(&g_data_queue[(index-1)*2], tmpbuf, bytes, RT_WAITING_FOREVER);	
@@ -201,13 +201,19 @@ static void _delay_us(uint32_t us)
 int _usb_write(int index, void *buffer, int size)
 {
 	int len=0,len_out=0,tmp_size=size,size64=64,send_size=0,addr=0;
-	//rt_kprintf("_usb_write %d\n",size);
+	//rt_kprintf("_usb_write index %d,size %d\n",index,size);
 	//send_size=USBBufferWrite(&g_sTxBuffer[index],buffer,size);
 	//rt_sem_take(&(usbrx_sem[index]), RT_WAITING_FOREVER);
 	//rt_kprintf("_usb_write %d %d %d\n",size,send_size,send_len);
 	//return 0;
 	//len_out=USBBufferSpaceAvailable(&g_sTxBuffer[index]);
 	//rt_kprintf("===>%d %d\n",size,len_out);
+	if(index==3)
+		index=2;
+	else if(index==5)
+		index=3;
+	else if(index==7)
+		index=4;
 	while(tmp_size!=0)
 	{
 		len_out=USBBufferSpaceAvailable(&g_sTxBuffer[index]);
@@ -226,7 +232,7 @@ int _usb_write(int index, void *buffer, int size)
 			//rt_sem_take(&(usbrx_sem[index]), RT_WAITING_FOREVER);
 			addr=addr+send_size;
 			tmp_size=tmp_size-send_size;
-		//	rt_kprintf("tmp_size %d,send_size %d\n",tmp_size,send_size);
+			//rt_kprintf("tmp_size %d,send_size %d\n",tmp_size,send_size);
 		}
 	}
 	//rt_kprintf("<===\n");

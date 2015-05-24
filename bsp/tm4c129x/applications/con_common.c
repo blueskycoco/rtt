@@ -129,7 +129,10 @@ void IntGpioD()
 	if(MAP_GPIOIntStatus(GPIO_PORTD_BASE, true)&GPIO_PIN_2)
 	{		
 		MAP_GPIOIntClear(GPIO_PORTD_BASE, GPIO_PIN_2);
-		ind[0]=((MAP_GPIOPinRead(GPIO_PORTD_BASE, GPIO_PIN_2)&(GPIO_PIN_2))==GPIO_PIN_2)?RT_TRUE:RT_FALSE;
+		ind[0]=RT_TRUE;//((MAP_GPIOPinRead(GPIO_PORTD_BASE, GPIO_PIN_2)&(GPIO_PIN_2))==GPIO_PIN_2)?RT_TRUE:RT_FALSE;
+		ind[1]=RT_TRUE;
+		ind[2]=RT_TRUE;
+		ind[3]=RT_TRUE;
 		rt_kprintf("gpiod 2 int %d\r\n",ind[0]);
 		
 	}	
@@ -1197,7 +1200,7 @@ static void common_r(void* parameter)
 	rt_err_t r;
 	while(1)
 	{
-		r=rt_data_queue_pop(&g_data_queue[dev], &last_data_ptr, &data_size, 100*5);
+		r=rt_data_queue_pop(&g_data_queue[dev], &last_data_ptr, &data_size, RT_WAITING_FOREVER);
 		//rt_data_queue_pop(&(g_data_queue[dev]), &last_data_ptr, &data_size, 0);
        // if (rt_data_queue_peak(&(g_data_queue[dev]), &data_ptr, &data_size) == RT_EOK)
        // {
@@ -1234,7 +1237,7 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 	/*init common device*/
 	rt_err_t result;
 	rt_uint8_t common[10];
-	int i;
+	int i,max_devices=4;
 	/*read config data from internal flash*/
 	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
 	MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOK);
@@ -1317,7 +1320,9 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 	config_socket3_ip6[68]=0xfa;
 	config_local_ip6[68]=0xfa;
 */
-	for(i=0;i<4;i++)
+	if(dev==DEV_USB)
+		max_devices=5;
+	for(i=0;i<max_devices;i++)
 	{
 		//config sem
 		rt_sprintf(common,"common_%d_rx",i);
@@ -1367,15 +1372,17 @@ int common_init(int dev)//0 uart , 1 parallel bus, 2 usb
 			if(i==0)
 			_usb_init();
 			rt_kprintf("uub %d\n",i);
-				rt_sprintf(common,"common_wx%d",i);
-				tid_common_w[i] = rt_thread_create(common,common_w_usb, (void *)(i*2),4096, 20, 10);
-				rt_sprintf(common,"common_rx%d",i);
-				tid_common_r[i] = rt_thread_create(common,common_r, (void *)(i*2+1),2048, 20, 10);
-				if(tid_common_w[i]!=RT_NULL)
-					rt_thread_startup(tid_common_w[i]);	
-				if(tid_common_r[i]!=RT_NULL)
-					rt_thread_startup(tid_common_r[i]);
-			
+			rt_sprintf(common,"common_wx%d",i);
+			tid_common_w[i] = rt_thread_create(common,common_w_usb, (void *)(i*2),4096, 20, 10);	
+			if(tid_common_w[i]!=RT_NULL)
+				rt_thread_startup(tid_common_w[i]);	
+			if(i!=4){
+			rt_sprintf(common,"common_rx%d",i);
+			tid_common_r[i] = rt_thread_create(common,common_r, (void *)(i*2+1),2048, 20, 10);
+				
+			if(tid_common_r[i]!=RT_NULL)
+				rt_thread_startup(tid_common_r[i]);
+				}
 		}
 	}
 	//rt_thread_delay(300);	

@@ -575,9 +575,12 @@ void socket_r(void *paramter)
 				status=recv(sock, g_socket[dev].recv_data, BUF_SIZE, 0);					
 				unlock(dev);
 				if(status>0)
-				{
+				{				
+					//rt_kprintf("get %d %d\n",status,ind[dev]);
 					if(ind[dev])
+					{
 						rt_data_queue_push(&g_data_queue[dev*2+1], g_socket[dev].recv_data, status, RT_WAITING_FOREVER);
+					}
 					else
 						rt_free(g_socket[dev].recv_data);
 				}
