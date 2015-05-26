@@ -503,6 +503,7 @@ void socket_r(void *paramter)
 					cnn_out(dev,1);
 					int imode=0;
 					ioctlsocket(g_socket[dev].sockfd, FIONBIO, &imode);
+					continue;
 				}
 				else if(errno==EINPROGRESS)
 				{
@@ -517,7 +518,7 @@ void socket_r(void *paramter)
 				           getsockopt(g_socket[dev].sockfd, SOL_SOCKET, SO_ERROR, (void*)(&valopt), &lon); 
 				           if(!valopt) 
 						   { 
-				              rt_kprintf("OK Connection is done\n"); 
+				              rt_kprintf("OK Connection %d is done\n",dev); 
 							  g_socket[dev].connected=true;
 							  cnn_out(dev,1);
 							  int imode=0;
@@ -949,6 +950,7 @@ bool socket_config(int dev)
 			g_socket[dev].server_addr.sin_port = htons(g_conf.remote_port[dev]);
 			rt_memset(&(g_socket[dev].server_addr.sin_zero),0, sizeof(g_socket[dev].server_addr.sin_zero));
 			g_socket[dev].server_addr.sin_addr.s_addr=inet_addr(g_conf.remote_ip[dev]);
+			rt_kprintf("to connect %s,port %d\n",g_conf.remote_ip[dev],g_conf.remote_port[dev]);
 			if(!is_right(g_conf.config[dev],CONFIG_TCP))
 			{
 				g_socket[dev].client_addr.sin_family = AF_INET;

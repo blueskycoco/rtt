@@ -313,7 +313,7 @@ rt_err_t ping_test(char* target, rt_uint32_t time, rt_size_t size)
     }
 
     lwip_close(s);
-	
+	rt_kprintf("ping return %d\n",result);
     return result;
 }
 #ifdef RT_USING_FINSH

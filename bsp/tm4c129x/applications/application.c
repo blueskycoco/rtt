@@ -182,7 +182,8 @@ void rt_init_thread_entry(void *parameter)
 	//socket_init();
 	//ping_test6("fe80::5867:8730:e9e6:d5c5%11",5,32);
 	//ping_test6("fe80::483:d903:e2ee:d05e%12",5,32);
-	//ping_test("192.168.1.6",5,32);
+	//ping_test("192.168.2.32",5,32);
+	//ping_test("192.168.2.32",5,32);
 }
 
 int rt_application_init(void)
