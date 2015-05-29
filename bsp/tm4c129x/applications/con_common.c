@@ -151,22 +151,41 @@ void IntGpioB()
 void default_config()
 {
 	struct netif * netif=netif_list;
-	g_conf.config[0]=CONFIG_TCP;//|CONFIG_SERVER;
-	g_conf.config[1]=CONFIG_TCP;//|CONFIG_SERVER;
-	g_conf.config[2]=CONFIG_TCP;//|CONFIG_SERVER;
-	g_conf.config[3]=CONFIG_TCP;//|CONFIG_SERVER;
-	g_conf.local_port[0]=1234;
-	g_conf.local_port[1]=1235;
-	g_conf.local_port[2]=1236;
-	g_conf.local_port[3]=1237;
-	memset(g_conf.remote_ip[0],'\0',16);
-	strcpy(g_conf.remote_ip[0],"192.168.2.32");
-	memset(g_conf.remote_ip[1],'\0',16);
-	strcpy(g_conf.remote_ip[1],"192.168.2.32");
-	memset(g_conf.remote_ip[2],'\0',16);
-	strcpy(g_conf.remote_ip[2],"192.168.2.32");
-	memset(g_conf.remote_ip[3],'\0',16);
-	strcpy(g_conf.remote_ip[3],"192.168.2.32");
+	if(((MAP_GPIOPinRead(GPIO_PORTD_BASE, GPIO_PIN_2)&(GPIO_PIN_2))==GPIO_PIN_2)?RT_TRUE:RT_FALSE)
+	{//server mode high level
+		g_conf.config[0]=CONFIG_TCP|CONFIG_SERVER;
+		g_conf.config[1]=CONFIG_TCP|CONFIG_SERVER;
+		g_conf.config[2]=CONFIG_TCP|CONFIG_SERVER;
+		g_conf.config[3]=CONFIG_TCP|CONFIG_SERVER;
+		memset(g_conf.remote_ip[0],'\0',16);
+		strcpy(g_conf.remote_ip[0],"192.168.2.6");
+		memset(g_conf.remote_ip[1],'\0',16);
+		strcpy(g_conf.remote_ip[1],"192.168.2.6");
+		memset(g_conf.remote_ip[2],'\0',16);
+		strcpy(g_conf.remote_ip[2],"192.168.2.6");
+		memset(g_conf.remote_ip[3],'\0',16);
+		strcpy(g_conf.remote_ip[3],"192.168.2.6");
+		memset(g_conf.local_ip,'\0',16);
+		strcpy(g_conf.local_ip,"192.168.2.32");	
+	}
+	else
+	{//client mode
+		g_conf.config[0]=CONFIG_TCP;//|CONFIG_SERVER;
+		g_conf.config[1]=CONFIG_TCP;//|CONFIG_SERVER;
+		g_conf.config[2]=CONFIG_TCP;//|CONFIG_SERVER;
+		g_conf.config[3]=CONFIG_TCP;//|CONFIG_SERVER;
+		memset(g_conf.remote_ip[0],'\0',16);
+		strcpy(g_conf.remote_ip[0],"192.168.2.32");
+		memset(g_conf.remote_ip[1],'\0',16);
+		strcpy(g_conf.remote_ip[1],"192.168.2.32");
+		memset(g_conf.remote_ip[2],'\0',16);
+		strcpy(g_conf.remote_ip[2],"192.168.2.32");
+		memset(g_conf.remote_ip[3],'\0',16);
+		strcpy(g_conf.remote_ip[3],"192.168.2.32");
+		memset(g_conf.local_ip,'\0',16);
+		strcpy(g_conf.local_ip,"192.168.2.6");	
+	}
+	
 	memset(g_conf.remote_ip6[0],'\0',64);
 	strcpy(g_conf.remote_ip6[0],"fe80::5867:8730:e9e6:d5c5%11");
 	memset(g_conf.remote_ip6[1],'\0',64);
@@ -175,11 +194,15 @@ void default_config()
 	strcpy(g_conf.remote_ip6[2],"fe80::5867:8730:e9e6:d5c5%11");
 	memset(g_conf.remote_ip6[3],'\0',64);
 	strcpy(g_conf.remote_ip6[3],"fe80::5867:8730:e9e6:d5c5%11");
+	g_conf.local_port[0]=1234;
+	g_conf.local_port[1]=1235;
+	g_conf.local_port[2]=1236;
+	g_conf.local_port[3]=1237;
+	
 	
 	memset(g_conf.local_ip6,'\0',64);
 	strcpy(g_conf.local_ip6,"fe80::1");
-	memset(g_conf.local_ip,'\0',16);
-	strcpy(g_conf.local_ip,"192.168.2.6");	
+	
 	memset(g_conf.gw,'\0',16);
 	strcpy(g_conf.gw,"192.168.2.1");	
 	memset(g_conf.sub_msk,'\0',16);
