@@ -13,6 +13,8 @@ bsp/stm32f10x/make.sh
 *.idb
 *.ilk
 build
+Debug
+documentation/html
 *~
 *.o
 *.obj

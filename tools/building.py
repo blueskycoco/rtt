@@ -196,7 +196,7 @@ def PrepareBuilding(env, root_directory, has_libcpu=False, remove_components = [
                 'vs':('msvc', 'cl'),
                 'vs2012':('msvc', 'cl'),
                 'cb':('keil', 'armcc'),
-                'ua':('keil', 'armcc')}
+                'ua':('gcc', 'gcc')}
     tgt_name = GetOption('target')
     if tgt_name:
         # --target will change the toolchain settings which clang-analyzer is
@@ -256,14 +256,23 @@ def PrepareBuilding(env, root_directory, has_libcpu=False, remove_components = [
 
     return objs
 
-def PrepareModuleBuilding(env, root_directory):
+def PrepareModuleBuilding(env, root_directory, bsp_directory):
     import rtconfig
 
+    global BuildOptions
     global Env
     global Rtt_Root
 
     Env = env
     Rtt_Root = root_directory
+
+    # parse bsp rtconfig.h to get used component
+    PreProcessor = SCons.cpp.PreProcessor()
+    f = file(bsp_directory + '/rtconfig.h', 'r')
+    contents = f.read()
+    f.close()
+    PreProcessor.process_contents(contents)
+    BuildOptions = PreProcessor.cpp_namespace
 
     # add build/clean library option for library checking
     AddOption('--buildlib',
@@ -585,6 +594,11 @@ def GlobSubDir(sub_dir, ext_name):
     for item in src:
         dst.append(os.path.relpath(item, sub_dir))
     return dst
+
+def PackageSConscript(package):
+    from package import BuildPackage
+
+    return BuildPackage(package)
 
 def file_path_exist(path, *args):
     return os.path.exists(os.path.join(path, *args))

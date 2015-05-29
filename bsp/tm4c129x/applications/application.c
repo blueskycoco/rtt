@@ -208,3 +208,4 @@ int rt_application_init(void)
 
     return 0;
 }
+

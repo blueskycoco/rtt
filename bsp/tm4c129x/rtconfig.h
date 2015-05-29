@@ -182,7 +182,7 @@
 // <integer name="RT_LWIP_PBUF_NUM" description="Maximal number of buffers in the pbuf pool" default="4" />
 #define RT_LWIP_PBUF_NUM    16
 // <integer name="RT_LWIP_TCP_PCB_NUM" description="Maximal number of simultaneously active TCP connections" default="5" />
-#define RT_LWIP_TCP_PCB_NUM 3
+#define RT_LWIP_TCP_PCB_NUM 5
 // <integer name="RT_LWIP_TCP_SND_BUF" description="TCP sender buffer size" default="8192" />
 #define RT_LWIP_TCP_SND_BUF 8192 //4096
 // <integer name="RT_LWIP_TCP_WND" description="TCP receive window" default="8192" />
