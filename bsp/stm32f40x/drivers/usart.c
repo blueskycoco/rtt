@@ -22,12 +22,12 @@
 #include <rtdevice.h>
 
 /* UART GPIO define. */
-#define UART1_GPIO_TX       GPIO_Pin_6
-#define UART1_TX_PIN_SOURCE GPIO_PinSource6
-#define UART1_GPIO_RX       GPIO_Pin_7
-#define UART1_RX_PIN_SOURCE GPIO_PinSource7
-#define UART1_GPIO          GPIOB
-#define UART1_GPIO_RCC      RCC_AHB1Periph_GPIOB
+#define UART1_GPIO_TX       GPIO_Pin_9
+#define UART1_TX_PIN_SOURCE GPIO_PinSource9
+#define UART1_GPIO_RX       GPIO_Pin_10
+#define UART1_RX_PIN_SOURCE GPIO_PinSource10
+#define UART1_GPIO          GPIOA
+#define UART1_GPIO_RCC      RCC_AHB1Periph_GPIOA
 #define RCC_APBPeriph_UART1 RCC_APB2Periph_USART1
 #define UART1_TX_DMA        DMA1_Channel4
 #define UART1_RX_DMA        DMA1_Channel5
@@ -42,12 +42,12 @@
 #define UART2_TX_DMA        DMA1_Channel4
 #define UART2_RX_DMA        DMA1_Channel5
 
-#define UART3_GPIO_TX       GPIO_Pin_8
-#define UART3_TX_PIN_SOURCE GPIO_PinSource8
-#define UART3_GPIO_RX       GPIO_Pin_9
-#define UART3_RX_PIN_SOURCE GPIO_PinSource9
-#define UART3_GPIO          GPIOD
-#define UART3_GPIO_RCC      RCC_AHB1Periph_GPIOD
+#define UART3_GPIO_TX       GPIO_Pin_10
+#define UART3_TX_PIN_SOURCE GPIO_PinSource10
+#define UART3_GPIO_RX       GPIO_Pin_11
+#define UART3_RX_PIN_SOURCE GPIO_PinSource11
+#define UART3_GPIO          GPIOB
+#define UART3_GPIO_RCC      RCC_AHB1Periph_GPIOB
 #define RCC_APBPeriph_UART3 RCC_APB1Periph_USART3
 #define UART3_TX_DMA        DMA1_Stream1
 #define UART3_RX_DMA        DMA1_Stream3

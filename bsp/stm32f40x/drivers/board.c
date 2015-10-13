@@ -89,9 +89,6 @@ void rt_hw_board_init()
 {
     /* NVIC Configuration */
     NVIC_Configuration();
-	rt_hw_led_init();
-	rt_hw_led_on(0);
-
     /* Configure the SysTick */
     SysTick_Configuration();
 

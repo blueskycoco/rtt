@@ -15,21 +15,9 @@
 #include <stm32f4xx.h>
 
 // led define
-#ifdef STM32_SIMULATOR
-#define led1_rcc                    RCC_AHBPeriph_GPIOA
-#define led1_gpio                   GPIOA
-#define led1_pin                    (GPIO_Pin_5)
-
-#define led2_rcc                    RCC_AHBPeriph_GPIOA
-#define led2_gpio                   GPIOA
-#define led2_pin                    (GPIO_Pin_6)
-
-#else
-
 #define led1_rcc                    RCC_AHB1Periph_GPIOB
 #define led1_gpio                   GPIOB
 #define led1_pin                    (GPIO_Pin_0)
-#endif // led define #ifdef STM32_SIMULATOR
 
 void rt_hw_led_init(void)
 {

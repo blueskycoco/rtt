@@ -85,7 +85,7 @@ int rt_application_init()
         2048, RT_THREAD_PRIORITY_MAX/3, 20);
 
     if (tid != RT_NULL)
-        rt_thread_startup(tid);
+  	    rt_thread_startup(tid);
 	/* init led thread */
 	rt_err_t result = rt_thread_init(&led_thread,
 							"led",
