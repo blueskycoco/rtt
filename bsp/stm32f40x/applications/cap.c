@@ -15,31 +15,124 @@ rt_device_t dev_cap,dev_wifi,dev_lcd;
 int data_co2=0,data_ch2o;
 char *post_message=NULL,can_send=0;
 char *server_time;
-
+char wifi_result[512]={0};
 char *http_parse_result(const char*lpbuf);
-unsigned int CRC_check(unsigned char *Data,unsigned char Data_length)
+unsigned int CRC_check(char *Data,char Data_length)
 {
 	unsigned int mid=0;
 	unsigned char times=0,Data_index=0;
-	unsigned int CRC=0xFFFF;
+	unsigned int LOCAL_CRC=0xFFFF;
 	while(Data_length)
 	{
-		CRC=Data[Data_index]^CRC;
+		LOCAL_CRC=Data[Data_index]^LOCAL_CRC;
 		for(times=0;times<8;times++)
 		{
-			mid=CRC;
-			CRC=CRC>>1;
+			mid=LOCAL_CRC;
+			LOCAL_CRC=LOCAL_CRC>>1;
 			if(mid & 0x0001)
 			{
-				CRC=CRC^0xA001;
+				LOCAL_CRC=LOCAL_CRC^0xA001;
 			}
 		}
 		Data_index++;
 		Data_length--;
 	}
-	return CRC;
+	return LOCAL_CRC;
+}
+char *http_parse_result(const char*lpbuf)  
+{
+	char *ptmp = RT_NULL;      
+	char *response = RT_NULL;   
+	ptmp = (char*)strstr(lpbuf,"HTTP/1.1");  
+	if(!ptmp)
+	{
+		rt_kprintf("http/1.1 not find\n");  
+		return RT_NULL;
+	}
+	if(atoi(ptmp + 9)!=200)
+	{
+		rt_kprintf("result:\n%s\n",lpbuf);   
+		return RT_NULL; 
+	}
+	ptmp = (char*)strstr(lpbuf,"\r\n\r\n"); 
+	if(!ptmp)
+	{
+		rt_kprintf("ptmp is NULL\n");
+		return RT_NULL;  
+	}
+	response = (char *)malloc(rt_strlen(ptmp)+1);  
+	if(!response)
+	{
+		rt_kprintf("malloc failed %d\n",rt_strlen(ptmp)+1);   
+		return RT_NULL;  
+	}
+	strcpy(response,ptmp+4); 
+	return response;
+}  
+
+char *add_item(char *old,char *id,char *text)
+{
+	cJSON *root;
+	char *out;
+	if(old!=RT_NULL)
+		root=cJSON_Parse(old);
+	else
+		root=cJSON_CreateObject();	
+	cJSON_AddItemToObject(root, id, cJSON_CreateString(text));
+	out=cJSON_Print(root);	
+	cJSON_Delete(root);
+	if(old)
+		free(old);
+	
+	return out;
+}
+char *add_obj(char *old,char *id,char *pad)
+{
+	cJSON *root,*fmt;
+	char *out;
+	root=cJSON_Parse(old);
+	fmt=cJSON_Parse(pad);
+	cJSON_AddItemToObject(root, id, fmt);
+	out=cJSON_Print(root);
+	cJSON_Delete(root);
+	cJSON_Delete(fmt);
+	free(pad);
+	return out;
+}
+char *doit_data(char *text,const char *item_str)
+{	
+	char *out=RT_NULL;
+	cJSON *item_json;	
+	item_json=cJSON_Parse(text);	
+	if (!item_json)
+	{
+		rt_kprintf("Error before: [%s]\n",cJSON_GetErrorPtr());
+	}
+	else	
+	{	
+		if (item_json)
+		{	 		
+			cJSON *data;	
+			data=cJSON_GetObjectItem(item_json,item_str);
+			if(data)		
+			{			
+				int nLen = rt_strlen(data->valuestring);
+				//rt_kprintf("%s ,%d %s\n",item_str,nLen,data->valuestring);			
+				out=(char *)malloc(nLen+1);		
+				rt_memset(out,'\0',nLen+1);	
+				memcpy(out,data->valuestring,nLen);	
+			}		
+			else		
+				rt_kprintf("can not find %s\n",item_str);	
+		} 
+		else	
+			rt_kprintf("get %s failed\n",item_str); 
+			cJSON_Delete(item_json);	
+	}	
+	return out;
 }
 
+/*get data from lv's cap board, and send to server ,save to local*/
 static rt_err_t cap_rx_ind(rt_device_t dev, rt_size_t size)
 {
 	rt_sem_release(&(cap_rx_sem));    
@@ -54,17 +147,16 @@ void cap_thread(void* parameter)
 	#define STATE_MESSAGE_LEN 4
 	#define STATE_MESSAGE 5
 	#define STATE_CRC 6
-	char *rcv=NULL,ch,state=STATE_IDLE,message_len=0;	
+	char ch,state=STATE_IDLE,message_len=0;	
 	char id[32]={0},data[32]={0},date[32]={0},error[32]={0};
-	char message[10],i=0,to_check[20];
+	char message[10],to_check[20];
+	unsigned char i=0;
 	int crc,j,message_type=0;
 
-	unsigned char httpd_send[64]={0};//"AT+HTTPDT\r\n";
-	unsigned char httpd_local[64]={0};//"AT+HTTPPH=/mango/checkDataYes\r\n";
-	strcpy(httpd_local,"AT+HTTPPH=/saveData/airmessage/messMgr.do");
-	strcpy(httpd_send,"AT+HTTPDT\n");
-	int len1=0,m=0;
-	char *ptr=rt_malloc(128);			
+	char httpd_send[64]={0};//"AT+HTTPDT\r\n";
+	char httpd_local[64]={0};//"AT+HTTPPH=/mango/checkDataYes\r\n";
+	strcpy(httpd_local,"AT+HTTPPH=/saveData/airmessage/messMgr.do?JSONStr=");
+	strcpy(httpd_send,"AT+HTTPDT\n");	
 	while(1)	
 	{		
 		if (rt_sem_take(&(cap_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;
@@ -76,6 +168,8 @@ void cap_thread(void* parameter)
 				{
 					if(ch==0x6c)
 						state=STATE_6C;
+					else
+						state=STATE_IDLE;
 				}
 				break;
 				case STATE_6C:
@@ -84,13 +178,15 @@ void cap_thread(void* parameter)
 					{
 						state=STATE_AA;
 						i=0;
-					}						
+					}
+					else
+						state=STATE_IDLE;
 				}
 				break;
 				case STATE_AA:
 				{
 					message_type=ch<<8;
-					//rt_kprintf("Get AA ==> %02x %02x",ch,message_type);
+					rt_kprintf(SUB_PROCESS"Get AA ==> %02x %02x",ch,message_type);
 					i=0;
 					state=STATE_MESSAGE_TYPE;
 				}
@@ -118,14 +214,14 @@ void cap_thread(void* parameter)
 					{
 						state=STATE_CRC;
 						crc=ch<<8;
-						//rt_kprintf(SUB_PROCESS"crc1 %02x\n",ch);
+						rt_kprintf(SUB_PROCESS"crc1 %02x\n",ch);
 					}	
 				}
 				break;
 				case STATE_CRC:
 				{
 					crc|=ch;
-					//rt_kprintf(SUB_PROCESS"crc2 %02x\n",ch);
+					rt_kprintf(SUB_PROCESS"crc2 %02x\n",ch);
 					rt_kprintf(SUB_PROCESS"GOT 0x6c 0xaa %04x %02x ",message_type,message_len);
 					for(i=0;i<message_len;i++)
 					{
@@ -136,7 +232,7 @@ void cap_thread(void* parameter)
 					to_check[0]=0x6c;to_check[1]=0xaa;to_check[2]=(message_type>>8)&0xff;to_check[3]=message_type&0xff;
 					to_check[4]=message_len;to_check[5+message_len]=(crc>>8)&0xff;
 					to_check[5+message_len+1]=crc&0xff;
-					//rt_kprintf(SUB_PROCESS"CRC Get %02x <> Count %02x\r\n",crc,CRC_check(to_check,message_len+5));
+					rt_kprintf(SUB_PROCESS"CRC Get %02x <> Count %02x\r\n",crc,CRC_check(to_check,message_len+5));
 					if(crc==CRC_check(to_check,message_len+5))
 					{
 						if(post_message==NULL)
@@ -216,7 +312,6 @@ void cap_thread(void* parameter)
 						for(i=0;i<message_len+7;i++)
 							rt_kprintf("0x%02x ",to_check[i]);
 					}
-					//i=to_check[i+3]+6;							
 					if(can_send)
 					{
 						can_send=0;
@@ -237,7 +332,7 @@ void cap_thread(void* parameter)
 								out1[j++]=post_message[i];
 							}
 						}
-						save_to_file(date,out1);
+						//save_to_file(date,out1);
 						rt_kprintf(SUB_PROCESS"send web %s",out1);
 						//rcv=send_web(URL,out1,9);
 						char *send=(char *)malloc(rt_strlen(out1)+rt_strlen(httpd_local)+1+1);
@@ -251,51 +346,35 @@ void cap_thread(void* parameter)
 						rt_device_write(dev_wifi, 0, (void *)httpd_send, rt_strlen(httpd_send));
 						rt_free(send);
 						rt_free(out1);
-						//rt_sem_take(&(server_sem), RT_WAITING_FOREVER);
+						rt_sem_take(&(server_sem), RT_WAITING_FOREVER);//wait for server respond
 						free(post_message);
 						post_message=NULL;
 						free(out1);
-						if(rcv!=NULL)
+						if(rt_strlen(wifi_result)!=0 && rt_strncmp(wifi_result,"ok",rt_strlen("ok"))==0)
 						{	
-							int len=rt_strlen(rcv);
-							rt_kprintf(SUB_PROCESS"<=== %s %d\n",rcv,len);
+							int len=rt_strlen(wifi_result);
+							rt_kprintf(SUB_PROCESS"<=== %s %d\n",wifi_result,len);
 							rt_kprintf(SUB_PROCESS"send ok\n");
-							free(rcv);
-						}						
+						}
+						else
+							rt_kprintf(SUB_PROCESS"send failed %s\r\n",wifi_result);
+						rt_memset(wifi_result,0,512);
 					}
-					return 0;						
+					state=STATE_IDLE;
+					i=0;
 				}
+				break;
 				default:
 				{
 					i=0;
 					state=STATE_IDLE;
-				}	
+				}
+				break;
 			}
-		}
-		#if 0
-		int len=rt_device_read(dev_cap, 0, ptr+m, 128);
-		if(len>0)	
-		{	
-			int i;		
-			len1=len1+len;
-			if(len1==9)
-			{
-				rt_kprintf("Get from Cap board:\n");
-				for(i=0;i<len1;i++)		
-				{		
-					rt_kprintf("%x ",ptr[i]);
-				}	
-				data_co2=ptr[2]*256+ptr[3];
-				rt_kprintf(" %d\n",data_co2);
-				len1=0;
-				m=0;
-			}
-			else
-				m=m+len;
-		}	
-		#endif
+		}		
 	}	
 }
+/*dwin lcd process*/
 static rt_err_t lcd_rx_ind(rt_device_t dev, rt_size_t size)
 {
 	rt_sem_release(&(lcd_rx_sem));    
@@ -330,100 +409,8 @@ void lcd_thread(void* parameter)
 		}		
 	}	
 }
-char *http_parse_result(const char*lpbuf)  
-{
-	char *ptmp = RT_NULL;      
-	char *response = RT_NULL;   
-	ptmp = (char*)strstr(lpbuf,"HTTP/1.1");  
-	if(!ptmp)
-	{
-		rt_kprintf("http/1.1 not find\n");  
-		return RT_NULL;
-	}
-	if(atoi(ptmp + 9)!=200)
-	{
-		rt_kprintf("result:\n%s\n",lpbuf);   
-		return RT_NULL; 
-	}
-	ptmp = (char*)strstr(lpbuf,"\r\n\r\n"); 
-	if(!ptmp)
-	{
-		rt_kprintf("ptmp is NULL\n");
-		return RT_NULL;  
-	}
-	response = (char *)malloc(rt_strlen(ptmp)+1);  
-	if(!response)
-	{
-		rt_kprintf("malloc failed %d\n",rt_strlen(ptmp)+1);   
-		return RT_NULL;  
-	}
-	strcpy(response,ptmp+4); 
-	return response;
-}  
 
-char *add_item(char *old,char *id,char *text)
-{
-	cJSON *root;
-	char *out;
-	int i=0,j=0;
-	if(old!=RT_NULL)
-		root=cJSON_Parse(old);
-	else
-		root=cJSON_CreateObject();	
-	cJSON_AddItemToObject(root, id, cJSON_CreateString(text));
-	out=cJSON_Print(root);	
-	cJSON_Delete(root);
-	if(old)
-		free(old);
-	
-	return out;
-}
-char *add_obj(char *old,char *id,char *pad)
-{
-	cJSON *root,*fmt;
-	char *out;
-	root=cJSON_Parse(old);
-	fmt=cJSON_Parse(pad);
-	cJSON_AddItemToObject(root, id, fmt);
-	out=cJSON_Print(root);
-	cJSON_Delete(root);
-	cJSON_Delete(fmt);
-	free(pad);
-	return out;
-}
-char *doit_data(char *text,const char *item_str)
-{	
-	char *out=RT_NULL;
-	cJSON *item_json;	
-	item_json=cJSON_Parse(text);	
-	if (!item_json)
-	{
-		rt_kprintf("Error before: [%s]\n",cJSON_GetErrorPtr());
-	}
-	else	
-	{	
-		if (item_json)
-		{	 		
-			cJSON *data;	
-			data=cJSON_GetObjectItem(item_json,item_str);
-			if(data)		
-			{			
-				int nLen = rt_strlen(data->valuestring);
-				//rt_kprintf("%s ,%d %s\n",item_str,nLen,data->valuestring);			
-				out=(char *)malloc(nLen+1);		
-				rt_memset(out,'\0',nLen+1);	
-				memcpy(out,data->valuestring,nLen);	
-			}		
-			else		
-				rt_kprintf("can not find %s\n",item_str);	
-		} 
-		else	
-			rt_kprintf("get %s failed\n",item_str); 
-			cJSON_Delete(item_json);	
-	}	
-	return out;
-}
-
+/*get data from server*/
 static rt_err_t wifi_rx_ind(rt_device_t dev, rt_size_t size)
 {
 	rt_sem_release(&(wifi_rx_sem));    
@@ -432,20 +419,12 @@ static rt_err_t wifi_rx_ind(rt_device_t dev, rt_size_t size)
 
 void wifi_thread(void* parameter)
 {	
-	int val1=0,val2=1,val3=2,val4=3,val5=4,val6=5;
-	uint8_t bat1=20,bat2=0;
-	char flag=0;
-	char *post_message=RT_NULL;
-	unsigned char read_co2[10]={0xFF,0x01,0x86,0x00,0x00,0x00,0x00,0x00,0x79};
 	unsigned char switch_at='+';
 	unsigned char done='a';
-	u8 str[100],str1[100];	/*将数字信息填充到str里*/
-
-	int len=0,i=0,state=0;
-	unsigned char ch;	
+	int len=0,i=0;
 	char *ptr=(char *)malloc(256);
-	unsigned char httpd_url[64]={0};//"AT+HTTPURL=http://101.200.182.92,8080\r\n";
-	unsigned char httpd_mode[64]={0};//"AT+HTTPTP=GET\r\n";	
+	char httpd_url[64]={0};//"AT+HTTPURL=http://101.200.182.92,8080\r\n";
+	char httpd_mode[64]={0};//"AT+HTTPTP=GET\r\n";	
 	strcpy(httpd_url,"AT+HTTPURL=http://101.200.182.92:8080\n");
 	strcpy(httpd_mode,"AT+HTTPTP=GET\n");
 	//rt_sem_init(&(wifi_rx_sem), "wifi_rx", 0, 0);
@@ -468,91 +447,68 @@ void wifi_thread(void* parameter)
 	while(1)	
 	{		
 		if (rt_sem_take(&(wifi_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;	
-		#if 0
-		while(1)
-		{
-			if(rt_device_read(dev_wifi, 0, &ch, 1)==1)
-			{
-				ptr[i]=ch;
-				rt_kprintf("%c",ptr[i]);
-				if(ptr[i]=='+')
-					state=1;
-				else if(ptr[i]=='o' && state==1)
-					state=2;
-				else if(ptr[i]=='k' && state==2)
-				{
-					state=0;
-					break;
-				}
-				i++;
-			}
-		}
-		len=i;
-		#else
 		len=rt_device_read(dev_wifi, 0, ptr+i, 128);
-		rt_sem_release(&(server_sem));    
-		continue;
 		if((len==1 && (ptr[0]=='+'||ptr[0]=='A'))||strstr(ptr,"+ERR")!=RT_NULL)
 			continue;
 		if(len>0)
 		{
 			i=i+len;
-		#endif
-		if(strstr(ptr,"ok")!=RT_NULL)
-		{
+			if(rt_strstr(ptr,"ok")!=RT_NULL)
+			{
+				strcpy(wifi_result,"ok");
+			}
+			else if(/*strstr(ptr,"HTTP/1.1")!=RT_NULL && */strchr(ptr,'}')!=RT_NULL)	
+			{	
+				int j,m=0;	
+				while(1)
+				{
+					if(ptr[m]=='H'&&ptr[m+1]=='T'&&ptr[m+2]=='T'&&ptr[m+3]=='P'&&ptr[m+4]=='/'&&ptr[m+5]=='1'&&ptr[m+6]=='.'&&ptr[m+7]=='1')
+						break;
+					m++;
+				}
+				if(m==i)
+				{
+					rt_memset(ptr,'\0',256);
+					i=0;
+					continue;
+				}
+				rt_kprintf("Get from Server:\n");
+				for(j=m;j<i;j++)		
+				{		
+					rt_kprintf("%c",ptr[j]);
+				}	
+				rt_kprintf("\n");
+				strcpy(wifi_result,ptr+m);
+				#if 0
+				char *result=http_parse_result(ptr+m);
+				if(result!=RT_NULL)
+				{
+					char *id=doit_data(result,"30");
+					char *start=doit_data(result,"101");
+					char *stop=doit_data(result,"102");
+					//rt_kprintf("result is %s\n",result);
+					if(id!=RT_NULL)
+					{
+						rt_kprintf("ID %s\n",id);
+						rt_free(id);
+					}
+					if(start!=RT_NULL)
+					{
+						rt_kprintf("start time %s\n",start);
+						rt_free(start);
+					}
+					if(stop!=RT_NULL)
+					{
+						rt_kprintf("stop time %s\n",stop);
+						rt_free(stop);
+					}
+					rt_free(result);
+				}
+				#endif
+			}		
 			rt_memset(ptr,'\0',256);
-			i=0;
-		}
-		else if(/*strstr(ptr,"HTTP/1.1")!=RT_NULL && */strchr(ptr,'}')!=RT_NULL)	
-		{	
-			int j,m=0;	
-			while(1)
-			{
-				if(ptr[m]=='H'&&ptr[m+1]=='T'&&ptr[m+2]=='T'&&ptr[m+3]=='P'&&ptr[m+4]=='/'&&ptr[m+5]=='1'&&ptr[m+6]=='.'&&ptr[m+7]=='1')
-					break;
-				m++;
-			}
-			if(m==i)
-			{
-				rt_memset(ptr,'\0',256);
-				i=0;
-				continue;
-			}
-			rt_kprintf("Get from Server:\n");
-			//for(j=m;j<i;j++)		
-			//{		
-			//	rt_kprintf("%c",ptr[j]);
-			//}	
-			//rt_kprintf("\n");
-			char *result=http_parse_result(ptr+m);
-			if(result!=RT_NULL)
-			{
-				char *id=doit_data(result,"30");
-				char *start=doit_data(result,"101");
-				char *stop=doit_data(result,"102");
-				//rt_kprintf("result is %s\n",result);
-				if(id!=RT_NULL)
-				{
-					rt_kprintf("ID %s\n",id);
-					rt_free(id);
-				}
-				if(start!=RT_NULL)
-				{
-					rt_kprintf("start time %s\n",start);
-					rt_free(start);
-				}
-				if(stop!=RT_NULL)
-				{
-					rt_kprintf("stop time %s\n",stop);
-					rt_free(stop);
-				}
-				rt_free(result);
-			}
+			i=0;		
 			rt_sem_release(&(server_sem));    
-			rt_memset(ptr,'\0',256);
-			i=0;
-			//rt_free(ptr);				
-		}	
 		}
 	}	
 }
@@ -619,7 +575,8 @@ int init_cap()
 		rt_kprintf("open youren wifi uart2 failed\r\n");
 		return -1;
 	}
-	#if 0
+	return 0;
+#if 0
 	while(1){
 		//rt_kprintf("cur str is %s\n",str);
 		rt_device_write(dev_cap, 0, (void *)read_co2, 9);
@@ -687,6 +644,5 @@ int init_cap()
 		//rt_sem_take(&(server_sem), RT_WAITING_FOREVER);
 		rt_thread_delay(600);
 		}
-	#endif
+#endif
 }
-

@@ -81,4 +81,4 @@
 #define RESEND_BYTE	0x0002
 #define TIME_BYTE	0x0001
 #define ERROR_BYTE	0xFF
-
+int init_cap();

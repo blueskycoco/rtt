@@ -26,6 +26,7 @@
 #ifdef RT_USING_GDB
 #include <gdb_stub.h>
 #endif
+#include "cap.h"
 static rt_uint8_t led_stack[ 512 ];
 static struct rt_thread led_thread;
 static void led_thread_entry(void* parameter)
@@ -58,7 +59,10 @@ void rt_init_thread_entry(void* parameter)
     gdb_set_device("uart6");
     gdb_start();
 #endif
-
+	if(init_cap())
+		rt_kprintf("init cap failed\n");
+	else
+		rt_kprintf("init cap ok\n");
     /* LwIP Initialization */
 #ifdef RT_USING_LWIP
     {

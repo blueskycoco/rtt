@@ -10,6 +10,7 @@ board.c
 stm32f4xx_it.c
 usart.c
 led.c
+cJSON.c
 """)
 
 # add Ethernet drivers.
