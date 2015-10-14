@@ -151,7 +151,7 @@ void cap_thread(void* parameter)
 	char id[32]={0},data[32]={0},date[32]={0},error[32]={0};
 	char message[10],to_check[20];
 	unsigned char i=0;
-	int crc,j,message_type=0;
+	int crc=0,j,message_type=0;
 
 	char httpd_send[64]={0};//"AT+HTTPDT\r\n";
 	char httpd_local[64]={0};//"AT+HTTPPH=/mango/checkDataYes\r\n";
@@ -441,6 +441,8 @@ void wifi_thread(void* parameter)
 	rt_device_write(dev_wifi, 0, (void *)&done, 1);
 	rt_thread_delay(1);
 	rt_device_write(dev_wifi, 0, (void *)httpd_url, rt_strlen(httpd_url));
+	rt_thread_delay(30);	
+	rt_device_write(dev_wifi, 0, (void *)httpd_url, rt_strlen(httpd_url));
 	rt_thread_delay(30);
 	rt_device_write(dev_wifi, 0, (void *)httpd_mode, rt_strlen(httpd_mode));
 	rt_thread_delay(30);
@@ -448,6 +450,13 @@ void wifi_thread(void* parameter)
 	{		
 		if (rt_sem_take(&(wifi_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;	
 		len=rt_device_read(dev_wifi, 0, ptr+i, 128);
+		if(len>0)
+		{
+			int m;
+			for(m=0;m<len;m++)
+				rt_kprintf("%c",ptr[i+m]);
+		}
+		continue;
 		if((len==1 && (ptr[0]=='+'||ptr[0]=='A'))||strstr(ptr,"+ERR")!=RT_NULL)
 			continue;
 		if(len>0)
@@ -646,3 +655,20 @@ int init_cap()
 		}
 #endif
 }
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+
+void wifi(char *arg)
+{
+	char *cmd=(char *)rt_malloc(strlen(arg)+3);
+	rt_memset(cmd,0,strlen(arg)+2);
+	strcpy(cmd,arg);
+	strcat(cmd,"\n");
+	rt_kprintf("%s",cmd);
+	rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
+	rt_free(cmd);
+}
+
+FINSH_FUNCTION_EXPORT(wifi, wifi cmd)
+#endif
+
