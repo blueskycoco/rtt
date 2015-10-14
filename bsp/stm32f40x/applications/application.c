@@ -86,6 +86,7 @@ int rt_application_init()
 
     if (tid != RT_NULL)
   	    rt_thread_startup(tid);
+
 	/* init led thread */
 	rt_err_t result = rt_thread_init(&led_thread,
 							"led",
@@ -99,7 +100,6 @@ int rt_application_init()
 	{
 		rt_thread_startup(&led_thread);
 	}
-
     return 0;
 }
 
