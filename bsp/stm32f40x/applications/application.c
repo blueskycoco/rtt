@@ -22,6 +22,7 @@
 #include <netif/ethernetif.h>
 #include "stm32f4xx_eth.h"
 #endif
+#include <dfs_posix.h>
 #include "led.h"
 #ifdef RT_USING_GDB
 #include <gdb_stub.h>
