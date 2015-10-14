@@ -11,6 +11,7 @@ stm32f4xx_it.c
 usart.c
 led.c
 cJSON.c
+k9f1g08_mtd.c
 """)
 
 # add Ethernet drivers.

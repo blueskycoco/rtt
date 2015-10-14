@@ -29,6 +29,18 @@
 #define RT_TIMER_THREAD_PRIO		4
 #define RT_TIMER_THREAD_STACK_SIZE	512
 #define RT_USING_LIBC 1
+#define RT_USING_DFS 1
+#define RT_USING_MTD_NAND 1
+#define RT_USING_DFS_DEVFS 1
+#define RT_USING_DFS_UFFS
+#define RT_CONFIG_UFFS_ECC_MODE UFFS_ECC_SOFT
+#define RT_UFFS_DEVICE_MAX          5
+
+ /* the max number of mounted filesystem */
+#define DFS_FILESYSTEMS_MAX         2
+/* the max number of opened files       */
+#define DFS_FD_MAX                  4
+
 /* SECTION: IPC */
 /* Using Semaphore*/
 #define RT_USING_SEMAPHORE

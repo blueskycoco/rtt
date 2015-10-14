@@ -13,7 +13,7 @@
  * 2014-04-27     Bernard      make code cleanup. 
  */
 
-#include <board.h>
+//#include <board.h>
 #include <rtthread.h>
 
 #ifdef RT_USING_LWIP
@@ -22,7 +22,17 @@
 #include <netif/ethernetif.h>
 #include "stm32f4xx_eth.h"
 #endif
+#ifdef RT_USING_DFS
+#include <dfs_init.h>
+#include <dfs_fs.h>
 #include <dfs_posix.h>
+#endif
+#ifdef RT_USING_DFS_UFFS
+#include <dfs_uffs.h>
+#endif
+#ifdef RT_USING_DFS_ROMFS
+#include <dfs_romfs.h>
+#endif
 #include "led.h"
 #ifdef RT_USING_GDB
 #include <gdb_stub.h>
@@ -59,6 +69,52 @@ void rt_init_thread_entry(void* parameter)
 #ifdef RT_USING_GDB
     gdb_set_device("uart6");
     gdb_start();
+#endif
+
+#ifdef RT_USING_DFS
+		dfs_init();
+#ifdef RT_USING_MTD_NAND
+		nand_mtd_init();
+		dfs_uffs_init();
+#endif 
+	if (dfs_mount("nand0", "/", "uffs", 0, 0) == 0)
+	{
+		rt_kprintf("uffs mount / partion ok\n");
+		
+		if (dfs_mount("nand0", "/nand0", "uffs", 0, 0) == 0)
+		{
+			rt_kprintf("uffs mount /nand0 partion ok\n");
+		}
+		else
+		{
+			if(mkdir("/nand0",0777)==RT_EOK)
+			{
+				if (dfs_mount("nand0", "/nand0", "uffs", 0, 0) == 0)
+				{
+					rt_kprintf("uffs mount on /nand0 ok\n");
+				}
+				else
+					rt_kprintf("uffs mount on /nand0 failed!\n");
+			}
+			else
+				rt_kprintf("uffs mount on /nand0 failed!\n");
+		}
+	}
+	else
+		rt_kprintf("uffs mount / partion failed!\n");
+	
+#if defined(RT_USING_DFS_DEVFS)
+			devfs_init();
+			if (dfs_mount(RT_NULL, "/dev", "devfs", 0, 0) == 0)
+				rt_kprintf("Device File System initialized!\n");
+			else
+				rt_kprintf("Device File System initialzation failed!\n");
+	
+        #ifdef RT_USING_NEWLIB
+			/* init libc */
+			libc_system_init("uart0");
+        #endif
+#endif
 #endif
 	if(init_cap())
 		rt_kprintf("init cap failed\n");
