@@ -61,6 +61,7 @@
 
 /* Using Dynamic Heap Management */
 #define RT_USING_HEAP
+#define RT_USING_MEMHEAP
 
 /* Using Small MM */
 #define RT_USING_SMALL_MEM

@@ -17,6 +17,36 @@ char *post_message=NULL,can_send=0;
 char *server_time;
 char wifi_result[512]={0};
 char *http_parse_result(const char*lpbuf);
+#define SRAM_MAPPING_ADDRESS 0x10000000
+struct rt_memheap system_heap;
+
+void sram_init(void)
+{
+    /* initialize the built-in SRAM as a memory heap */
+    rt_memheap_init(&system_heap,
+                    "system",
+                    (void *)SRAM_MAPPING_ADDRESS,
+                    1024*64);
+}
+
+void *sram_malloc(unsigned long size)
+{
+    return rt_memheap_alloc(&system_heap, size);
+}
+RTM_EXPORT(sram_malloc);
+
+void sram_free(void *ptr)
+{
+    rt_memheap_free(ptr);
+}
+RTM_EXPORT(sram_free);
+
+void *sram_realloc(void *ptr, unsigned long size)
+{
+    return rt_memheap_realloc(&system_heap, ptr, size);
+}
+RTM_EXPORT(sram_realloc);
+
 unsigned int CRC_check(char *Data,char Data_length)
 {
 	unsigned int mid=0;
@@ -60,7 +90,7 @@ char *http_parse_result(const char*lpbuf)
 		rt_kprintf("ptmp is NULL\n");
 		return RT_NULL;  
 	}
-	response = (char *)malloc(rt_strlen(ptmp)+1);  
+	response = (char *)sram_malloc(rt_strlen(ptmp)+1);  
 	if(!response)
 	{
 		rt_kprintf("malloc failed %d\n",rt_strlen(ptmp)+1);   
@@ -82,7 +112,7 @@ char *add_item(char *old,char *id,char *text)
 	out=cJSON_Print(root);	
 	cJSON_Delete(root);
 	if(old)
-		free(old);
+		sram_free(old);
 	
 	return out;
 }
@@ -96,7 +126,7 @@ char *add_obj(char *old,char *id,char *pad)
 	out=cJSON_Print(root);
 	cJSON_Delete(root);
 	cJSON_Delete(fmt);
-	free(pad);
+	sram_free(pad);
 	return out;
 }
 char *doit_data(char *text,const char *item_str)
@@ -118,7 +148,7 @@ char *doit_data(char *text,const char *item_str)
 			{			
 				int nLen = rt_strlen(data->valuestring);
 				//rt_kprintf("%s ,%d %s\n",item_str,nLen,data->valuestring);			
-				out=(char *)malloc(nLen+1);		
+				out=(char *)sram_malloc(nLen+1);		
 				rt_memset(out,'\0',nLen+1);	
 				memcpy(out,data->valuestring,nLen);	
 			}		
@@ -322,7 +352,7 @@ void cap_thread(void* parameter)
 								j++;
 						}
 						rt_kprintf(SUB_PROCESS"send post_message %s",post_message);
-						char *out1=malloc(rt_strlen(post_message)-j+1);
+						char *out1=sram_malloc(rt_strlen(post_message)-j+1);
 						rt_memset(out1,'\0',rt_strlen(post_message)-j+1);
 						j=0;
 						for(i=0;i<rt_strlen(post_message);i++)
@@ -335,7 +365,7 @@ void cap_thread(void* parameter)
 						//save_to_file(date,out1);
 						rt_kprintf(SUB_PROCESS"send web %s",out1);
 						//rcv=send_web(URL,out1,9);
-						char *send=(char *)malloc(rt_strlen(out1)+rt_strlen(httpd_local)+1+1);
+						char *send=(char *)sram_malloc(rt_strlen(out1)+rt_strlen(httpd_local)+1+1);
 						rt_memset(send,'\0',rt_strlen(out1)+rt_strlen(httpd_local)+1+1);
 						strcpy(send,httpd_local);
 						strcat(send,out1);
@@ -344,12 +374,12 @@ void cap_thread(void* parameter)
 						rt_device_write(dev_wifi, 0, (void *)send, rt_strlen(send));
 						rt_thread_delay(10);
 						rt_device_write(dev_wifi, 0, (void *)httpd_send, rt_strlen(httpd_send));
-						rt_free(send);
-						rt_free(out1);
+						sram_free(send);
+						sram_free(out1);
 						rt_sem_take(&(server_sem), RT_WAITING_FOREVER);//wait for server respond
-						free(post_message);
+						sram_free(post_message);
 						post_message=NULL;
-						free(out1);
+						sram_free(out1);
 						if(rt_strlen(wifi_result)!=0 && rt_strncmp(wifi_result,"ok",rt_strlen("ok"))==0)
 						{	
 							int len=rt_strlen(wifi_result);
@@ -383,7 +413,7 @@ static rt_err_t lcd_rx_ind(rt_device_t dev, rt_size_t size)
 void lcd_thread(void* parameter)
 {	
 	int len1=0,m=0;
-	char *ptr=rt_malloc(32);			
+	char *ptr=sram_malloc(32);			
 	while(1)	
 	{		
 		if (rt_sem_take(&(lcd_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;		
@@ -422,7 +452,7 @@ void wifi_thread(void* parameter)
 	unsigned char switch_at='+';
 	unsigned char done='a';
 	int len=0,i=0;
-	char *ptr=(char *)malloc(256);
+	char *ptr=(char *)sram_malloc(256);
 	char httpd_url[64]={0};//"AT+HTTPURL=http://101.200.182.92,8080\r\n";
 	char httpd_mode[64]={0};//"AT+HTTPTP=GET\r\n";	
 	strcpy(httpd_url,"AT+HTTPURL=http://101.200.182.92:8080\n");
@@ -499,19 +529,19 @@ void wifi_thread(void* parameter)
 					if(id!=RT_NULL)
 					{
 						rt_kprintf("ID %s\n",id);
-						rt_free(id);
+						sram_free(id);
 					}
 					if(start!=RT_NULL)
 					{
 						rt_kprintf("start time %s\n",start);
-						rt_free(start);
+						sram_free(start);
 					}
 					if(stop!=RT_NULL)
 					{
 						rt_kprintf("stop time %s\n",stop);
-						rt_free(stop);
+						sram_free(stop);
 					}
-					rt_free(result);
+					sram_free(result);
 				}
 				#endif
 			}		
@@ -528,6 +558,7 @@ void wifi_thread(void* parameter)
 //uart4 for lcd
 int init_cap()
 {
+	sram_init();
 	dev_cap=rt_device_find("uart3");
 	if (rt_device_open(dev_cap, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)			
 	{
@@ -613,7 +644,7 @@ int init_cap()
 			if(post_message[i]==',')
 				j++;
 		}
-		char *out1=malloc(rt_strlen(post_message)+3*j+1);
+		char *out1=sram_malloc(rt_strlen(post_message)+3*j+1);
 		rt_memset(out1,'\0',rt_strlen(post_message)+3*j+1);
 		//out1[0]='"';
 		j=0;
@@ -638,8 +669,8 @@ int init_cap()
 			}
 		}
 		//out1[j]='"';
-		free(post_message);
-		char *send=(char *)malloc(rt_strlen(out1)+rt_strlen(httpd_local)+1+1);
+		sram_free(post_message);
+		char *send=(char *)sram_malloc(rt_strlen(out1)+rt_strlen(httpd_local)+1+1);
 		rt_memset(send,'\0',rt_strlen(out1)+rt_strlen(httpd_local)+1+1);
 		strcpy(send,httpd_local);
 		strcat(send,out1);
@@ -648,8 +679,8 @@ int init_cap()
 		rt_device_write(dev_wifi, 0, (void *)send, rt_strlen(send));
 		rt_thread_delay(10);
 		rt_device_write(dev_wifi, 0, (void *)httpd_send, rt_strlen(httpd_send));
-		rt_free(send);
-		rt_free(out1);
+		sram_free(send);
+		sram_free(out1);
 		//rt_sem_take(&(server_sem), RT_WAITING_FOREVER);
 		rt_thread_delay(600);
 		}
@@ -660,13 +691,13 @@ int init_cap()
 
 void wifi(char *arg)
 {
-	char *cmd=(char *)rt_malloc(strlen(arg)+3);
+	char *cmd=(char *)sram_malloc(strlen(arg)+3);
 	rt_memset(cmd,0,strlen(arg)+2);
 	strcpy(cmd,arg);
 	strcat(cmd,"\n");
 	rt_kprintf("%s",cmd);
 	rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
-	rt_free(cmd);
+	sram_free(cmd);
 }
 void rst()
 {
