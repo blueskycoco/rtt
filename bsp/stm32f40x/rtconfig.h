@@ -34,8 +34,10 @@
 #define RT_USING_DFS_DEVFS 1
 #define RT_USING_DFS_UFFS	1
 #define RT_CONFIG_UFFS_ECC_MODE 	UFFS_ECC_NONE
-#define RT_UFFS_DEVICE_MAX          5
+#define RT_UFFS_DEVICE_MAX          1
 #define RT_UFFS_USE_CHECK_MARK_FUNCITON 1
+#define DFS_FILESYSTEMS_MAX			2
+#define DFS_FD_MAX					1
 
 /* SECTION: IPC */
 /* Using Semaphore*/
@@ -96,9 +98,9 @@
 /* Using Device file system */
 /* #define RT_USING_DFS */
 /* the max number of mounted filesystem */
-#define DFS_FILESYSTEMS_MAX			2
+//#define DFS_FILESYSTEMS_MAX			2
 /* the max number of opened files 		*/
-#define DFS_FD_MAX					4
+//#define DFS_FD_MAX					4
 
 /* Using ELM FATFS */
 //#define RT_USING_DFS_ELMFAT

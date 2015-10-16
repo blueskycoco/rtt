@@ -920,8 +920,7 @@ static rt_err_t nand_mtd_check_block(
 	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00; 
 	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x08; 
 	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(addr);  
-	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(addr);  
-	//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(addr);     
+	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(addr);
 
 	*(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_READ_TRUE; 
 
@@ -951,7 +950,6 @@ static rt_err_t nand_mtd_mark_bad_block(
     *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x08; 
     *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(addr);  
     *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(addr);
-  	//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(addr);
 
     /* Write data */
     *(vu8 *)(Bank_NAND_ADDR | DATA_AREA) = 0x00;
@@ -977,8 +975,7 @@ static rt_err_t nand_mtd_erase_block(
 	*(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_ERASE0;
 
 	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(addr);  
-	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(addr);  
-	//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(addr);
+	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(addr);
 		
 	*(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_ERASE1; 
 
@@ -1008,8 +1005,7 @@ static rt_err_t nand_mtd_read(
 	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00;
 	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00;
 	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(page);  
-	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(page);  
-		//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(page);     
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(page);
 
 	    *(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_READ_TRUE; 
 
@@ -1021,15 +1017,14 @@ static rt_err_t nand_mtd_read(
 	    }
 		status = FSMC_NAND_GetStatus();
 	}
-	if (/*status==NAND_READY && */spare != RT_NULL && spare_len != 0)
+	if (spare != RT_NULL && spare_len != 0)
 	{
 		*(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_READ_1; 
 	   
 	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00;
 	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x08;
 	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(page);  
-	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(page);  
-		//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(page);     
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(page);
 
 	    *(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_READ_TRUE; 
 
@@ -1071,7 +1066,6 @@ static rt_err_t nand_mtd_write (
 	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00; 
 	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(page);  
 	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(page);
-	  	//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(page);
 
 	    /* Write data */
 	    for(index = 0x0000; index < data_len; index++)
@@ -1100,7 +1094,6 @@ static rt_err_t nand_mtd_write (
 		    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x08; 
 		    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(page);  
 		    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(page);
-		  	//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(page);
 		}
 	    /* Write data */
 	    for(index = 0x0000; index < spare_len; index++)
@@ -1166,7 +1159,7 @@ void nand_mtd_init()
 	NAND_Init();
 
 	NAND_ReadID(&NAND_ID);
-	rt_kprintf("\n\r Nand Flash ID:0x%02x 0x%02x 0x%02x 0x%02x \n",NAND_ID.Maker_ID,NAND_ID.Device_ID, NAND_ID.Third_ID,NAND_ID.Fourth_ID);
+	rt_kprintf("\nNand Flash ID:0x%02x 0x%02x 0x%02x 0x%02x \n",NAND_ID.Maker_ID,NAND_ID.Device_ID, NAND_ID.Third_ID,NAND_ID.Fourth_ID);
 
     /* initialize mutex */
 	if (rt_mutex_init(&nand, "nand", RT_IPC_FLAG_FIFO) != RT_EOK)

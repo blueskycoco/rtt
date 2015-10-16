@@ -76,7 +76,7 @@ void rt_init_thread_entry(void* parameter)
 #ifdef RT_USING_MTD_NAND
 		nand_mtd_init();
 #endif 
-	#if 0
+	#if 1
 	dfs_uffs_init();
 	if (dfs_mount("nand0", "/", "uffs", 0, 0) == 0)
 	{
@@ -105,6 +105,7 @@ void rt_init_thread_entry(void* parameter)
 	else
 		rt_kprintf("uffs mount / partion failed!\n");
 	#endif
+#if 0
 #if defined(RT_USING_DFS_DEVFS)
 			devfs_init();
 			if (dfs_mount(RT_NULL, "/dev", "devfs", 0, 0) == 0)
@@ -116,6 +117,7 @@ void rt_init_thread_entry(void* parameter)
 			/* init libc */
 			libc_system_init("uart0");
         #endif
+#endif
 #endif
 #endif
 	if(init_cap())

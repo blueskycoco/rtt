@@ -39,7 +39,7 @@ extern int Image$$RW_IRAM1$$ZI$$Limit;
 #define STM32_SRAM_BEGIN    (__segment_end("HEAP"))
 #else
 extern int __bss_end;
-#define STM32_SRAM_BEGIN    (&__bss_end)
+//#define STM32_SRAM_BEGIN    (&__bss_end)
 #endif
 
 /*******************************************************************************
