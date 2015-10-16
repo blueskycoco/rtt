@@ -911,10 +911,28 @@ static rt_err_t nand_mtd_check_block(
 		struct rt_mtd_nand_device* device,
 		rt_uint32_t block)
 {
-	rt_err_t result=RT_EOK;
-	
+	rt_err_t result=RT_ERROR;
+	rt_uint8_t status=0;
+	rt_uint32_t addr=(block << 6);
 	rt_mutex_take(&nand, RT_WAITING_FOREVER);
-	//result = k9f2808_mtd_check_block(device,block);
+	*(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_READ_1; 
+	   
+	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00; 
+	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x08; 
+	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(addr);  
+	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(addr);  
+	//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(addr);     
+
+	*(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_READ_TRUE; 
+
+	while( GPIO_ReadInputDataBit(GPIOD, GPIO_Pin_6) == 0 );
+
+	status= *(vu8 *)(Bank_NAND_ADDR);
+
+	if(/*(NAND_READY==FSMC_NAND_GetStatus()) && (*/status == 0xff)
+		result=RT_EOK;
+	else
+		rt_kprintf("check block %d ,%d\n",addr,status);
 	rt_mutex_release(&nand);
 	return result;
 }
@@ -923,9 +941,28 @@ static rt_err_t nand_mtd_mark_bad_block(
 		struct rt_mtd_nand_device* device,
 		rt_uint32_t block)
 {
-	rt_err_t result=RT_EOK;	
+	rt_err_t result=RT_ERROR;	
 	rt_mutex_take(&nand, RT_WAITING_FOREVER);
-	//result = k9f2808_mtd_mark_bad_block(device,block);
+	rt_uint32_t addr=(block << 6);
+	/* Page write command and address */
+    *(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_PAGEPROGRAM;
+
+    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00;  
+    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x08; 
+    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(addr);  
+    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(addr);
+  	//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(addr);
+
+    /* Write data */
+    *(vu8 *)(Bank_NAND_ADDR | DATA_AREA) = 0x00;
+    
+    *(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_PAGEPROGRAM_TRUE;
+    while( GPIO_ReadInputDataBit(GPIOD, GPIO_Pin_6) == 0 );
+    
+    /* Check status for successful operation */
+    if(NAND_READY==FSMC_NAND_GetStatus())
+		result=RT_EOK;
+	//rt_kprintf("Mark block %d Bad\n",block);
 	rt_mutex_release(&nand);
 	return result;
 }
@@ -934,9 +971,21 @@ static rt_err_t nand_mtd_erase_block(
 		struct rt_mtd_nand_device* device,
 		rt_uint32_t block)
 {
-	rt_err_t result=RT_EOK;	
-	rt_mutex_take(&nand, RT_WAITING_FOREVER);	
-	//result = k9f2808_mtd_erase_block(device,block);
+	rt_err_t result=RT_ERROR;	
+	rt_uint32_t addr=(block << 6);
+	rt_mutex_take(&nand, RT_WAITING_FOREVER);
+	*(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_ERASE0;
+
+	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(addr);  
+	*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(addr);  
+	//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(addr);
+		
+	*(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_ERASE1; 
+
+    while( GPIO_ReadInputDataBit(GPIOD, GPIO_Pin_6) == 0 );
+	if(FSMC_NAND_GetStatus()==NAND_READY)
+    	result=RT_EOK;
+	//rt_kprintf("Erase block %d\n",addr);
 	rt_mutex_release(&nand);
 	return result;
 }
@@ -947,10 +996,56 @@ static rt_err_t nand_mtd_read(
 		rt_uint8_t * data, rt_uint32_t data_len, //may not always be 2048
 		rt_uint8_t * spare, rt_uint32_t spare_len)
 {
-	rt_err_t result=RT_EOK;
+	rt_err_t result=RT_ERROR;
+	uint32_t index = 0x0000;
+  	uint32_t status = NAND_READY;
+	uint32_t size = 0;
 	rt_mutex_take(&nand, RT_WAITING_FOREVER);
-	//result = k9f2808_mtd_read(dev,page,data,data_len,spare,spare_len);
+	if (data != RT_NULL && data_len != 0)
+	{
+		*(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_READ_1; 
+	   
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00;
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00;
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(page);  
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(page);  
+		//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(page);     
+
+	    *(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_READ_TRUE; 
+
+	   	while( GPIO_ReadInputDataBit(GPIOD, GPIO_Pin_6) == 0 );
+
+	    for(index = 0x0000; index < data_len; index++)
+	    {
+	      data[index]= *(vu8 *)(Bank_NAND_ADDR);
+	    }
+		status = FSMC_NAND_GetStatus();
+	}
+	if (/*status==NAND_READY && */spare != RT_NULL && spare_len != 0)
+	{
+		*(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_READ_1; 
+	   
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00;
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x08;
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(page);  
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(page);  
+		//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(page);     
+
+	    *(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_READ_TRUE; 
+
+	   	while( GPIO_ReadInputDataBit(GPIOD, GPIO_Pin_6) == 0 );
+
+	    for(index = 0x0000; index < spare_len; index++)
+	    {
+	      spare[index]= *(vu8 *)(Bank_NAND_ADDR);
+	    }
+		status = FSMC_NAND_GetStatus();
+	}
 	rt_mutex_release(&nand);
+	if(NAND_READY==status)
+			result=RT_EOK;
+	else
+		rt_kprintf("nand_mtd_read page %d, %02x %d,%02x %d failed\n",page,data,data_len,spare,spare_len);
 
 	return result;
 }
@@ -961,11 +1056,70 @@ static rt_err_t nand_mtd_write (
 		const rt_uint8_t * data, rt_uint32_t data_len,//will be 2048 always!
 		const rt_uint8_t * spare, rt_uint32_t spare_len)
 {	
-	rt_err_t result=RT_EOK;
+	rt_err_t result=RT_ERROR;
+	uint32_t index = 0x00;
+   	uint32_t status = NAND_READY;
 	rt_mutex_take(&nand, RT_WAITING_FOREVER);
-	//result = k9f2808_mtd_write(dev,page,data,data_len,spare,spare_len);
-	rt_mutex_release(&nand);
+	//rt_kprintf("nand write %02x %d,%02x %d\r\n",data,data_len,spare,spare_len);
+	if(data != RT_NULL && data_len != 0 )
+	{
+		RT_ASSERT(data_len == NAND_PAGE_SIZE);
+		/* Page write command and address */
+	    *(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_PAGEPROGRAM;
 
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00;  
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00; 
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(page);  
+	    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(page);
+	  	//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(page);
+
+	    /* Write data */
+	    for(index = 0x0000; index < data_len; index++)
+	    {
+	      *(vu8 *)(Bank_NAND_ADDR | DATA_AREA) = data[index];
+	    }
+	    if(spare==RT_NULL)
+	    {
+	    	*(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_PAGEPROGRAM_TRUE;
+	    	//
+	    	while( GPIO_ReadInputDataBit(GPIOD, GPIO_Pin_6) == 0 );
+	    
+	    	/* Check status for successful operation */
+	    	status = FSMC_NAND_GetStatus();
+	    }
+	}    
+
+	if(spare != RT_NULL && spare_len != 0)
+	{
+		if(data==RT_NULL)
+		{
+			/* Page write command and address */
+		    *(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_PAGEPROGRAM;
+
+		    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x00;  
+		    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = 0x08; 
+		    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_1st_CYCLE(page);  
+		    *(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_2nd_CYCLE(page);
+		  	//*(vu8 *)(Bank_NAND_ADDR | ADDR_AREA) = ADDR_3rd_CYCLE(page);
+		}
+	    /* Write data */
+	    for(index = 0x0000; index < spare_len; index++)
+	    {
+	      *(vu8 *)(Bank_NAND_ADDR | DATA_AREA) = spare[index];
+	    }
+		
+	    *(vu8 *)(Bank_NAND_ADDR | CMD_AREA) = NAND_CMD_PAGEPROGRAM_TRUE;
+	    //
+	    while( GPIO_ReadInputDataBit(GPIOD, GPIO_Pin_6) == 0 );
+	    
+	    /* Check status for successful operation */
+	    status = FSMC_NAND_GetStatus();
+	}
+	rt_mutex_release(&nand);
+	if(NAND_READY==status)
+		result=RT_EOK;
+	else
+		rt_kprintf("nand_mtd_write page %d, %02x %d,%02x %d failed\n",page,data,data_len,spare,spare_len);
 	return result;
 }
 
@@ -1004,15 +1158,15 @@ void k9f2808_mtd_init()
 }
 void nand_mtd_init()
 {
-	/* initialize nand controller of S3C2440 */
-	//nand_hw_init();
 	NAND_IDTypeDef NAND_ID;
-	#define NAND_HY_MakerID    0XEC// 
-	#define NAND_HY_DeviceID   0XF1// 
+	#define NAND_HY_MakerID    0XEC
+	#define NAND_HY_DeviceID   0XF1
+	rt_uint8_t spare[64],spare1[64],*data,*data1;
+	int i;
 	NAND_Init();
 
 	NAND_ReadID(&NAND_ID);
-	rt_kprintf("\n\r Nand Flash ID:0x%x\t 0x%x\t 0x%x\t 0x%x \n\r",NAND_ID.Maker_ID,NAND_ID.Device_ID, NAND_ID.Third_ID,NAND_ID.Fourth_ID);
+	rt_kprintf("\n\r Nand Flash ID:0x%02x 0x%02x 0x%02x 0x%02x \n",NAND_ID.Maker_ID,NAND_ID.Device_ID, NAND_ID.Third_ID,NAND_ID.Fourth_ID);
 
     /* initialize mutex */
 	if (rt_mutex_init(&nand, "nand", RT_IPC_FLAG_FIFO) != RT_EOK)
@@ -1020,8 +1174,41 @@ void nand_mtd_init()
 		rt_kprintf("init nand lock mutex failed\n");
 	}
 
-
 	k9f2808_mtd_init();
+
+	#if 0
+	data=(rt_uint8_t *)rt_malloc(2048);
+	data1=(rt_uint8_t *)rt_malloc(2048);
+	rt_memset(spare1,0,64);
+	if(data1!=RT_NULL)
+	rt_memset(data1,0,2048);
+	rt_kprintf("==Data>\n");
+	for(i=0;i<2048;i++)
+	{
+		data[i]=255-i%255;
+		rt_kprintf("%02x ",data[i]);
+	}	
+	rt_kprintf("\n==Spare>\n");
+	for(i=0;i<64;i++)
+	{
+		spare[i]=i;
+		rt_kprintf("%d ",spare[i]);
+	}
+	//NAND_Reset();
+	nand_mtd_erase_block(RT_NULL,0);
+	nand_mtd_write(RT_NULL,0,data,2048,spare,64);
+	nand_mtd_read(RT_NULL,0,data1,2048,spare1,64);
+	rt_kprintf("\n<Data==\n");
+	for(i=0;i<2048;i++)
+	{
+		rt_kprintf("%02x ",data1[i]);
+	}
+	rt_kprintf("\n<Spare==\n");
+	for(i=0;i<64;i++)
+	{
+		rt_kprintf("%d ",spare1[i]);
+	}
+	#endif
 }
 #if 0
 #include "finsh.h"

@@ -60,7 +60,7 @@
  * \note uffs cache the block info for opened directories and files,
  *       a practical value is 5 ~ MAX_OBJECT_HANDLE
  */
-#define MAX_CACHED_BLOCK_INFO	50
+#define MAX_CACHED_BLOCK_INFO	5//dillon 50
 
 /** 
  * \def MAX_PAGE_BUFFERS

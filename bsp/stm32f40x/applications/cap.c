@@ -431,13 +431,13 @@ void wifi_thread(void* parameter)
 	rt_sem_init(&(server_sem), "server_rx", 0, 0);
 	//rt_device_set_rx_indicate(dev_wifi, wifi_rx_ind);
 	//rt_thread_startup(rt_thread_create("thread_wifi",wifi_rcv, 0,512, 20, 10));
-	//rt_thread_delay(300);
+	rt_thread_delay(200);	
 	rt_device_write(dev_wifi, 0, (void *)&switch_at, 1);
-	rt_thread_delay(10);
+	rt_thread_delay(3);
 	rt_device_write(dev_wifi, 0, (void *)&switch_at, 1);
-	rt_thread_delay(10);
+	rt_thread_delay(3);
 	rt_device_write(dev_wifi, 0, (void *)&switch_at, 1);
-	rt_thread_delay(10);
+	rt_thread_delay(3);
 	rt_device_write(dev_wifi, 0, (void *)&done, 1);
 	rt_thread_delay(1);
 	rt_device_write(dev_wifi, 0, (void *)httpd_url, rt_strlen(httpd_url));
@@ -668,7 +668,11 @@ void wifi(char *arg)
 	rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
 	rt_free(cmd);
 }
-
+void rst()
+{
+	NVIC_SystemReset();
+}
 FINSH_FUNCTION_EXPORT(wifi, wifi cmd)
+FINSH_FUNCTION_EXPORT(rst, system reset)
 #endif
 

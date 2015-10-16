@@ -32,14 +32,10 @@
 #define RT_USING_DFS 1
 #define RT_USING_MTD_NAND 1
 #define RT_USING_DFS_DEVFS 1
-#define RT_USING_DFS_UFFS
-#define RT_CONFIG_UFFS_ECC_MODE UFFS_ECC_SOFT
+#define RT_USING_DFS_UFFS	1
+#define RT_CONFIG_UFFS_ECC_MODE 	UFFS_ECC_NONE
 #define RT_UFFS_DEVICE_MAX          5
-
- /* the max number of mounted filesystem */
-#define DFS_FILESYSTEMS_MAX         2
-/* the max number of opened files       */
-#define DFS_FD_MAX                  4
+#define RT_UFFS_USE_CHECK_MARK_FUNCITON 1
 
 /* SECTION: IPC */
 /* Using Semaphore*/

@@ -75,12 +75,13 @@ void rt_init_thread_entry(void* parameter)
 		dfs_init();
 #ifdef RT_USING_MTD_NAND
 		nand_mtd_init();
-		dfs_uffs_init();
 #endif 
+	#if 0
+	dfs_uffs_init();
 	if (dfs_mount("nand0", "/", "uffs", 0, 0) == 0)
 	{
 		rt_kprintf("uffs mount / partion ok\n");
-		
+		#if 0
 		if (dfs_mount("nand0", "/nand0", "uffs", 0, 0) == 0)
 		{
 			rt_kprintf("uffs mount /nand0 partion ok\n");
@@ -99,10 +100,11 @@ void rt_init_thread_entry(void* parameter)
 			else
 				rt_kprintf("uffs mount on /nand0 failed!\n");
 		}
+		#endif
 	}
 	else
 		rt_kprintf("uffs mount / partion failed!\n");
-	
+	#endif
 #if defined(RT_USING_DFS_DEVFS)
 			devfs_init();
 			if (dfs_mount(RT_NULL, "/dev", "devfs", 0, 0) == 0)
