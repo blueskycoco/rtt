@@ -164,6 +164,7 @@ void send_web_post(char *buf,int timeout)
 	strcpy(httpd_mode,"AT+HTTPTP=POST\n");
 	strcpy(httpd_local,"AT+HTTPPH=/saveData/airmessage/messMgr.do\n");
 	strcpy(httpd_send,"AT+HTTPDT=JSONStr=");
+	rt_kprintf("buf %s\n",buf);
 	rt_device_write(dev_wifi, 0, (void *)httpd_mode, rt_strlen(httpd_mode));
 	rt_thread_delay(30);
 	char *send=(char *)sram_malloc(rt_strlen(buf)+rt_strlen(httpd_send)+1+1);
@@ -213,7 +214,8 @@ char *doit_data(char *text,const char *item_str)
 }
 void save_to_file(char *date,char *message)
 {
-	FILE *fp;
+	//FILE *fp;
+	int fp;
 	char *file_path;
 	char *data;
 	file_path=(char *)sram_malloc(256);
@@ -223,11 +225,11 @@ void save_to_file(char *date,char *message)
 	strcpy(file_path,FILE_PATH);
 	rt_memcpy(file_path+rt_strlen(FILE_PATH),date,10);
 	strcat(file_path,".dat");
-	fp = fopen(file_path, "r");
-	if (fp == NULL)
+	fp = open(file_path, O_RDONLY,0);
+	if (fp < 0)
 	{
-		fp=fopen(file_path,"w");
-		if(fp==NULL)
+		fp=open(file_path,O_WRONLY | O_CREAT ,0);
+		if(fp<0)
 		{
 			rt_kprintf("can not create %s\r\n",file_path);
 			sram_free(file_path);
@@ -237,17 +239,17 @@ void save_to_file(char *date,char *message)
 	}
 	else
 	{
-		fclose(fp);
-		fp=fopen(file_path, "a");
+		close(fp);
+		fp=open(file_path, O_WRONLY | O_APPEND,0);
 	}
-	strcpy(data,date+13);
+	strcpy(data,date+11);
 	strcat(data,"\n");
-	fwrite(data,rt_strlen(data),1,fp);
+	write(fp,data,rt_strlen(data));
 	rt_memset(data,'\0',512);
 	strcpy(data,message);
 	strcat(data,"\n");
-	fwrite(data,rt_strlen(data),1,fp);
-	fclose(fp);
+	write(fp,data,rt_strlen(data));
+	close(fp);
 	sram_free(file_path);
 	sram_free(data);
 }
@@ -1027,6 +1029,34 @@ void rst()
 {
 	NVIC_SystemReset();
 }
+void cat1(char *file)
+{
+	int fp;
+	char *data;
+	data=(char *)sram_malloc(256);
+	rt_memset(data,0,256);
+	fp = open(file, O_RDONLY,0);
+	if (fp < 0)
+	{
+			rt_kprintf("can not create %s\r\n",file);
+			sram_free(data);
+			return;
+	}
+	while(1)
+	{		
+		if(read(fp,data,256)>0)
+		{
+			rt_kprintf("%s",data);
+			rt_memset(data,0,256);
+		}
+		else
+			break;
+	}
+	close(fp);
+	sram_free(data);
+}
+
+FINSH_FUNCTION_EXPORT(cat1, cat file)
 FINSH_FUNCTION_EXPORT(wifi, wifi cmd)
 FINSH_FUNCTION_EXPORT(rst, system reset)
 #endif
