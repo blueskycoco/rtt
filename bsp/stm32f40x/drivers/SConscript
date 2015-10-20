@@ -12,6 +12,7 @@ usart.c
 led.c
 cJSON.c
 k9f1g08_mtd.c
+rtc.c
 """)
 
 # add Ethernet drivers.

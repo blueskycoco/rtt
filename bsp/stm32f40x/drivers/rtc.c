@@ -9,15 +9,59 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2009-01-05     Bernard      the first version.
+ * 2009-01-05     Bernard      the first version
  * 2011-11-26     aozima       implementation time.
  */
 
 #include <rtthread.h>
-#include <stm32f10x.h>
-#include "rtc.h"
+#include <stm32f4xx.h>
+#include <time.h>
 
+__IO uint32_t AsynchPrediv = 0, SynchPrediv = 0;
+RTC_TimeTypeDef RTC_TimeStructure;
+RTC_InitTypeDef RTC_InitStructure;
+RTC_AlarmTypeDef  RTC_AlarmStructure;
+RTC_DateTypeDef RTC_DateStructure;
+
+#define MINUTE   60
+#define HOUR   (60*MINUTE)
+#define DAY   (24*HOUR)
+#define YEAR   (365*DAY)
+
+static int month[12] =
+{
+    0,
+    DAY*(31),
+    DAY*(31+29),
+    DAY*(31+29+31),
+    DAY*(31+29+31+30),
+    DAY*(31+29+31+30+31),
+    DAY*(31+29+31+30+31+30),
+    DAY*(31+29+31+30+31+30+31),
+    DAY*(31+29+31+30+31+30+31+31),
+    DAY*(31+29+31+30+31+30+31+31+30),
+    DAY*(31+29+31+30+31+30+31+31+30+31),
+    DAY*(31+29+31+30+31+30+31+31+30+31+30)
+};
 static struct rt_device rtc;
+
+static time_t rt_mktime(struct tm *tm)
+{
+	long res;
+	int year;
+	year = tm->tm_year - 70;
+
+	res = YEAR * year + DAY * ((year + 1) / 4);
+	res += month[tm->tm_mon];
+
+	if (tm->tm_mon > 1 && ((year + 2) % 4))
+	res -= DAY;
+	res += DAY * (tm->tm_mday - 1);
+	res += HOUR * tm->tm_hour;
+	res += MINUTE * tm->tm_min;
+	res += tm->tm_sec;
+	return res;
+}
 static rt_err_t rt_rtc_open(rt_device_t dev, rt_uint16_t oflag)
 {
     if (dev->rx_indicate != RT_NULL)
@@ -35,37 +79,122 @@ static rt_size_t rt_rtc_read(rt_device_t dev, rt_off_t pos, void* buffer, rt_siz
 
 static rt_err_t rt_rtc_control(rt_device_t dev, rt_uint8_t cmd, void *args)
 {
-    rt_time_t *time;
+    time_t *time;
+	struct tm ti,*to;
     RT_ASSERT(dev != RT_NULL);
 
     switch (cmd)
     {
     case RT_DEVICE_CTRL_RTC_GET_TIME:
-        time = (rt_time_t *)args;
+        time = (time_t *)args;
         /* read device */
-        *time = RTC_GetCounter();
+		//RTC_GetTimeStamp(RTC_Format_BIN, &RTC_TimeStructure, &RTC_DateStructure);
+		RTC_GetTime(RTC_Format_BIN, &RTC_TimeStructure);
+		RTC_GetDate(RTC_Format_BIN, &RTC_DateStructure);
+		ti.tm_sec = RTC_TimeStructure.RTC_Seconds;
+		ti.tm_min = RTC_TimeStructure.RTC_Minutes;
+		ti.tm_hour = RTC_TimeStructure.RTC_Hours;
+		//ti.tm_wday = (RTC_DateStructure.RTC_WeekDay==7)?0:RTC_DateStructure.RTC_WeekDay;
+		ti.tm_mon = RTC_DateStructure.RTC_Month -1;
+		ti.tm_mday = RTC_DateStructure.RTC_Date;
+		ti.tm_year = RTC_DateStructure.RTC_Year + 70;
+		*time = rt_mktime(&ti);
+        //*time = RTC_GetCounter();
+
         break;
 
     case RT_DEVICE_CTRL_RTC_SET_TIME:
     {
-        time = (rt_time_t *)args;
+        time = (time_t *)args;
 
-        /* Enable PWR and BKP clocks */
-        RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
+        /* Enable the PWR clock */
+	    RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
 
-        /* Allow access to BKP Domain */
-        PWR_BackupAccessCmd(ENABLE);
+	    /* Allow access to RTC */
+	    PWR_BackupAccessCmd(ENABLE);
 
         /* Wait until last write operation on RTC registers has finished */
-        RTC_WaitForLastTask();
+        //RTC_WaitForLastTask();
 
         /* Change the current time */
-        RTC_SetCounter(*time);
+        //RTC_SetCounter(*time);
+
+		to = localtime(time);
+		RTC_TimeStructure.RTC_Seconds = to->tm_sec;
+		RTC_TimeStructure.RTC_Minutes = to->tm_min;
+		RTC_TimeStructure.RTC_Hours	= to->tm_hour;
+		//RTC_DateStructure.RTC_WeekDay =(ti->tm_wday==0)?7:ti->tm_wday;
+		RTC_DateStructure.RTC_Month = to->tm_mon + 1;
+		RTC_DateStructure.RTC_Date = to->tm_mday;
+		RTC_DateStructure.RTC_Year = to->tm_year - 70;
+		RTC_SetTime(RTC_Format_BIN, &RTC_TimeStructure);
+		RTC_SetDate(RTC_Format_BIN, &RTC_DateStructure);
 
         /* Wait until last write operation on RTC registers has finished */
-        RTC_WaitForLastTask();
+        //RTC_WaitForLastTask();
 
-        BKP_WriteBackupRegister(BKP_DR1, 0xA5A5);
+        RTC_WriteBackupRegister(RTC_BKP_DR1, 0xA5A5);
+		//BKP_WriteBackupRegister(BKP_DR1, 0xA5A5);
+    }
+    break;
+	case RT_DEVICE_CTRL_RTC_GET_ALARM:
+        time = (time_t *)args;
+        /* read device */
+		//RTC_GetTimeStamp(RTC_Format_BIN, &RTC_TimeStructure, &RTC_DateStructure);
+		RTC_GetAlarm(RTC_Format_BIN,RTC_Alarm_A, &RTC_AlarmStructure);
+		RTC_GetDate(RTC_Format_BIN, &RTC_DateStructure);
+		ti.tm_sec = RTC_AlarmStructure.RTC_AlarmTime.RTC_Seconds;
+		ti.tm_min = RTC_AlarmStructure.RTC_AlarmTime.RTC_Minutes;
+		ti.tm_hour = RTC_AlarmStructure.RTC_AlarmTime.RTC_Hours;
+		//ti.tm_wday = (RTC_DateStructure.RTC_WeekDay==7)?0:RTC_DateStructure.RTC_WeekDay;
+		ti.tm_mon = RTC_DateStructure.RTC_Month -1;
+		ti.tm_mday = RTC_DateStructure.RTC_Date;
+		ti.tm_year = RTC_DateStructure.RTC_Year + 70;
+		*time = rt_mktime(&ti);
+		rt_kprintf("RTC_AlarmMask %d,RTC_AlarmDateWeekDaySel %d,RTC_AlarmDateWeekDay %d\n",RTC_AlarmStructure.RTC_AlarmMask,RTC_AlarmStructure.RTC_AlarmDateWeekDaySel,RTC_AlarmStructure.RTC_AlarmDateWeekDay);
+        //*time = RTC_GetCounter();
+
+        break;
+
+    case RT_DEVICE_CTRL_RTC_SET_ALARM:
+    {
+        time = (time_t *)args;
+
+        /* Enable the PWR clock */
+	    RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
+
+	    /* Allow access to RTC */
+	    PWR_BackupAccessCmd(ENABLE);
+		RTC_WaitForSynchro();
+		
+        /* Wait until last write operation on RTC registers has finished */
+        //RTC_WaitForLastTask();
+		RTC_ClearFlag(RTC_FLAG_ALRAF);
+		EXTI_ClearITPendingBit(EXTI_Line17);
+
+        /* Change the current time */
+        //RTC_SetCounter(*time);
+
+		RTC_AlarmCmd(RTC_Alarm_A,DISABLE);
+
+		to = localtime(time);
+		RTC_AlarmStructure.RTC_AlarmTime.RTC_H12     = RTC_H12_PM;
+		RTC_AlarmStructure.RTC_AlarmTime.RTC_Seconds = to->tm_sec;
+		RTC_AlarmStructure.RTC_AlarmTime.RTC_Minutes = to->tm_min;
+		RTC_AlarmStructure.RTC_AlarmTime.RTC_Hours	= to->tm_hour;
+		RTC_AlarmStructure.RTC_AlarmDateWeekDay=RTC_AlarmDateWeekDaySel_Date;
+		RTC_AlarmStructure.RTC_AlarmDateWeekDay=RTC_Weekday_Tuesday;
+		RTC_AlarmStructure.RTC_AlarmMask=RTC_AlarmMask_DateWeekDay;
+		RTC_SetAlarm(RTC_Format_BIN,RTC_Alarm_A,&RTC_AlarmStructure);		
+		
+		RTC_ITConfig(RTC_IT_ALRA,ENABLE);
+		RTC_AlarmCmd(RTC_Alarm_A,ENABLE);
+
+        /* Wait until last write operation on RTC registers has finished */
+        //RTC_WaitForLastTask();
+
+        RTC_WriteBackupRegister(RTC_BKP_DR1, 0xA5A5);
+		//BKP_WriteBackupRegister(BKP_DR1, 0xA5A5);
     }
     break;
     }
@@ -80,45 +209,106 @@ static rt_err_t rt_rtc_control(rt_device_t dev, rt_uint8_t cmd, void *args)
 * Output         : None
 * Return         : 0 reday,-1 error.
 *******************************************************************************/
-int RTC_Configuration(void)
+int RTC_Config(void)
 {
-    u32 count=0x200000;
+	u32 count=0x200000;
+	/* Enable the PWR clock */
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
 
-    /* Enable PWR and BKP clocks */
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);
+	/* Allow access to RTC */
+	PWR_BackupAccessCmd(ENABLE);
+#if 1
+	RCC_LSEConfig(RCC_LSE_ON);
 
-    /* Allow access to BKP Domain */
-    PWR_BackupAccessCmd(ENABLE);
-
-    /* Reset Backup Domain */
-    BKP_DeInit();
-
-    /* Enable LSE */
-    RCC_LSEConfig(RCC_LSE_ON);
-    /* Wait till LSE is ready */
-    while ( (RCC_GetFlagStatus(RCC_FLAG_LSERDY) == RESET) && (--count) );
+	/* Wait till LSE is ready */
+	while ( (RCC_GetFlagStatus(RCC_FLAG_LSERDY) == RESET) && (--count) );
     if ( count == 0 )
     {
         return -1;
     }
+	
+	/* Select the RTC Clock Source */
+	RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
+#else
+/* The RTC Clock may varies due to LSI frequency dispersion */   
+  /* Enable the LSI OSC */ 
+  RCC_LSICmd(ENABLE);
 
-    /* Select LSE as RTC Clock Source */
-    RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
+  /* Wait till LSE is ready */
+  while ( (RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET) && (--count) );
+  if ( count == 0 )
+  {
+	  return -1;
+  }
 
-    /* Enable RTC Clock */
-    RCC_RTCCLKCmd(ENABLE);
+  /* Select the RTC Clock Source */
+  RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
+  
+#endif
+	SynchPrediv = 0xFF;
+	AsynchPrediv = 0x7F;
 
-    /* Wait for RTC registers synchronization */
-    RTC_WaitForSynchro();
+	/* Enable the RTC Clock */
+	RCC_RTCCLKCmd(ENABLE);
 
-    /* Wait until last write operation on RTC registers has finished */
-    RTC_WaitForLastTask();
+	/* Wait for RTC APB registers synchronisation */
+	RTC_WaitForSynchro();
 
-    /* Set RTC prescaler: set RTC period to 1sec */
-    RTC_SetPrescaler(32767); /* RTC period = RTCCLK/RTC_PR = (32.768 KHz)/(32767+1) */
+	/* Enable The TimeStamp */
+	//RTC_TimeStampCmd(RTC_TimeStampEdge_Falling, ENABLE);
 
-    /* Wait until last write operation on RTC registers has finished */
-    RTC_WaitForLastTask();
+	return 0;
+}
+void RTC_TimeShow(void)
+{
+  /* Get the current Time */
+  RTC_GetTime(RTC_Format_BIN, &RTC_TimeStructure);
+  /* Display time Format : hh:mm:ss */
+  rt_kprintf("%0.2d:%0.2d:%0.2d",RTC_TimeStructure.RTC_Hours, RTC_TimeStructure.RTC_Minutes, RTC_TimeStructure.RTC_Seconds);
+}
+
+int RTC_Configuration(void)
+{
+	NVIC_InitTypeDef  NVIC_InitStructure;
+	EXTI_InitTypeDef  EXTI_InitStructure;
+
+	if(RTC_Config() < 0 )
+		return -1;
+
+	/* Set the Time */
+	RTC_TimeStructure.RTC_Hours   = 0;
+	RTC_TimeStructure.RTC_Minutes = 0;
+	RTC_TimeStructure.RTC_Seconds = 0;
+
+	/* Set the Date */
+	RTC_DateStructure.RTC_Month = 1;
+	RTC_DateStructure.RTC_Date = 1;
+	RTC_DateStructure.RTC_Year = 0;
+	RTC_DateStructure.RTC_WeekDay = 4;
+
+	/* Calendar Configuration */
+	RTC_InitStructure.RTC_AsynchPrediv = AsynchPrediv;
+	RTC_InitStructure.RTC_SynchPrediv =  SynchPrediv;
+	RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;
+	RTC_Init(&RTC_InitStructure);
+	RTC_ClearFlag(RTC_FLAG_ALRAF);
+	EXTI_ClearITPendingBit(EXTI_Line17);
+	EXTI_InitStructure.EXTI_Line = EXTI_Line17;
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	EXTI_Init(&EXTI_InitStructure);
+	NVIC_InitStructure.NVIC_IRQChannel = RTC_Alarm_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+	
+	/* Set Current Time and Date */
+	RTC_SetTime(RTC_Format_BCD, &RTC_TimeStructure);
+	RTC_SetDate(RTC_Format_BCD, &RTC_DateStructure);
+	if (RTC_Init(&RTC_InitStructure) == ERROR)
+		return -1;
 
     return 0;
 }
@@ -127,7 +317,7 @@ void rt_hw_rtc_init(void)
 {
     rtc.type	= RT_Device_Class_RTC;
 
-    if (BKP_ReadBackupRegister(BKP_DR1) != 0xA5A5)
+    if (RTC_ReadBackupRegister(RTC_BKP_DR1) != 0xA5A5)
     {
         rt_kprintf("rtc is not configured\n");
         rt_kprintf("please configure with set_date and set_time\n");
@@ -179,6 +369,39 @@ time_t time(time_t* t)
 
     return time;
 }
+#if defined (__IAR_SYSTEMS_ICC__) &&  (__VER__) >= 6020000   /* for IAR 6.2 later Compiler */
+#pragma module_name = "?time"
+time_t (__time32)(time_t *t)                                 /* Only supports 32-bit timestamp */
+#else
+time_t alarm(time_t* t)
+#endif
+{
+    rt_device_t device;
+    time_t time=0;
+
+    device = rt_device_find("rtc");
+    if (device != RT_NULL)
+    {
+        rt_device_control(device, RT_DEVICE_CTRL_RTC_GET_ALARM, &time);
+        if (t != RT_NULL) *t = time;
+    }
+
+    return time;
+}
+void RTC_Alarm_IRQHandler(void)
+{
+  if(RTC_GetITStatus(RTC_IT_ALRA) != RESET) 
+  {
+	rt_kprintf("alarm occur\n");
+	RTC_TimeShow();
+    EXTI_ClearITPendingBit(EXTI_Line17);
+    PWR_BackupAccessCmd(ENABLE);
+    RTC_ClearITPendingBit(RTC_IT_ALRA);
+    RTC_ClearFlag(RTC_FLAG_ALRAF);
+    PWR_BackupAccessCmd(DISABLE);
+  }
+}
+
 
 #ifdef RT_USING_FINSH
 #include <finsh.h>
@@ -197,7 +420,7 @@ void set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day)
     if (ti != RT_NULL)
     {
         ti->tm_year = year - 1900;
-        ti->tm_mon 	= month - 1; /* ti->tm_mon 	= month; 0~11 */
+        ti->tm_mon 	= month - 1; /* ti->tm_mon 	= month; */
         ti->tm_mday = day;
     }
 
@@ -237,8 +460,34 @@ void set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
     }
 }
 FINSH_FUNCTION_EXPORT(set_time, set time. e.g: set_time(23,59,59))
+void set_alarm(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
+{
+	time_t now;
+	struct tm* ti;
+	rt_device_t device;
 
-void list_date(void)
+	ti = RT_NULL;
+	/* get current time */
+	time(&now);
+
+	ti = localtime(&now);
+	if (ti != RT_NULL)
+	{
+		ti->tm_hour = hour;
+		ti->tm_min	= minute;
+		ti->tm_sec	= second;
+	}
+
+	now = mktime(ti);
+	device = rt_device_find("rtc");
+	if (device != RT_NULL)
+	{
+		rt_rtc_control(device, RT_DEVICE_CTRL_RTC_SET_ALARM, &now);
+	}
+}
+FINSH_FUNCTION_EXPORT(set_alarm, set alarm. e.g: set_alarm(23,59,59))
+
+void list_date()
 {
     time_t now;
 
@@ -246,4 +495,12 @@ void list_date(void)
     rt_kprintf("%s\n", ctime(&now));
 }
 FINSH_FUNCTION_EXPORT(list_date, show date and time.)
+void list_alarm()
+{
+    time_t now;
+
+    alarm(&now);
+    rt_kprintf("%s\n", ctime(&now));
+}
+FINSH_FUNCTION_EXPORT(list_alarm, show alarm time.)
 #endif

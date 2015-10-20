@@ -70,6 +70,7 @@ void rt_init_thread_entry(void* parameter)
     gdb_set_device("uart6");
     gdb_start();
 #endif
+	rt_hw_rtc_init();
 
 #ifdef RT_USING_DFS
 		dfs_init();

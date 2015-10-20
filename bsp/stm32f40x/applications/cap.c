@@ -134,12 +134,16 @@ char *add_obj(char *old,char *id,char *pad)
 	sram_free(pad);
 	return out;
 }
-void send_web(char *buf,int timeout)
+void send_web_get(char *buf,int timeout)
 {
 	char httpd_send[64]={0};//"AT+HTTPDT\r\n";
-	char httpd_local[64]={0};//"AT+HTTPPH=/mango/checkDataYes\r\n";
+	char httpd_local[64]={0};//"AT+HTTPPH=/mango/checkDataYes\r\n";	
+	char httpd_mode[64]={0};//"AT+HTTPTP=GET\r\n";	
+	strcpy(httpd_mode,"AT+HTTPTP=GET\n");
 	strcpy(httpd_local,"AT+HTTPPH=/saveData/airmessage/messMgr.do?JSONStr=");
 	strcpy(httpd_send,"AT+HTTPDT\n");
+	rt_device_write(dev_wifi, 0, (void *)httpd_mode, rt_strlen(httpd_mode));
+	rt_thread_delay(30);
 	char *send=(char *)sram_malloc(rt_strlen(buf)+rt_strlen(httpd_local)+1+1);
 	rt_memset(send,'\0',rt_strlen(buf)+rt_strlen(httpd_local)+1+1);
 	strcpy(send,httpd_local);
@@ -152,6 +156,29 @@ void send_web(char *buf,int timeout)
 	sram_free(send);
 	rt_sem_take(&(server_sem), timeout);//wait for server respond
 }
+void send_web_post(char *buf,int timeout)
+{
+	char httpd_send[64]={0};//"AT+HTTPDT\r\n";
+	char httpd_local[64]={0};//"AT+HTTPPH=/mango/checkDataYes\r\n";
+	char httpd_mode[64]={0};//"AT+HTTPTP=GET\r\n";	
+	strcpy(httpd_mode,"AT+HTTPTP=POST\n");
+	strcpy(httpd_local,"AT+HTTPPH=/saveData/airmessage/messMgr.do\n");
+	strcpy(httpd_send,"AT+HTTPDT=JSONStr=");
+	rt_device_write(dev_wifi, 0, (void *)httpd_mode, rt_strlen(httpd_mode));
+	rt_thread_delay(30);
+	char *send=(char *)sram_malloc(rt_strlen(buf)+rt_strlen(httpd_send)+1+1);
+	rt_memset(send,'\0',rt_strlen(buf)+rt_strlen(httpd_send)+1+1);
+	strcpy(send,httpd_send);
+	strcat(send,buf);
+	strcat(send,"\n");
+	rt_kprintf("send %s",send);
+	rt_device_write(dev_wifi, 0, (void *)httpd_local, rt_strlen(send));
+	rt_thread_delay(10);
+	rt_device_write(dev_wifi, 0, (void *)send, rt_strlen(httpd_send));
+	sram_free(send);
+	rt_sem_take(&(server_sem), timeout);//wait for server respond
+}
+
 char *doit_data(char *text,const char *item_str)
 {	
 	char *out=RT_NULL;
@@ -296,7 +323,7 @@ void resend_history(char *date_begin,char *date_end)
 						{
 							line[rt_strlen(line)-1]='\0';							
 							rt_kprintf(MAIN_PROCESS"rsend web %s",line);
-							send_web(line,RT_WAITING_FOREVER);
+							send_web_post(line,RT_WAITING_FOREVER);
 							char *rcv=wifi_result;
 							if(rt_strlen(rcv)!=0)
 							{	
@@ -313,7 +340,7 @@ void resend_history(char *date_begin,char *date_end)
 						{						
 							line[rt_strlen(line)-1]='\0';
 							rt_kprintf(MAIN_PROCESS"rsend web %s",line);
-							send_web(line,RT_WAITING_FOREVER);
+							send_web_post(line,RT_WAITING_FOREVER);
 							char *rcv=wifi_result;
 							if(rt_strlen(rcv)!=0)
 							{	
@@ -377,6 +404,7 @@ void sync_server(int fd,int resend)
 	sync_message=add_item(sync_message,ID_DEVICE_IP_ADDR,"16.168.1.23");
 	sync_message=add_item(sync_message,ID_DEVICE_PORT,"9517");
 	rt_kprintf(SUB_PROCESS"<sync GET>%s\n",sync_message);
+	#if 0
 	j=0;
 	for(i=0;i<rt_strlen(sync_message);i++)
 	{
@@ -393,10 +421,11 @@ void sync_server(int fd,int resend)
 			out1[j++]=sync_message[i];
 		}
 	}
-	send_web(out1,RT_WAITING_FOREVER);
+	#endif
+	send_web_post(sync_message,RT_WAITING_FOREVER);
 	rcv=wifi_result;
 	sram_free(sync_message);
-	sram_free(out1);
+	//sram_free(out1);
 	if(rt_strlen(rcv)!=0)
 	{	
 		int len=rt_strlen(rcv);
@@ -573,7 +602,7 @@ void cap_thread(void* parameter)
 						{
 							case TIME_BYTE:
 								{
-									rt_sprintf(date,"20%02d-%02d-%02d%%20%02d:%02d",to_check[i+5],to_check[i+6],to_check[i+7],to_check[i+8],to_check[i+9],to_check[i+10]);
+									rt_sprintf(date,"20%02d-%02d-%02d %02d:%02d",to_check[i+5],to_check[i+6],to_check[i+7],to_check[i+8],to_check[i+9],to_check[i+10]);
 									rt_kprintf(SUB_PROCESS"date is %s\r\n",date);
 									post_message=add_item(post_message,ID_DEVICE_CAP_TIME,date);
 									can_send=1;
@@ -587,7 +616,7 @@ void cap_thread(void* parameter)
 								break;
 							case RESEND_BYTE:
 								{
-									rt_device_read(dev_cap,0,server_time,13);
+									rt_device_write(dev_cap,0,server_time,13);
 								}
 								break;
 							default:
@@ -595,7 +624,7 @@ void cap_thread(void* parameter)
 									/*get cap data*/
 									if(to_check[i+5]==0x45 && to_check[i+6]==0x52 && to_check[i+7]==0x52 && to_check[i+8]==0x4f && to_check[i+9]==0x52)
 									{
-										rt_sprintf(error,"%dth%%20sensor%%20possible%%20error",to_check[i+3]);
+										rt_sprintf(error,"%dth sensor possible error",to_check[i+3]);
 										post_message=add_item(post_message,ID_ALERT_CAP_FAILED,error);
 									}
 									else
@@ -640,6 +669,7 @@ void cap_thread(void* parameter)
 					if(can_send)
 					{
 						can_send=0;
+						#if 0
 						j=0;
 						for(i=0;i<rt_strlen(post_message);i++)
 						{
@@ -657,10 +687,11 @@ void cap_thread(void* parameter)
 								out1[j++]=post_message[i];
 							}
 						}
-						//save_to_file(date,out1);
-						send_web(out1,RT_WAITING_FOREVER);
-						sram_free(out1);
+						#endif
+						save_to_file(date,post_message);
+						send_web_post(post_message,RT_WAITING_FOREVER);
 						sram_free(post_message);
+						//sram_free(post_message);
 						post_message=NULL;
 						if(rt_strlen(wifi_result)!=0 && rt_strncmp(wifi_result,"ok",rt_strlen("ok"))==0)
 						{	
