@@ -11,6 +11,7 @@ stm32f30x_it.c
 led.c
 ili93xx.c
 usart.c
+cJSON.c
 """)
 
 # add Ethernet drivers.

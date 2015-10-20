@@ -15,6 +15,8 @@
 
 #include <board.h>
 #include <rtthread.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef RT_USING_LWIP
 #include <lwip/sys.h>
@@ -27,12 +29,34 @@
 #ifdef RT_USING_GDB
 #include <gdb_stub.h>
 #endif
+#include "cJSON.h"
+
 static rt_uint8_t led_stack[ 512 ];
 static struct rt_thread led_thread;
+char *add_item(char *old,char *id,char *text)
+{
+	cJSON *root;
+	char *out;
+	if(old!=RT_NULL)
+		root=cJSON_Parse(old);
+	else
+		root=cJSON_CreateObject();	
+	cJSON_AddItemToObject(root, id, cJSON_CreateString(text));
+	out=cJSON_Print(root);	
+	cJSON_Delete(root);
+	if(old)
+		rt_free(old);
+	
+	return out;
+}
+
+
 static void led_thread_entry(void* parameter)
 {
     unsigned int count=0;
- 
+	char buf[256]={0};
+	char *tmp=RT_NULL;
+ 	tmp=add_item(RT_NULL,"12","34");
     rt_hw_led_init();
     while (1)
     {
@@ -40,6 +64,9 @@ static void led_thread_entry(void* parameter)
 #ifndef RT_USING_FINSH
         rt_kprintf("led on, count : %d\r\n",count);
 #endif
+		rt_sprintf(buf,"led on , count : %d",count);
+		tmp=add_item(tmp,"12",buf);
+		rt_kprintf("==>%s",tmp);
         count++;
         rt_hw_led_on(0);
         rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
