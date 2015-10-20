@@ -113,7 +113,8 @@ char *add_item(char *old,char *id,char *text)
 	else
 		root=cJSON_CreateObject();	
 	cJSON_AddItemToObject(root, id, cJSON_CreateString(text));
-	out=cJSON_Print(root);	
+	//out=cJSON_Print(root);	
+	out=cJSON_PrintUnformatted(root);	
 	cJSON_Delete(root);
 	if(old)
 		sram_free(old);
@@ -854,8 +855,9 @@ int init_cap()
 		rt_device_control(dev_cap,RT_DEVICE_CTRL_CONFIG,&config);	
 		rt_sem_init(&(cap_rx_sem), "cap_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_cap, cap_rx_ind);
-		//rt_thread_startup(rt_thread_create("thread_cap",cap_thread, 0,1024, 20, 10));
+		rt_thread_startup(rt_thread_create("thread_cap",cap_thread, 0,1024, 20, 10));
 		//rt_device_write(dev_cap, 0, (void *)read_co2, 9);
+		#if 0
 		post_message=add_item(RT_NULL,ID_DGRAM_TYPE,TYPE_DGRAM_DATA);
 		post_message=add_item(post_message,ID_DEVICE_UID,"230FFEE9981283737D");
 		post_message=add_item(post_message,ID_DEVICE_IP_ADDR,"192.168.1.2");
@@ -865,6 +867,7 @@ int init_cap()
 		post_message=add_item(post_message,"32","9511.df");
 		rt_kprintf("==>\n%s",post_message);
 		sram_free(post_message);
+		#endif
 	}
 	else
 	{
