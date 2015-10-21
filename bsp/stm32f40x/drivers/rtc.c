@@ -22,7 +22,7 @@ RTC_TimeTypeDef RTC_TimeStructure;
 RTC_InitTypeDef RTC_InitStructure;
 RTC_AlarmTypeDef  RTC_AlarmStructure;
 RTC_DateTypeDef RTC_DateStructure;
-
+extern struct rt_semaphore alarm_sem;
 #define MINUTE   60
 #define HOUR   (60*MINUTE)
 #define DAY   (24*HOUR)
@@ -158,7 +158,21 @@ static rt_err_t rt_rtc_control(rt_device_t dev, rt_uint8_t cmd, void *args)
 
     case RT_DEVICE_CTRL_RTC_SET_ALARM:
     {
+		NVIC_InitTypeDef  NVIC_InitStructure;
+		EXTI_InitTypeDef  EXTI_InitStructure;
         time = (time_t *)args;
+		RTC_ClearFlag(RTC_FLAG_ALRAF);
+		EXTI_ClearITPendingBit(EXTI_Line17);
+		EXTI_InitStructure.EXTI_Line = EXTI_Line17;
+		EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+		EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+		EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+		EXTI_Init(&EXTI_InitStructure);
+		NVIC_InitStructure.NVIC_IRQChannel = RTC_Alarm_IRQn;
+		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+		NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+		NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+		NVIC_Init(&NVIC_InitStructure);
 
         /* Enable the PWR clock */
 	    RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
@@ -269,8 +283,6 @@ void RTC_TimeShow(void)
 
 int RTC_Configuration(void)
 {
-	NVIC_InitTypeDef  NVIC_InitStructure;
-	EXTI_InitTypeDef  EXTI_InitStructure;
 
 	if(RTC_Config() < 0 )
 		return -1;
@@ -290,19 +302,7 @@ int RTC_Configuration(void)
 	RTC_InitStructure.RTC_AsynchPrediv = AsynchPrediv;
 	RTC_InitStructure.RTC_SynchPrediv =  SynchPrediv;
 	RTC_InitStructure.RTC_HourFormat = RTC_HourFormat_24;
-	RTC_Init(&RTC_InitStructure);
-	RTC_ClearFlag(RTC_FLAG_ALRAF);
-	EXTI_ClearITPendingBit(EXTI_Line17);
-	EXTI_InitStructure.EXTI_Line = EXTI_Line17;
-	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
-	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-	EXTI_Init(&EXTI_InitStructure);
-	NVIC_InitStructure.NVIC_IRQChannel = RTC_Alarm_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init(&NVIC_InitStructure);
+	RTC_Init(&RTC_InitStructure);	
 	
 	/* Set Current Time and Date */
 	RTC_SetTime(RTC_Format_BCD, &RTC_TimeStructure);
@@ -399,6 +399,7 @@ void RTC_Alarm_IRQHandler(void)
     RTC_ClearITPendingBit(RTC_IT_ALRA);
     RTC_ClearFlag(RTC_FLAG_ALRAF);
     PWR_BackupAccessCmd(DISABLE);
+	rt_sem_release(&(alarm_sem));
   }
 }
 
