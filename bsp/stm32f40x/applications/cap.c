@@ -765,36 +765,10 @@ static rt_err_t wifi_rx_ind(rt_device_t dev, rt_size_t size)
 
 void wifi_thread(void* parameter)
 {	
-	unsigned char switch_at='+';
-	unsigned char done='a';
 	int len=0,i=0;
 	char *ptr=(char *)sram_malloc(256);
-	char httpd_url[64]={0};//"AT+HTTPURL=http://101.200.182.92,8080\r\n";
-	char httpd_mode[64]={0};//"AT+HTTPTP=GET\r\n";	
-	//strcpy(httpd_url,"AT+HTTPURL=http://101.200.182.92:8080\n");
-	strcpy(httpd_url,"AT+HTTPURL=http://16.168.0.3:8080\n");
-	strcpy(httpd_mode,"AT+HTTPTP=GET\n");
-	//rt_sem_init(&(wifi_rx_sem), "wifi_rx", 0, 0);
-	rt_sem_init(&(server_sem), "server_rx", 0, 0);
-	//rt_device_set_rx_indicate(dev_wifi, wifi_rx_ind);
-	//rt_thread_startup(rt_thread_create("thread_wifi",wifi_rcv, 0,512, 20, 10));
-	rt_thread_delay(200);	
-	rt_device_write(dev_wifi, 0, (void *)&switch_at, 1);
-	rt_thread_delay(3);
-	rt_device_write(dev_wifi, 0, (void *)&switch_at, 1);
-	rt_thread_delay(3);
-	rt_device_write(dev_wifi, 0, (void *)&switch_at, 1);
-	rt_thread_delay(3);
-	rt_device_write(dev_wifi, 0, (void *)&done, 1);
-	rt_thread_delay(1);
-	rt_device_write(dev_wifi, 0, (void *)httpd_url, rt_strlen(httpd_url));
-	rt_thread_delay(30);	
-	rt_device_write(dev_wifi, 0, (void *)httpd_url, rt_strlen(httpd_url));
-	rt_thread_delay(30);
-	rt_device_write(dev_wifi, 0, (void *)httpd_mode, rt_strlen(httpd_mode));
-	rt_thread_delay(30);
-	send_web_post("{\"1\":\"2\"}",RT_WAITING_FOREVER);
-	while(1)	
+	
+	while(1)
 	{		
 		if (rt_sem_take(&(wifi_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;	
 		len=rt_device_read(dev_wifi, 0, ptr+i, 128);
@@ -803,6 +777,7 @@ void wifi_thread(void* parameter)
 			int m;
 			for(m=0;m<len;m++)
 				rt_kprintf("%c",ptr[i+m]);
+			rt_sem_release(&(server_sem));    
 		}
 		continue;
 		if((len==1 && (ptr[0]=='+'||ptr[0]=='A'))||strstr(ptr,"+ERR")!=RT_NULL)
@@ -865,7 +840,6 @@ void wifi_thread(void* parameter)
 			}		
 			rt_memset(ptr,'\0',256);
 			i=0;		
-			rt_sem_release(&(server_sem));    
 		}
 	}	
 }
@@ -933,11 +907,62 @@ int init_cap()
 	}
 	dev_wifi=rt_device_find("uart2");
 	if (rt_device_open(dev_wifi, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)			
-	{		
-		
+	{			
+		unsigned char switch_at='+';
+		unsigned char done='a';
+		char *cmd;
+		rt_sem_init(&(server_sem), "server_rx", 0, 0);
 		rt_sem_init(&(wifi_rx_sem), "wifi_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_wifi, wifi_rx_ind);
 		rt_thread_startup(rt_thread_create("thread_wifi",wifi_thread, 0,512, 20, 10));
+
+		rt_thread_delay(200);	
+		rt_device_write(dev_wifi, 0, (void *)&switch_at, 1);
+		rt_thread_delay(3);
+		rt_device_write(dev_wifi, 0, (void *)&switch_at, 1);
+		rt_thread_delay(3);
+		rt_device_write(dev_wifi, 0, (void *)&switch_at, 1);
+		rt_thread_delay(3);
+		rt_device_write(dev_wifi, 0, (void *)&done, 1);
+		rt_thread_delay(10);
+		cmd=(char *)sram_malloc(512);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+HTPFT=OFF\n");
+		rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+HTPTP=POST\n");
+		rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+HTPSV=101.200.182.92,8080\n");
+		//strcpy(cmd,"AT+HTPSV=16.168.0.3,8080\n");
+		rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+HTPHD=Connection: Keep-Alive[0D][0A]Content-Type:application/x-www-form-urlencoded[0D][0A]\n");
+		rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+HTPURL=/saveData/airmessage/messMgr.do[3F]\n");
+		rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+Z\n");
+		rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(300);
+		//sram_free(cmd);
+		//cmd=(char *)sram_malloc(512);
+		rt_memset(cmd,0,512);
+		//strcpy(cmd,"JSONStr={\"0\":\"2\",\"30\":\"1234abcd\",\"35\":\"192.1.3.21\",\"36\":\"8769\",\"60\":\"34\",\"61\":\"54\",\"62\":\"14\",\"63\":\"54\",\"64\":\"120\",\"65\":\"121\",\"90\":\"92\",\"103\":\"2015-10-20 12:16\"}");
+		strcpy(cmd,"JSONStr={\"0\":\"5\",\"30\":\"230FFEE9981283737D\",\"35\":\"192.1.3.55\",\"36\":\"8769\"}");
+		rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
+		rt_kprintf("send %s\n",cmd);
+		//rt_thread_delay(200);
+		//rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
+		//rt_thread_delay(200);
+		//rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
+		sram_free(cmd);
 	}
 	else
 	{
@@ -1025,7 +1050,7 @@ void wifi(char *arg)
 	strcpy(cmd,arg);
 	strcat(cmd,"\n");
 	rt_kprintf("%s",cmd);
-	rt_device_write(dev_wifi, 0, (void *)cmd, rt_strlen(cmd));
+	rt_device_write(dev_wifi, 0, (void *)arg, rt_strlen(arg));
 	sram_free(cmd);
 }
 void rst()

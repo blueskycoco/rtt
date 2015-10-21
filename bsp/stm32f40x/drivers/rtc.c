@@ -399,7 +399,7 @@ void RTC_Alarm_IRQHandler(void)
     RTC_ClearITPendingBit(RTC_IT_ALRA);
     RTC_ClearFlag(RTC_FLAG_ALRAF);
     PWR_BackupAccessCmd(DISABLE);
-	rt_sem_release(&(alarm_sem));
+	//rt_sem_release(&(alarm_sem));
   }
 }
 
