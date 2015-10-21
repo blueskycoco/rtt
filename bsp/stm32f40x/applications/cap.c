@@ -18,7 +18,7 @@ struct rt_semaphore cap_rx_sem,wifi_rx_sem,server_sem,lcd_rx_sem;
 rt_device_t dev_cap,dev_wifi,dev_lcd;
 int data_co2=0,data_ch2o;
 char *post_message=NULL,can_send=0;
-char *server_time;
+char server_time[13];
 char wifi_result[512]={0};
 char *http_parse_result(const char*lpbuf);
 #define SRAM_MAPPING_ADDRESS 0x10000000
@@ -458,19 +458,19 @@ void sync_server(int fd,int resend)
 				unsigned int crc=0;
 				starttime=doit_data(rcv+4,(char *)"104");
 				server_time[0]=0x6c;server_time[1]=ARM_TO_CAP;
-				server_time[2]=0x01;server_time[3]=0x06;
+				server_time[2]=0x00;server_time[3]=0x01;server_time[4]=0x06;
 				rt_memcpy(year,starttime+2,2);
 				rt_memcpy(month,starttime+5,2);
 				rt_memcpy(day,starttime+8,2);
 				rt_memcpy(hour,starttime+11,2);
 				rt_memcpy(minute,starttime+14,2);
 				rt_memcpy(second,starttime+17,2);
-				server_time[4]=atoi(year);server_time[5]=atoi(month);
-				server_time[6]=atoi(day);server_time[7]=atoi(hour);
-				server_time[8]=atoi(minute);server_time[9]=atoi(second);
-				crc=CRC_check(server_time,10);
-				server_time[10]=(crc&0xff00)>>8;server_time[11]=crc&0x00ff;
-				write(fd,server_time,12);
+				server_time[5]=atoi(year);server_time[6]=atoi(month);
+				server_time[7]=atoi(day);server_time[8]=atoi(hour);
+				server_time[9]=atoi(minute);server_time[10]=atoi(second);
+				crc=CRC_check(server_time,11);
+				server_time[11]=(crc&0xff00)>>8;server_time[12]=crc&0x00ff;
+				write(fd,server_time,13);
 				rt_kprintf(MAIN_PROCESS"SERVER TIME %s\r\n",starttime);
 				//tmp=doit_data(rcv+4,(char *)"211");
 				rt_kprintf(MAIN_PROCESS"211 %s\r\n",doit_data(rcv+4,"211"));
@@ -504,12 +504,13 @@ void cap_thread(void* parameter)
 	char id[32]={0},data[32]={0},date[32]={0},error[32]={0};
 	char message[10],to_check[20];
 	unsigned char i=0;
-	int crc=0,j,message_type=0;
-
+	int crc=0,j,message_type=0;	
+	//char time[]={0x6C,0xBB,0x00,0x01,0x06,0x0F,0x09,0x10,0x09,0x09,0x09,0xE1,0xD8};
 	//char httpd_send[64]={0};//"AT+HTTPDT\r\n";
 	//char httpd_local[64]={0};//"AT+HTTPPH=/mango/checkDataYes\r\n";
 	//strcpy(httpd_local,"AT+HTTPPH=/saveData/airmessage/messMgr.do?JSONStr=");
 	//strcpy(httpd_send,"AT+HTTPDT\n");	
+	//rt_device_write(dev_cap, 0, (void *)time, 13);
 	while(1)	
 	{		
 		if (rt_sem_take(&(cap_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;
@@ -770,7 +771,8 @@ void wifi_thread(void* parameter)
 	char *ptr=(char *)sram_malloc(256);
 	char httpd_url[64]={0};//"AT+HTTPURL=http://101.200.182.92,8080\r\n";
 	char httpd_mode[64]={0};//"AT+HTTPTP=GET\r\n";	
-	strcpy(httpd_url,"AT+HTTPURL=http://101.200.182.92:8080\n");
+	//strcpy(httpd_url,"AT+HTTPURL=http://101.200.182.92:8080\n");
+	strcpy(httpd_url,"AT+HTTPURL=http://16.168.0.3:8080\n");
 	strcpy(httpd_mode,"AT+HTTPTP=GET\n");
 	//rt_sem_init(&(wifi_rx_sem), "wifi_rx", 0, 0);
 	rt_sem_init(&(server_sem), "server_rx", 0, 0);
@@ -791,6 +793,7 @@ void wifi_thread(void* parameter)
 	rt_thread_delay(30);
 	rt_device_write(dev_wifi, 0, (void *)httpd_mode, rt_strlen(httpd_mode));
 	rt_thread_delay(30);
+	send_web_post("{\"1\":\"2\"}",RT_WAITING_FOREVER);
 	while(1)	
 	{		
 		if (rt_sem_take(&(wifi_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;	
@@ -888,7 +891,7 @@ int init_cap()
 		rt_device_control(dev_cap,RT_DEVICE_CTRL_CONFIG,&config);	
 		rt_sem_init(&(cap_rx_sem), "cap_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_cap, cap_rx_ind);
-		rt_thread_startup(rt_thread_create("thread_cap",cap_thread, 0,1024, 20, 10));
+		rt_thread_startup(rt_thread_create("thread_cap",cap_thread, 0,2048, 20, 10));
 		//rt_device_write(dev_cap, 0, (void *)read_co2, 9);
 		#if 0
 		post_message=add_item(RT_NULL,ID_DGRAM_TYPE,TYPE_DGRAM_DATA);
