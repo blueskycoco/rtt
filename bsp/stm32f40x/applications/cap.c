@@ -14,12 +14,12 @@
 #include "cJSON.h"
 #include "cap.h"
 //#define SUB_PROCESS "[CapProcess]"
-struct rt_semaphore cap_rx_sem,wifi_rx_sem,server_sem,lcd_rx_sem;
+struct rt_semaphore cap_rx_sem,wifi_rx_sem,server_sem,lcd_rx_sem,alarm_sem;;
 rt_device_t dev_cap,dev_wifi,dev_lcd;
 int data_co2=0,data_ch2o;
 char *post_message=NULL,can_send=0;
-char server_time[13];
-char wifi_result[512]={0};
+char *server_time=RT_NULL;
+char *wifi_result=RT_NULL;
 char *http_parse_result(const char*lpbuf);
 #define SRAM_MAPPING_ADDRESS 0x10000000
 struct rt_memheap system_heap;
@@ -73,6 +73,7 @@ unsigned int CRC_check(char *Data,char Data_length)
 	}
 	return LOCAL_CRC;
 }
+#if 0
 char *http_parse_result(const char*lpbuf)  
 {
 	char *ptmp = RT_NULL;      
@@ -103,7 +104,7 @@ char *http_parse_result(const char*lpbuf)
 	strcpy(response,ptmp+4); 
 	return response;
 }  
-
+#endif
 char *add_item(char *old,char *id,char *text)
 {
 	cJSON *root;
@@ -121,6 +122,7 @@ char *add_item(char *old,char *id,char *text)
 	
 	return out;
 }
+#if 0
 char *add_obj(char *old,char *id,char *pad)
 {
 	cJSON *root,*fmt;
@@ -156,7 +158,8 @@ void send_web_get(char *buf,int timeout)
 	sram_free(send);
 	rt_sem_take(&(server_sem), timeout);//wait for server respond
 }
-void send_web_post(char *buf,int timeout)
+#endif
+void send_web_post(char *log,char *buf,int timeout)
 {
 	#if 0
 	char httpd_send[64]={0};//"AT+HTTPDT\r\n";
@@ -186,7 +189,7 @@ void send_web_post(char *buf,int timeout)
 	rt_device_write(dev_wifi, 0, (void *)httpd_send, rt_strlen(httpd_send));
 	//rt_sem_take(&(server_sem), timeout);
 	rt_thread_delay(100);	
-	rt_kprintf("send done.=> ");
+	rt_kprintf("%ssend done.=> ",log);
 	for(i=0;i<strlen(buf);i++)
 		rt_kprintf("%c",buf[i]);
 	rt_kprintf("\n");	
@@ -227,10 +230,9 @@ char *doit_data(char *text,const char *item_str)
 }
 void save_to_file(char *date,char *message)
 {
-	//FILE *fp;
 	int fp;
-	char *file_path;
-	char *data;
+	char *file_path=RT_NULL;
+	char *data=RT_NULL;
 	file_path=(char *)sram_malloc(256);
 	data=(char *)sram_malloc(512);
 	rt_memset(file_path,0,256);
@@ -244,7 +246,7 @@ void save_to_file(char *date,char *message)
 		fp=open(file_path,O_WRONLY | O_CREAT ,0);
 		if(fp<0)
 		{
-			rt_kprintf("can not create %s\r\n",file_path);
+			rt_kprintf(RESEND_PROCESS"can not create %s\r\n",file_path);
 			sram_free(file_path);
 			sram_free(data);
 			return;
@@ -271,17 +273,25 @@ void resend_history(char *date_begin,char *date_end)
 {
 	FILE *fp;
 	int month_b,year_b,day_b,month_e,year_e,day_e,hour_e,minute_e,max_day;
-	char year_begin[5]={0};
-	char year_end[5]={0};
-	char month_begin[3]={0};
-	char month_end[3]={0};
-	char day_begin[3]={0};
-	char day_end[3]={0};
-	char hour_end[3]={0};
-	char minute_end[3]={0};
-	char file_path[256]={0};
-//	char data[512]={0};
-	char date[32]={0};
+	char *year_begin=RT_NULL;
+	char *year_end=RT_NULL;
+	char *month_begin=RT_NULL;
+	char *month_end=RT_NULL;
+	char *day_begin=RT_NULL;
+	char *day_end=RT_NULL;
+	char *hour_end=RT_NULL;
+	char *minute_end=RT_NULL;
+	char *file_path=RT_NULL;
+	char *date=RT_NULL;
+	file_path=(char *)sram_malloc(256);
+	date=(char *)sram_malloc(32);
+	minute_end=(char *)sram_malloc(3);
+	hour_end=(char *)sram_malloc(3);
+	day_end=(char *)sram_malloc(3);
+	month_end=(char *)sram_malloc(3);
+	month_begin=(char *)sram_malloc(3);
+	year_end=(char *)sram_malloc(5);
+	year_begin=(char *)sram_malloc(5);
 	rt_memcpy(year_begin,date_begin,4);
 	rt_memcpy(year_end,date_end,4);
 	rt_memcpy(month_begin,date_begin+5,2);
@@ -298,7 +308,7 @@ void resend_history(char *date_begin,char *date_end)
 	day_e=atoi(day_end);
 	hour_e=atoi(hour_end);
 	minute_e=atoi(minute_end);
-	rt_kprintf(MAIN_PROCESS"year_b %04d,month_b %02d,day_b %02d,year_e %04d,month_e %02d,day_e %02d\r\n",year_b,month_b,day_b,year_e,month_e,day_e);
+	rt_kprintf(RESEND_PROCESS"year_b %04d,month_b %02d,day_b %02d,year_e %04d,month_e %02d,day_e %02d\r\n",year_b,month_b,day_b,year_e,month_e,day_e);
 	while(1)
 	{
 		if(year_b<year_e || month_b<month_e || day_b<=day_e)
@@ -309,14 +319,14 @@ void resend_history(char *date_begin,char *date_end)
 			strcpy(file_path,FILE_PATH);
 			rt_memcpy(file_path+rt_strlen(FILE_PATH),date,10);
 			strcat(file_path,".dat");
-			rt_kprintf(MAIN_PROCESS"to open %s\r\n",file_path);
+			rt_kprintf(RESEND_PROCESS"to open %s\r\n",file_path);
 			fp = fopen(file_path, "r");
 			if (fp != NULL)
 			{
 				int read=0,tmp_i=0;
 				char * line = NULL;
 				size_t len = 0;
-				rt_kprintf(MAIN_PROCESS"open file %s ok\r\n",file_path);
+				rt_kprintf(RESEND_PROCESS"open file %s ok\r\n",file_path);
 				while ((read = getline(&line, &len, fp)) != -1) 
 				{				
 					if(year_b==year_e && month_b==month_e && day_b==day_e)
@@ -328,23 +338,32 @@ void resend_history(char *date_begin,char *date_end)
 							rt_memcpy(local_minute,line+3,2);
 							if((atoi(local_hour)*60+atoi(local_minute))>(hour_e*60+minute_e))
 							{
-								rt_kprintf(MAIN_PROCESS"file_time %02d:%02d,end time %02d:%02d",atoi(local_hour),atoi(local_minute),hour_e,minute_e);
+								rt_kprintf(RESEND_PROCESS"file_time %02d:%02d,end time %02d:%02d",atoi(local_hour),atoi(local_minute),hour_e,minute_e);
 								sram_free(line);
 								fclose(fp);
+								sram_free(file_path);
+								sram_free(date);
+								sram_free(minute_end);
+								sram_free(hour_end);
+								sram_free(day_end);
+								sram_free(month_end);
+								sram_free(month_begin);
+								sram_free(year_end);
+								sram_free(year_begin);
 								return;
 							}
 						}
 						else
 						{
 							line[rt_strlen(line)-1]='\0';							
-							rt_kprintf(MAIN_PROCESS"rsend web %s",line);
-							send_web_post(line,RT_WAITING_FOREVER);
+							rt_kprintf(RESEND_PROCESS"rsend web %s",line);
+							send_web_post(RESEND_PROCESS,line,RT_WAITING_FOREVER);
 							char *rcv=wifi_result;
 							if(rt_strlen(rcv)!=0)
 							{	
 								int len1=rt_strlen(rcv);
-								rt_kprintf(MAIN_PROCESS"<=== %s %d\n",rcv,len1);
-								rt_kprintf(MAIN_PROCESS"send ok\n");
+								rt_kprintf(RESEND_PROCESS"<=== %s %d\n",rcv,len1);
+								rt_kprintf(RESEND_PROCESS"send ok\n");
 								//sram_free(rcv);
 							}
 						}
@@ -354,14 +373,14 @@ void resend_history(char *date_begin,char *date_end)
 						if((tmp_i%2)!=0)
 						{						
 							line[rt_strlen(line)-1]='\0';
-							rt_kprintf(MAIN_PROCESS"rsend web %s",line);
-							send_web_post(line,RT_WAITING_FOREVER);
+							rt_kprintf(RESEND_PROCESS"rsend web %s",line);
+							send_web_post(RESEND_PROCESS,line,RT_WAITING_FOREVER);
 							char *rcv=wifi_result;
 							if(rt_strlen(rcv)!=0)
 							{	
 								int len1=rt_strlen(rcv);
-								rt_kprintf(MAIN_PROCESS"<=== %s %d\n",rcv,len1);
-								rt_kprintf(MAIN_PROCESS"send ok\n");
+								rt_kprintf(RESEND_PROCESS"<=== %s %d\n",rcv,len1);
+								rt_kprintf(RESEND_PROCESS"send ok\n");
 								//sram_free(rcv);
 							}
 						}
@@ -373,7 +392,7 @@ void resend_history(char *date_begin,char *date_end)
 			}
 			else
 			{
-				rt_kprintf(MAIN_PROCESS"can not open %s\r\n",file_path);
+				rt_kprintf(RESEND_PROCESS"can not open %s\r\n",file_path);
 				//break;
 			}
 			if(month_b==2)
@@ -398,12 +417,21 @@ void resend_history(char *date_begin,char *date_end)
 		}
 		else
 		{
-			rt_kprintf(MAIN_PROCESS"end year_b %04d,month_b %02d,day_b %02d,year_e %04d,month_e %02d,day_e %02d\r\n",year_b,month_b,day_b,year_e,month_e,day_e);
+			rt_kprintf(RESEND_PROCESS"end year_b %04d,month_b %02d,day_b %02d,year_e %04d,month_e %02d,day_e %02d\r\n",year_b,month_b,day_b,year_e,month_e,day_e);
 			break;
 		}
 	}
 	if(fp!=NULL)
 	fclose(fp);
+	sram_free(file_path);
+	sram_free(date);
+	sram_free(minute_end);
+	sram_free(hour_end);
+	sram_free(day_end);
+	sram_free(month_end);
+	sram_free(month_begin);
+	sram_free(year_end);
+	sram_free(year_begin);
 }
 
 void sync_server(int fd,int resend)
@@ -418,46 +446,28 @@ void sync_server(int fd,int resend)
 	sync_message=add_item(sync_message,ID_DEVICE_UID,"230FFEE9981283737D");
 	sync_message=add_item(sync_message,ID_DEVICE_IP_ADDR,"16.168.1.23");
 	sync_message=add_item(sync_message,ID_DEVICE_PORT,"9517");
-	rt_kprintf(SUB_PROCESS"<sync GET>%s\n",sync_message);
-	#if 0
-	j=0;
-	for(i=0;i<rt_strlen(sync_message);i++)
-	{
-		if(sync_message[i]=='\n'||sync_message[i]=='\r'||sync_message[i]=='\t')
-			j++;
-	}
-	char *out1=sram_malloc(rt_strlen(sync_message)-j+1);
-	rt_memset(out1,'\0',rt_strlen(sync_message)-j+1);
-	j=0;
-	for(i=0;i<rt_strlen(sync_message);i++)
-	{
-		if(sync_message[i]!='\r'&&sync_message[i]!='\n'&&sync_message[i]!='\t')		
-		{
-			out1[j++]=sync_message[i];
-		}
-	}
-	#endif
-	send_web_post(sync_message,RT_WAITING_FOREVER);
+	rt_kprintf(ALARM_PROCESS"<sync GET>%s\n",sync_message);
+	
+	send_web_post(ALARM_PROCESS,sync_message,RT_WAITING_FOREVER);
 	rcv=wifi_result;
 	sram_free(sync_message);
-	//sram_free(out1);
 	if(rt_strlen(rcv)!=0)
 	{	
 		int len=rt_strlen(rcv);
-		rt_kprintf(MAIN_PROCESS"<=== %s %d\n",rcv,len);
-		rt_kprintf(MAIN_PROCESS"send ok\n");
+		rt_kprintf(ALARM_PROCESS"<=== %s %d\n",rcv,len);
+		rt_kprintf(ALARM_PROCESS"send ok\n");
 		char *starttime=NULL;
 		char *tmp=NULL;
 		if(resend)
 		{
 			
-			starttime=doit_data(rcv+3,(char *)"101");
-			tmp=doit_data(rcv+3,(char *)"102");
+			starttime=doit_data(rcv,(char *)"101");
+			tmp=doit_data(rcv,(char *)"102");
 			if(starttime!=NULL && tmp!=NULL)
 			{
-				rt_kprintf(MAIN_PROCESS"%s\r\n",tmp);
-				rt_kprintf(MAIN_PROCESS"%s\r\n",starttime);
-				resend_history(starttime,tmp);
+				rt_kprintf(ALARM_PROCESS"%s\r\n",tmp);
+				rt_kprintf(ALARM_PROCESS"%s\r\n",starttime);
+				//resend_history(starttime,tmp);
 				sram_free(starttime);
 				sram_free(tmp);
 			}
@@ -469,7 +479,7 @@ void sync_server(int fd,int resend)
 			//{
 				char year[3]={0},month[3]={0},day[3]={0},hour[3]={0},minute[3]={0},second[3]={0};
 				unsigned int crc=0;
-				starttime=doit_data(rcv+4,(char *)"104");
+				starttime=doit_data(rcv,(char *)"104");
 				server_time[0]=0x6c;server_time[1]=ARM_TO_CAP;
 				server_time[2]=0x00;server_time[3]=0x01;server_time[4]=0x06;
 				rt_memcpy(year,starttime+2,2);
@@ -484,10 +494,12 @@ void sync_server(int fd,int resend)
 				crc=CRC_check(server_time,11);
 				server_time[11]=(crc&0xff00)>>8;server_time[12]=crc&0x00ff;
 				write(fd,server_time,13);
-				rt_kprintf(MAIN_PROCESS"SERVER TIME %s\r\n",starttime);
+				rt_kprintf(ALARM_PROCESS"SERVER TIME %s\r\n",starttime);
 				//tmp=doit_data(rcv+4,(char *)"211");
-				rt_kprintf(MAIN_PROCESS"211 %s\r\n",doit_data(rcv+4,"211"));
-				rt_kprintf(MAIN_PROCESS"212 %s\r\n",doit_data(rcv+4,"212"));
+				rt_kprintf(ALARM_PROCESS"211 %s\r\n",doit_data(rcv,"211"));
+				rt_kprintf(ALARM_PROCESS"212 %s\r\n",doit_data(rcv,"212"));
+				set_date(atoi(year),atoi(month),atoi(day));
+				set_time(atoi(hour),atoi(minute),atoi(second));
 			//}
 			//else if(atoi(type)==6)
 			//{
@@ -686,7 +698,7 @@ void cap_thread(void* parameter)
 					{
 						can_send=0;						
 						save_to_file(date,post_message);
-						send_web_post(post_message,RT_WAITING_FOREVER);
+						send_web_post(SUB_PROCESS,post_message,RT_WAITING_FOREVER);
 						sram_free(post_message);
 						//sram_free(post_message);
 						post_message=NULL;
@@ -851,6 +863,53 @@ void wifi_thread(void* parameter)
 		}
 	}	
 }
+void set_next_alarm(int step)
+{
+	time_t now;
+	struct tm* rtc_tm;
+
+	time(&now);
+	rtc_tm = localtime(&now);
+	rtc_tm->tm_sec += step;
+	if (rtc_tm->tm_sec >= 60) {
+	rtc_tm->tm_sec %= 60;
+	rtc_tm->tm_min++;
+	}
+	if (rtc_tm->tm_min == 60) {
+	rtc_tm->tm_min = 0;
+	rtc_tm->tm_hour++;
+	}
+	if (rtc_tm->tm_hour == 24)
+	rtc_tm->tm_hour = 0;
+
+	rtc_tm->tm_min +=0;
+	if (rtc_tm->tm_min == 60) {
+	rtc_tm->tm_min = 0;
+	rtc_tm->tm_hour++;
+	}
+	if (rtc_tm->tm_hour == 24)
+	rtc_tm->tm_hour = 0;
+
+	rtc_tm->tm_hour +=0;
+	if (rtc_tm->tm_hour == 24)
+	rtc_tm->tm_hour = 0;
+	rt_kprintf(ALARM_PROCESS"tm_hour %02d,tm_min %02d,tm_sec %02d\r\n",rtc_tm->tm_hour,rtc_tm->tm_min,rtc_tm->tm_sec);		
+	set_alarm(rtc_tm->tm_hour,rtc_tm->tm_min,rtc_tm->tm_sec);
+
+}
+
+void alarm_thread(void* parameter)
+{
+	set_next_alarm(10);
+	while(1)	
+	{		
+		if(rt_sem_take(&(alarm_sem), RT_WAITING_FOREVER) != RT_EOK) continue;
+		sync_server(dev_cap,0);
+		sync_server(dev_cap,1);
+		set_next_alarm(10);
+	}
+
+}
 
 //uart1 for debug
 //uart2 for wifi
@@ -859,7 +918,10 @@ void wifi_thread(void* parameter)
 int init_cap()
 {
 	sram_init();
-	
+	server_time=(char *)sram_malloc(13);
+	wifi_result=(char *)sram_malloc(512);
+	rt_sem_init(&(alarm_sem), "alarm", 0, 0);
+	rt_thread_startup(rt_thread_create("alarm",alarm_thread, 0,512, 20, 10));
 	dev_lcd=rt_device_find("uart4");
 	if (rt_device_open(dev_lcd, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)			
 	{
@@ -874,7 +936,7 @@ int init_cap()
 		rt_device_control(dev_lcd,RT_DEVICE_CTRL_CONFIG,&config);	
 		rt_sem_init(&(lcd_rx_sem), "lcd_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_lcd, lcd_rx_ind);
-		rt_thread_startup(rt_thread_create("thread_lcd",lcd_thread, 0,512, 20, 10));
+		//rt_thread_startup(rt_thread_create("thread_lcd",lcd_thread, 0,512, 20, 10));
 	}
 	else
 	{

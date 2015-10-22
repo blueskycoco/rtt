@@ -278,7 +278,7 @@ void RTC_TimeShow(void)
   /* Get the current Time */
   RTC_GetTime(RTC_Format_BIN, &RTC_TimeStructure);
   /* Display time Format : hh:mm:ss */
-  rt_kprintf("%0.2d:%0.2d:%0.2d",RTC_TimeStructure.RTC_Hours, RTC_TimeStructure.RTC_Minutes, RTC_TimeStructure.RTC_Seconds);
+  rt_kprintf("\n%0.2d:%0.2d:%0.2d\n",RTC_TimeStructure.RTC_Hours, RTC_TimeStructure.RTC_Minutes, RTC_TimeStructure.RTC_Seconds);
 }
 
 int RTC_Configuration(void)
@@ -369,6 +369,7 @@ time_t time(time_t* t)
 
     return time;
 }
+
 #if defined (__IAR_SYSTEMS_ICC__) &&  (__VER__) >= 6020000   /* for IAR 6.2 later Compiler */
 #pragma module_name = "?time"
 time_t (__time32)(time_t *t)                                 /* Only supports 32-bit timestamp */
@@ -392,20 +393,17 @@ void RTC_Alarm_IRQHandler(void)
 {
   if(RTC_GetITStatus(RTC_IT_ALRA) != RESET) 
   {
-	rt_kprintf("alarm occur\n");
 	RTC_TimeShow();
     EXTI_ClearITPendingBit(EXTI_Line17);
     PWR_BackupAccessCmd(ENABLE);
     RTC_ClearITPendingBit(RTC_IT_ALRA);
     RTC_ClearFlag(RTC_FLAG_ALRAF);
     PWR_BackupAccessCmd(DISABLE);
-	//rt_sem_release(&(alarm_sem));
+	rt_sem_release(&(alarm_sem));
   }
 }
 
 
-#ifdef RT_USING_FINSH
-#include <finsh.h>
 
 void set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day)
 {
@@ -433,7 +431,6 @@ void set_date(rt_uint32_t year, rt_uint32_t month, rt_uint32_t day)
         rt_rtc_control(device, RT_DEVICE_CTRL_RTC_SET_TIME, &now);
     }
 }
-FINSH_FUNCTION_EXPORT(set_date, set date. e.g: set_date(2010,2,28))
 
 void set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
 {
@@ -460,7 +457,6 @@ void set_time(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
         rt_rtc_control(device, RT_DEVICE_CTRL_RTC_SET_TIME, &now);
     }
 }
-FINSH_FUNCTION_EXPORT(set_time, set time. e.g: set_time(23,59,59))
 void set_alarm(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
 {
 	time_t now;
@@ -486,7 +482,6 @@ void set_alarm(rt_uint32_t hour, rt_uint32_t minute, rt_uint32_t second)
 		rt_rtc_control(device, RT_DEVICE_CTRL_RTC_SET_ALARM, &now);
 	}
 }
-FINSH_FUNCTION_EXPORT(set_alarm, set alarm. e.g: set_alarm(23,59,59))
 
 void list_date()
 {
@@ -495,7 +490,6 @@ void list_date()
     time(&now);
     rt_kprintf("%s\n", ctime(&now));
 }
-FINSH_FUNCTION_EXPORT(list_date, show date and time.)
 void list_alarm()
 {
     time_t now;
@@ -503,5 +497,12 @@ void list_alarm()
     alarm(&now);
     rt_kprintf("%s\n", ctime(&now));
 }
+
+#ifdef RT_USING_FINSH
+#include <finsh.h>
+FINSH_FUNCTION_EXPORT(set_time, set time. e.g: set_time(23,59,59))	
+FINSH_FUNCTION_EXPORT(set_date, set date. e.g: set_date(2010,2,28))
+FINSH_FUNCTION_EXPORT(set_alarm, set alarm. e.g: set_alarm(23,59,59))
+FINSH_FUNCTION_EXPORT(list_date, show date and time.)
 FINSH_FUNCTION_EXPORT(list_alarm, show alarm time.)
 #endif

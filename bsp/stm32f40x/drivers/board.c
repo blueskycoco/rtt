@@ -93,8 +93,9 @@ void rt_hw_board_init()
     SysTick_Configuration();
 
     stm32_hw_usart_init();
+	#ifdef RT_USING_PIN
     stm32_hw_pin_init();
-    
+    #endif
 #ifdef RT_USING_CONSOLE
     rt_console_set_device(CONSOLE_DEVICE);
 #endif

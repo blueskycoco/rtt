@@ -84,5 +84,8 @@
 #define URL "http://101.200.182.92:8080/saveData/airmessage/messMgr.do"
 #define FILE_PATH	"/history/"
 #define MAIN_PROCESS 						"[MainSystem]:"
-#define SUB_PROCESS 						"[ChildSystem]:"
+#define SUB_PROCESS 						"[CapThread]:"
+#define ALARM_PROCESS 						"[AlarmThread]:"
+#define RESEND_PROCESS 						"[ResendThread]:"
+
 int init_cap();

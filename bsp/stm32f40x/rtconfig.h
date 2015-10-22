@@ -79,7 +79,7 @@
 #define RT_USING_UART4
 
 /* Using GPIO pin framework */
-#define RT_USING_PIN
+//#define RT_USING_PIN
 
 /* Using Hardware Timer framework */
 //#define RT_USING_HWTIMER
@@ -90,7 +90,7 @@
 #define RT_CONSOLEBUF_SIZE	128
 
 /* SECTION: finsh, a C-Express shell */
-#define RT_USING_FINSH
+//#define RT_USING_FINSH
 /* Using symbol table */
 #define FINSH_USING_SYMTAB
 #define FINSH_USING_DESCRIPTION
