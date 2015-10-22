@@ -883,7 +883,7 @@ int init_cap()
 		rt_device_control(dev_lcd,RT_DEVICE_CTRL_CONFIG,&config);	
 		rt_sem_init(&(lcd_rx_sem), "lcd_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_lcd, lcd_rx_ind);
-		//rt_thread_startup(rt_thread_create("thread_lcd",lcd_thread, 0,512, 20, 10));
+		rt_thread_startup(rt_thread_create("thread_lcd",lcd_thread, 0,512, 20, 10));
 	}
 	else
 	{
