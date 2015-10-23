@@ -759,7 +759,7 @@ static rt_err_t lcd_rx_ind(rt_device_t dev, rt_size_t size)
 void lcd_thread(void* parameter)
 {	
 	int len1=0,m=0;
-	char *ptr=sram_malloc(32);			
+	char *ptr=sram_malloc(32);	
 	while(1)	
 	{		
 		if (rt_sem_take(&(lcd_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;		
@@ -874,16 +874,16 @@ int init_cap()
 	{
 		struct serial_configure config;			
 		config.baud_rate=115200;
-		config.bit_order = BIT_ORDER_LSB;			
-		config.data_bits = DATA_BITS_8;			
-		config.parity	 = PARITY_NONE;			
-		config.stop_bits = STOP_BITS_1;				
-		config.invert	 = NRZ_NORMAL;				
-		config.bufsz	 = RT_SERIAL_RB_BUFSZ;			
-		rt_device_control(dev_lcd,RT_DEVICE_CTRL_CONFIG,&config);	
+		config.bit_order = BIT_ORDER_LSB;	
+		config.data_bits = DATA_BITS_8;
+		config.parity	 = PARITY_NONE;
+		config.stop_bits = STOP_BITS_1;
+		config.invert	 = NRZ_NORMAL;
+		config.bufsz	 = RT_SERIAL_RB_BUFSZ;
+		rt_device_control(dev_lcd,RT_DEVICE_CTRL_CONFIG,&config);
 		rt_sem_init(&(lcd_rx_sem), "lcd_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_lcd, lcd_rx_ind);
-		rt_thread_startup(rt_thread_create("thread_lcd",lcd_thread, 0,512, 20, 10));
+		rt_thread_startup(rt_thread_create("thread_lcd",lcd_thread, 0,256, 20, 10));
 	}
 	else
 	{
@@ -977,7 +977,7 @@ int init_cap()
 		rt_device_control(dev_cap,RT_DEVICE_CTRL_CONFIG,&config);	
 		rt_sem_init(&(cap_rx_sem), "cap_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_cap, cap_rx_ind);
-		rt_thread_startup(rt_thread_create("thread_cap",cap_thread, 0,2048, 20, 10));
+		rt_thread_startup(rt_thread_create("thread_cap",cap_thread, 0,1024, 20, 10));
 		//rt_device_write(dev_cap, 0, (void *)read_co2, 9);
 		#if 0
 		post_message=add_item(RT_NULL,ID_DGRAM_TYPE,TYPE_DGRAM_DATA);
