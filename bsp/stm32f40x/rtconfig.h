@@ -37,7 +37,7 @@
 #define RT_UFFS_DEVICE_MAX          1
 #define RT_UFFS_USE_CHECK_MARK_FUNCITON 1
 #define DFS_FILESYSTEMS_MAX			2
-#define DFS_FD_MAX					1
+#define DFS_FD_MAX					2
 
 /* SECTION: IPC */
 /* Using Semaphore*/
@@ -90,7 +90,7 @@
 #define RT_CONSOLEBUF_SIZE	128
 
 /* SECTION: finsh, a C-Express shell */
-#define RT_USING_FINSH
+//#define RT_USING_FINSH
 /* Using symbol table */
 #define FINSH_USING_SYMTAB
 #define FINSH_USING_DESCRIPTION

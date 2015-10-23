@@ -20,6 +20,7 @@ int data_co2=0,data_ch2o;
 char *post_message=NULL,can_send=0;
 char *server_time=RT_NULL;
 char *wifi_result=RT_NULL;
+struct rt_mutex     lock;
 char *http_parse_result(const char*lpbuf);
 #define SRAM_MAPPING_ADDRESS 0x10000000
 struct rt_memheap system_heap;
@@ -370,7 +371,8 @@ void resend_history(char *date_begin,char *date_end)
 						}
 						else
 						{
-							line[rt_strlen(line)-1]='\0';							
+							line[rt_strlen(line)-1]='\0';				
+							rt_mutex_take(&lock, RT_WAITING_FOREVER);
 							rt_kprintf(RESEND_PROCESS"rsend web:\n");
 							send_web_post(RESEND_PROCESS,line,100);
 							//char *rcv=wifi_result;
@@ -381,8 +383,8 @@ void resend_history(char *date_begin,char *date_end)
 								rt_kprintf(RESEND_PROCESS"send ok\n");
 								rt_memset(wifi_result,0,512);
 								g_index=0;
-								//sram_free(rcv);
 							}
+							rt_mutex_release(&lock);
 						}
 					}
 					else
@@ -390,6 +392,7 @@ void resend_history(char *date_begin,char *date_end)
 						if((tmp_i%2)!=0)
 						{						
 							line[rt_strlen(line)-1]='\0';
+							rt_mutex_take(&lock, RT_WAITING_FOREVER);
 							rt_kprintf(RESEND_PROCESS"rsend web:\n");
 							send_web_post(RESEND_PROCESS,line,100);
 							//char *rcv=wifi_result;
@@ -400,8 +403,8 @@ void resend_history(char *date_begin,char *date_end)
 								rt_kprintf(RESEND_PROCESS"send ok\n");
 								rt_memset(wifi_result,0,512);
 								g_index=0;
-								//sram_free(rcv);
 							}
+							rt_mutex_release(&lock);
 						}
 					}
 					tmp_i++;
@@ -467,7 +470,7 @@ void sync_server(int fd,int resend)
 	sync_message=add_item(sync_message,ID_DEVICE_IP_ADDR,"16.168.1.23");
 	sync_message=add_item(sync_message,ID_DEVICE_PORT,"9517");
 	rt_kprintf(ALARM_PROCESS"<sync GET>:\n");
-	
+	rt_mutex_take(&lock, RT_WAITING_FOREVER);
 	send_web_post(ALARM_PROCESS,sync_message,100);
 	sram_free(sync_message);
 	if(rt_strlen(wifi_result)!=0)
@@ -477,6 +480,7 @@ void sync_server(int fd,int resend)
 		rt_kprintf(ALARM_PROCESS"send ok\n");
 		char *starttime=NULL;
 		char *tmp=NULL;
+		rt_mutex_release(&lock);
 		if(resend)
 		{
 			
@@ -528,7 +532,10 @@ void sync_server(int fd,int resend)
 		//sram_free(rcv);
 	}
 	else
+	{
 		rt_kprintf("==>%s\n",wifi_result);
+		rt_mutex_release(&lock);
+	}
 	rt_memset(wifi_result,0,512);
 	g_index=0;
 	return ;
@@ -721,7 +728,8 @@ void cap_thread(void* parameter)
 					if(can_send)
 					{
 						can_send=0;						
-						save_to_file(date,post_message);
+						save_to_file(date,post_message);						
+						rt_mutex_take(&lock, RT_WAITING_FOREVER);
 						send_web_post(SUB_PROCESS,post_message,100);
 						sram_free(post_message);
 						//sram_free(post_message);
@@ -735,6 +743,8 @@ void cap_thread(void* parameter)
 						else
 							rt_kprintf(SUB_PROCESS"send failed %s\r\n",wifi_result);
 						rt_memset(wifi_result,0,512);
+						g_index=0;
+						rt_mutex_release(&lock);
 					}
 					state=STATE_IDLE;
 					i=0;
@@ -864,6 +874,7 @@ void alarm_thread(void* parameter)
 int init_cap()
 {
 	sram_init();
+	rt_mutex_init(&lock, "lock", RT_IPC_FLAG_PRIO);
 	server_time=(char *)sram_malloc(13);
 	wifi_result=(char *)sram_malloc(512);
 	rt_memset(wifi_result,0,512);
@@ -898,8 +909,6 @@ int init_cap()
 		char *cmd;
 		rt_sem_init(&(server_sem), "server_rx", 0, 0);
 		rt_sem_init(&(wifi_rx_sem), "wifi_rx", 0, 0);
-		
-
 		rt_thread_delay(200);	
 		rt_device_write(dev_wifi, 0, (void *)&switch_at, 1);
 		rt_thread_delay(3);
@@ -977,7 +986,7 @@ int init_cap()
 		rt_device_control(dev_cap,RT_DEVICE_CTRL_CONFIG,&config);	
 		rt_sem_init(&(cap_rx_sem), "cap_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_cap, cap_rx_ind);
-		rt_thread_startup(rt_thread_create("thread_cap",cap_thread, 0,1024, 20, 10));
+		rt_thread_startup(rt_thread_create("thread_cap",cap_thread, 0,2048, 20, 10));
 		//rt_device_write(dev_cap, 0, (void *)read_co2, 9);
 		#if 0
 		post_message=add_item(RT_NULL,ID_DGRAM_TYPE,TYPE_DGRAM_DATA);
