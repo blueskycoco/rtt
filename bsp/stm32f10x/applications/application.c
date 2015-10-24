@@ -50,6 +50,7 @@ ALIGN(RT_ALIGN_SIZE)
   static rt_uint8_t led_stack[ 2048 ];
   static struct rt_thread led_thread;
 extern void main_loop();
+extern void dgus_loop();
 static void led_thread_entry(void* parameter)
 {
   unsigned int count=0;
@@ -57,7 +58,6 @@ static void led_thread_entry(void* parameter)
   int fd;
   int index, length;
   char ch;
-  main_loop();
 
   rt_hw_led_init();
   //dillon LCD_Init();
@@ -70,9 +70,9 @@ static void led_thread_entry(void* parameter)
   while (1)
   {
 	/* led1 on */
-#ifndef RT_USING_FINSH
-	rt_kprintf("led on, count : %d\r\n",count);
-#endif
+//#ifndef RT_USING_FINSH
+	//rt_kprintf("led on, count : %d\r\n",count);
+////#endif
 	//LCD_Clear(0XF81F);
 	//LCD_ShowString(120,240,24,24,24,"Led onn");
 	//uart2_tx("123456\r\n",rt_strlen("123456\r\n"));
@@ -80,11 +80,12 @@ static void led_thread_entry(void* parameter)
 	rt_hw_led_on(0);
 	rt_hw_led_on(1);
 	rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
+	write_data(0x0101,count);
 
 	/* led1 off */
-#ifndef RT_USING_FINSH
-	rt_kprintf("led off\r\n");
-#endif
+//#ifndef RT_USING_FINSH
+	//rt_kprintf("led off\r\n");
+//#endif
 	//LCD_Clear(0xF800);
 	//LCD_ShowString(120,240,24,24,24,"Led off");
 	//uart2_tx("654321\r\n",rt_strlen("654321\r\n"));
@@ -107,6 +108,8 @@ void rt_init_thread_entry(void* parameter)
   finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif  /* RT_USING_FINSH */
 
+  //main_loop();
+	dgus_loop();
   /* Filesystem Initialization */
 #if defined(RT_USING_DFS) && defined(RT_USING_DFS_ELMFAT)
   /* mount sd card fat partition 1 as root directory */

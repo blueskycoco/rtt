@@ -26,9 +26,9 @@
 
 #else
 
-#define led1_rcc                    RCC_APB2Periph_GPIOA
-#define led1_gpio                   GPIOA
-#define led1_pin                    (GPIO_Pin_8)
+#define led1_rcc                    RCC_APB2Periph_GPIOC
+#define led1_gpio                   GPIOC
+#define led1_pin                    (GPIO_Pin_13)
 
 #define led2_rcc                    RCC_APB2Periph_GPIOD
 #define led2_gpio                   GPIOD

@@ -405,7 +405,7 @@ void uart_init(int type)
 
 //  if(type==UART_TYPE_PARAM)
   {
-	uart_param_dev = rt_device_find("uart1");
+	uart_param_dev = rt_device_find("uart3");
 	if (uart_param_dev == RT_NULL)
 	{
 	  rt_kprintf("finsh: can not find device: uart2\n");
@@ -420,7 +420,7 @@ void uart_init(int type)
   }
   //else
   {
-	uart_lcd_dev = rt_device_find("uart3");
+	uart_lcd_dev = rt_device_find("uart1");
 	if (uart_lcd_dev == RT_NULL)
 	{
 	  rt_kprintf("finsh: can not find device: uart2\n");
