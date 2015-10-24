@@ -661,8 +661,14 @@ void cap_thread(void* parameter)
 						{
 							case TIME_BYTE:
 								{
-									rt_sprintf(date,"20%02d-%02d-%02d %02d:%02d",to_check[i+5],to_check[i+6],to_check[i+7],to_check[i+8],to_check[i+9],to_check[i+10]);
+									time_t now;
+									struct tm* rtc_tm;
+									time(&now);
+									rtc_tm = localtime(&now);
+									//rt_sprintf(date,"20%02d-%02d-%02d %02d:%02d",to_check[i+5],to_check[i+6],to_check[i+7],to_check[i+8],to_check[i+9],to_check[i+10]);
+									rt_sprintf(date,"%02d-%02d-%02d %02d:%02d",rtc_tm->tm_year+1900,rtc_tm->tm_mon+1,rtc_tm->tm_mday,rtc_tm->tm_hour,rtc_tm->tm_min);
 									rt_kprintf(SUB_PROCESS"date is %s\r\n",date);
+									list_date();
 									post_message=add_item(post_message,ID_DEVICE_CAP_TIME,date);
 									can_send=1;
 								}
@@ -810,12 +816,12 @@ void wifi_thread(void* parameter)
 	{		
 		if (rt_sem_take(&(wifi_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;		
 		len=rt_device_read(dev_wifi, 0, wifi_result+g_index, 128);		
-		/*if(len>0)
+		if(len>0)
 		{
 			int m;
 			for(m=g_index;m<g_index+len;m++)
 				rt_kprintf("%c",wifi_result[m]);   
-		}*/
+		}
 		g_index=g_index+len;				
 	}	
 }
@@ -873,13 +879,15 @@ void alarm_thread(void* parameter)
 //uart4 for lcd
 int init_cap()
 {
-	sram_init();
+	sram_init();	
+	set_date(2015,10,24);
+	set_time(14,44,30);
 	rt_mutex_init(&lock, "lock", RT_IPC_FLAG_PRIO);
 	server_time=(char *)sram_malloc(13);
 	wifi_result=(char *)sram_malloc(512);
 	rt_memset(wifi_result,0,512);
 	rt_sem_init(&(alarm_sem), "alarm", 0, 0);
-	rt_thread_startup(rt_thread_create("alarm",alarm_thread, 0,1024, 20, 10));
+	//rt_thread_startup(rt_thread_create("alarm",alarm_thread, 0,1024, 20, 10));
 	dev_lcd=rt_device_find("uart4");
 	if (rt_device_open(dev_lcd, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)			
 	{
@@ -983,11 +991,18 @@ int init_cap()
 		config.stop_bits = STOP_BITS_1;				
 		config.invert	 = NRZ_NORMAL;				
 		config.bufsz	 = RT_SERIAL_RB_BUFSZ;			
-		rt_device_control(dev_cap,RT_DEVICE_CTRL_CONFIG,&config);	
+		rt_device_control(dev_cap,RT_DEVICE_CTRL_CONFIG,&config);				
+		server_time[0]=0x6c;server_time[1]=ARM_TO_CAP;
+		server_time[2]=0x00;server_time[3]=0x01;server_time[4]=0x06;
+		server_time[5]=0x0f;server_time[6]=0x0a;
+		server_time[7]=0x18;server_time[8]=0x0e;
+		server_time[9]=0x0e;server_time[10]=0x18;
+		int crc=CRC_check(server_time,11);
+		server_time[11]=(crc&0xff00)>>8;server_time[12]=crc&0x00ff;
+		rt_device_write(dev_cap,0,server_time,13);
 		rt_sem_init(&(cap_rx_sem), "cap_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_cap, cap_rx_ind);
 		rt_thread_startup(rt_thread_create("thread_cap",cap_thread, 0,2048, 20, 10));
-		//rt_device_write(dev_cap, 0, (void *)read_co2, 9);
 		#if 0
 		post_message=add_item(RT_NULL,ID_DGRAM_TYPE,TYPE_DGRAM_DATA);
 		post_message=add_item(post_message,ID_DEVICE_UID,"230FFEE9981283737D");
