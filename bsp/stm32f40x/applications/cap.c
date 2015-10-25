@@ -21,6 +21,7 @@ char *post_message=NULL,can_send=0;
 char *server_time=RT_NULL;
 char *wifi_result=RT_NULL;
 struct rt_mutex     lock;
+long co,co2,hcho,temp,shidu,pm25;
 char *http_parse_result(const char*lpbuf);
 #define SRAM_MAPPING_ADDRESS 0x10000000
 struct rt_memheap system_heap;
@@ -718,6 +719,38 @@ void cap_thread(void* parameter)
 											}	
 											data[j]='.';
 										}
+										if(strncmp(id,ID_CAP_CO,strlen(ID_CAP_CO))==0)
+										{
+											co=atoi(data);
+											write_data(VAR_DATE_TIME_1,co);
+											write_data(VAR_ALARM_TYPE_3,999);
+											write_data(VAR_ALARM_TYPE_4,999);			
+										}
+										else if(strncmp(id,ID_CAP_CO2,strlen(ID_CAP_CO2))==0)
+										{
+											co2=atoi(data);											
+											write_data(VAR_DATE_TIME_2,co2);
+										}
+										else if(strncmp(id,ID_CAP_HCHO_EXT,strlen(ID_CAP_HCHO_EXT))==0)
+										{
+											hcho=atoi(data);
+											write_data(VAR_DATE_TIME_3,hcho);
+										}
+										else if(strncmp(id,ID_CAP_TEMPERATURE,strlen(ID_CAP_TEMPERATURE))==0)
+										{
+											temp=atoi(data);
+											write_data(VAR_DATE_TIME_4,temp);
+										}
+										else if(strncmp(id,ID_CAP_SHI_DU,strlen(ID_CAP_SHI_DU))==0)
+										{
+											shidu=atoi(data);
+											write_data(VAR_ALARM_TYPE_1,shidu);
+										}
+										else if(strncmp(id,ID_CAP_PM_25,strlen(ID_CAP_PM_25))==0)
+										{
+											pm25=atoi(data);
+											write_data(VAR_ALARM_TYPE_2,pm25);
+										}
 										post_message=add_item(post_message,id,data);
 										//rt_kprintf(SUB_PROCESS"id %s data %s\r\n==>\n%s\n",id,data,post_message);
 									}
@@ -772,13 +805,140 @@ static rt_err_t lcd_rx_ind(rt_device_t dev, rt_size_t size)
 	rt_sem_release(&(lcd_rx_sem));    
 	return RT_EOK;
 }
+
+
+unsigned short input_handle(char *input)
+{
+	int i=0,addr=0,data=0;
+	rt_kprintf("got press\r\n");
+	input[0]=2;
+	addr=input[1]<<8|input[2];
+	data=input[4]<<8|input[5];
+	switch(addr)
+	{
+		
+		case ALARM_INFO_PRESS:
+			if(ALARM_INFO_DATA==data)
+				return STATE_ALARM_INFO;
+		case START_PRESS:
+			if(START_DATA==data)
+				return STATE_START;
+		case S1_PRESS:
+			if(S1_DATA==data)
+				return STATE_MAIN_S1;
+		case S2_PRESS:
+		if(S2_DATA==data)
+			return STATE_MAIN_S2;
+		case S3_PRESS:
+		if(S3_DATA==data)
+			return STATE_MAIN_S3;
+		case S4_PRESS:
+		if(S4_DATA==data)
+			return STATE_MAIN_S4;
+		case S5_PRESS:
+		if(S5_DATA==data)
+			return STATE_MAIN_S5;
+		case S6_PRESS:
+		if(S6_DATA==data)
+			return STATE_MAIN_S6;
+		case S7_PRESS:
+		if(S7_DATA==data)
+			return STATE_MAIN_S7;
+		case S8_PRESS:
+		if(S8_DATA==data)
+			return STATE_MAIN_S8;
+		default:
+			return STATE_MAIN;
+		
+	}
+	return STATE_MAIN;
+}
+
+void switch_pic(unsigned char Index)	//??????????
+{
+	char cmd[]={0x5a,0xa5,0x03,0x80,0x04,0x00};
+	cmd[5]=Index;
+	rt_device_write(dev_lcd,0,cmd,6);
+}
+void write_data(unsigned int Index,int data)	//??????????
+{
+	char cmd[]={0x5a,0xa5,0x05,0x82,0x00,0x00,0x00,0x00};
+	cmd[4]=(Index&0xff00)>>8;cmd[5]=Index&0x00ff;
+	cmd[6]=(data&0xff00)>>8;cmd[7]=data&0x00ff;
+	rt_device_write(dev_lcd,0,cmd,8);
+}
+void lcd_ctl(int state)
+{
+	switch(state)
+	{
+		case STATE_ORIGIN:
+		{
+			rt_kprintf("STATE_ORIGIN state \n");
+			switch_pic(0);
+			write_data(VAR_TTR_TIME,1223+0);
+			write_data(VAR_TIME_SET,2231+0);
+			write_data(VAR_POWR_SET,4433+0);
+			break;
+		}
+		case STATE_MAIN:
+		{
+			rt_kprintf("STATE_MAIN\n");				
+			write_data(VAR_TTR_TIME,1223+0);
+			write_data(VAR_TIME_SET,2231+0);
+			write_data(VAR_POWR_SET,4433+0);
+			break;
+		}			
+		case STATE_ALARM_INFO:
+		{
+			rt_kprintf("STATE_ALARM_INFO\n");	
+			write_data(VAR_DATE_TIME_1,7832+0);
+			write_data(VAR_DATE_TIME_2,7635+0);
+			write_data(VAR_DATE_TIME_3,9037+0);
+			write_data(VAR_DATE_TIME_4,7362+0);
+			write_data(VAR_ALARM_TYPE_1,747736+0);
+			write_data(VAR_ALARM_TYPE_2,747636+0);
+			write_data(VAR_ALARM_TYPE_3,35+0);
+			write_data(VAR_ALARM_TYPE_4,746+0);			
+			break;
+		}		
+		case STATE_START:
+		{
+			rt_kprintf("STATE_START \n");	
+			write_data(VAR_RUN_TIME,1122+0);
+			write_data(VAR_REAL_TIME_TEMP,3321+0);
+			break;
+		}	
+		case STATE_MAIN_S1:
+		case STATE_MAIN_S2:
+		case STATE_MAIN_S3:
+		case STATE_MAIN_S4:
+		case STATE_MAIN_S5:
+		case STATE_MAIN_S6:
+		case STATE_MAIN_S7:
+		case STATE_MAIN_S8:
+		{
+			write_data(VAR_CHANNEL_SET,state-4);
+		}
+		default:					
+		{
+			rt_kprintf("UNKNOWN  state , got STATE_ORIGIN\r\n");
+			break;
+		}
+	}
+
+}
 void lcd_thread(void* parameter)
 {	
 	int len1=0,m=0;
+	char ch;
+	int i=1;
+	int get=0;
 	char *ptr=sram_malloc(32);	
+	switch_pic(0);
 	while(1)	
 	{		
 		if (rt_sem_take(&(lcd_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;		
+		#if 0
 		int len=rt_device_read(dev_lcd, 0, ptr+m, 128);		
 		if(len>0)	
 		{	
@@ -798,7 +958,63 @@ void lcd_thread(void* parameter)
 			}
 			else
 				m=m+len;
-		}		
+		}	
+		#else
+		while (rt_device_read(dev_lcd, 0, &ch, 1) == 1)
+		{
+			//rt_kprintf("<=%x \r\n",ch);
+			switch(get)
+			{
+				case 0:
+					if(ch==0x5a)
+					{
+						//rt_kprintf("0x5a get ,get =1\r\n");
+						get=1;
+					}
+					break;
+				case 1:
+					if(ch==0xa5)
+					{
+						//rt_kprintf("0xa5 get ,get =2\r\n");
+						get=2;
+						
+						}
+					break;
+				case 2:
+					if(ch==0x06)
+					{
+						//rt_kprintf("0x06 get,get =3\r\n");
+						get=3;
+						break;
+					}
+				case 3:
+					if(ch==0x83)
+					{
+						//rt_kprintf("0x83 get,get =4\r\n");
+						get=4;
+						i=1;
+						break;
+					}
+				case 4:
+					{
+						//rt_kprintf("%02x get ,get =5\r\n",ch);
+						ptr[i++]=ch;
+						if(i==6)
+						{
+							get=0;
+							ptr[0]=0x01;
+							rt_kprintf("get %x %x %x %x %x %x\r\n",ptr[0],ptr[1],ptr[2],ptr[3],ptr[4],ptr[5]);
+							lcd_ctl(input_handle(ptr));
+							
+						}
+					}
+					break;			
+				default:
+					rt_kprintf("unknown state\r\n");
+					break;						
+			}			
+		}
+		#endif
 	}	
 }
 
