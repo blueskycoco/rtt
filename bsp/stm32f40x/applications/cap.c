@@ -665,8 +665,8 @@ void cap_thread(void* parameter)
 									struct tm* rtc_tm;
 									time(&now);
 									rtc_tm = localtime(&now);
-									//rt_sprintf(date,"20%02d-%02d-%02d %02d:%02d",to_check[i+5],to_check[i+6],to_check[i+7],to_check[i+8],to_check[i+9],to_check[i+10]);
-									rt_sprintf(date,"%02d-%02d-%02d %02d:%02d",rtc_tm->tm_year+1900,rtc_tm->tm_mon+1,rtc_tm->tm_mday,rtc_tm->tm_hour,rtc_tm->tm_min);
+									rt_sprintf(date,"20%02d-%02d-%02d %02d:%02d",to_check[i+5],to_check[i+6],to_check[i+7],to_check[i+8],to_check[i+9],to_check[i+10]);
+									//rt_sprintf(date,"%02d-%02d-%02d %02d:%02d",rtc_tm->tm_year+1900,rtc_tm->tm_mon+1,rtc_tm->tm_mday,rtc_tm->tm_hour,rtc_tm->tm_min);
 									rt_kprintf(SUB_PROCESS"date is %s\r\n",date);
 									list_date();
 									post_message=add_item(post_message,ID_DEVICE_CAP_TIME,date);
@@ -887,7 +887,7 @@ int init_cap()
 	wifi_result=(char *)sram_malloc(512);
 	rt_memset(wifi_result,0,512);
 	rt_sem_init(&(alarm_sem), "alarm", 0, 0);
-	//rt_thread_startup(rt_thread_create("alarm",alarm_thread, 0,1024, 20, 10));
+	rt_thread_startup(rt_thread_create("alarm",alarm_thread, 0,1024, 20, 10));
 	dev_lcd=rt_device_find("uart4");
 	if (rt_device_open(dev_lcd, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)			
 	{
@@ -992,6 +992,7 @@ int init_cap()
 		config.invert	 = NRZ_NORMAL;				
 		config.bufsz	 = RT_SERIAL_RB_BUFSZ;			
 		rt_device_control(dev_cap,RT_DEVICE_CTRL_CONFIG,&config);				
+		#if 0
 		server_time[0]=0x6c;server_time[1]=ARM_TO_CAP;
 		server_time[2]=0x00;server_time[3]=0x01;server_time[4]=0x06;
 		server_time[5]=0x0f;server_time[6]=0x0a;
@@ -1000,6 +1001,7 @@ int init_cap()
 		int crc=CRC_check(server_time,11);
 		server_time[11]=(crc&0xff00)>>8;server_time[12]=crc&0x00ff;
 		rt_device_write(dev_cap,0,server_time,13);
+		#endif
 		rt_sem_init(&(cap_rx_sem), "cap_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_cap, cap_rx_ind);
 		rt_thread_startup(rt_thread_create("thread_cap",cap_thread, 0,2048, 20, 10));
