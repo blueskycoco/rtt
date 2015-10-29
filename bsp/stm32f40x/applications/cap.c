@@ -891,14 +891,14 @@ void lcd_ctl(int state)
 		case STATE_ALARM_INFO:
 		{
 			rt_kprintf("STATE_ALARM_INFO\n");	
-			write_data(VAR_DATE_TIME_1,7832+0);
-			write_data(VAR_DATE_TIME_2,7635+0);
-			write_data(VAR_DATE_TIME_3,9037+0);
-			write_data(VAR_DATE_TIME_4,7362+0);
-			write_data(VAR_ALARM_TYPE_1,747736+0);
-			write_data(VAR_ALARM_TYPE_2,747636+0);
-			write_data(VAR_ALARM_TYPE_3,35+0);
-			write_data(VAR_ALARM_TYPE_4,746+0);			
+			write_data(VAR_DATE_TIME_1,co);
+			write_data(VAR_DATE_TIME_2,co2);
+			write_data(VAR_DATE_TIME_3,hcho);
+			write_data(VAR_DATE_TIME_4,temp);
+			write_data(VAR_ALARM_TYPE_1,shidu);
+			write_data(VAR_ALARM_TYPE_2,pm25);
+			write_data(VAR_ALARM_TYPE_3,99);
+			write_data(VAR_ALARM_TYPE_4,99);			
 			break;
 		}		
 		case STATE_START:
@@ -1103,7 +1103,7 @@ int init_cap()
 	wifi_result=(char *)sram_malloc(512);
 	rt_memset(wifi_result,0,512);
 	rt_sem_init(&(alarm_sem), "alarm", 0, 0);
-	rt_thread_startup(rt_thread_create("alarm",alarm_thread, 0,1024, 20, 10));
+	//rt_thread_startup(rt_thread_create("alarm",alarm_thread, 0,1024, 20, 10));
 	dev_lcd=rt_device_find("uart4");
 	if (rt_device_open(dev_lcd, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)			
 	{
