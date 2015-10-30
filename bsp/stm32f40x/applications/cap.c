@@ -27,6 +27,7 @@ char *http_parse_result(const char*lpbuf);
 #define SRAM_MAPPING_ADDRESS 0x10000000
 struct rt_memheap system_heap;
 int g_index=0;
+rt_bool_t server_time_got=RT_FALSE;
 void sram_init(void)
 {
     /* initialize the built-in SRAM as a memory heap */
@@ -204,6 +205,7 @@ void send_web_post(char *log,char *buf,int timeout)
 	else 
 	{
 		strcpy(wifi_result,"failed");
+		rt_kprintf("\n<%c>\n",ch);
 		i=7;
 	}
 	rt_kprintf("\n=====================>\n");
@@ -212,6 +214,7 @@ void send_web_post(char *log,char *buf,int timeout)
 	//rt_kprintf("\nsend done.\n");
 	for(j=0;j<i;j++)
 		rt_kprintf("%c",wifi_result[j]);
+	while(rt_device_read(dev_wifi, 0, &ch, 1)==1);
 	rt_kprintf("\n=====================>\n");
 	sram_free(httpd_send);
 }
@@ -527,8 +530,8 @@ void sync_server(int fd,int resend)
 					server_time[9]=atoi(minute);server_time[10]=atoi(second);
 					crc=CRC_check(server_time,11);
 					server_time[11]=(crc&0xff00)>>8;server_time[12]=crc&0x00ff;
-					//for(i=0;i<13;i++)
-					//	rt_kprintf("%x\n",server_time[i]);
+					for(i=0;i<13;i++)
+						rt_kprintf("%x\n",server_time[i]);
 					write(fd,server_time,13);
 					rt_kprintf(ALARM_PROCESS"SERVER TIME %s\r\n",starttime);
 					//rt_kprintf(ALARM_PROCESS"==>%d:%d:%d %d_%d_%d\n",server_time[5],server_time[6],server_time[7],server_time[8],server_time[9],server_time[10]);
@@ -537,7 +540,8 @@ void sync_server(int fd,int resend)
 					rt_kprintf(ALARM_PROCESS"212 %s\r\n",doit_data(wifi_result,"212"));
 					rt_kprintf("to settime %d.%d.%d-%d:%d:%d\n",atoi(year)+2000,atoi(month),atoi(day),atoi(hour),atoi(minute),atoi(second));
 					set_date(atoi(year)+2000,atoi(month),atoi(day));
-					set_time(atoi(hour),atoi(minute),atoi(second));				
+					set_time(atoi(hour),atoi(minute),atoi(second));	
+					server_time_got=RT_TRUE;
 				}
 				//rt_mutex_release(&lock);
 			//}
@@ -788,7 +792,8 @@ void cap_thread(void* parameter)
 							rt_kprintf("%c",post_message[j]);
 						rt_kprintf("\nsend done.\n");
 						//rt_mutex_take(&lock, RT_WAITING_FOREVER);
-						//send_web_post(SUB_PROCESS,post_message,100);
+						if(server_time_got)
+						send_web_post(SUB_PROCESS,post_message,100);
 						sram_free(post_message);
 						post_message=NULL;
 						//rt_mutex_release(&lock);
@@ -1115,13 +1120,14 @@ void alarm_thread(void* parameter)
 	while(1)	
 	{		
 		if(rt_sem_take(&(alarm_sem), RT_WAITING_FOREVER) != RT_EOK) continue;
-		if(!sync)
-		{
-			sync=RT_TRUE;
+		//if(!sync)
+		//{
+		//	sync=RT_TRUE;
+			if(!server_time_got)
 			sync_server(dev_cap,0);
-			sync_server(dev_cap,1);
-			sync=RT_FALSE;
-		}
+			//sync_server(dev_cap,1);
+		//	sync=RT_FALSE;
+		//}
 		set_next_alarm(10);
 	}
 
