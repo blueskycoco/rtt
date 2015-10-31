@@ -531,8 +531,10 @@ void sync_server(int fd,int resend)
 					crc=CRC_check(server_time,11);
 					server_time[11]=(crc&0xff00)>>8;server_time[12]=crc&0x00ff;
 					for(i=0;i<13;i++)
-						rt_kprintf("%x\n",server_time[i]);
-					write(fd,server_time,13);
+					{
+						rt_kprintf("%02x\n",server_time[i]);
+					}
+					rt_device_write(fd, 0, (void *)server_time, 13);
 					rt_kprintf(ALARM_PROCESS"SERVER TIME %s\r\n",starttime);
 					//rt_kprintf(ALARM_PROCESS"==>%d:%d:%d %d_%d_%d\n",server_time[5],server_time[6],server_time[7],server_time[8],server_time[9],server_time[10]);
 					//tmp=doit_data(rcv+4,(char *)"211");
@@ -679,8 +681,8 @@ void cap_thread(void* parameter)
 									struct tm* rtc_tm;
 									time(&now);
 									rtc_tm = localtime(&now);
-									//rt_sprintf(date,"20%02d-%02d-%02d %02d:%02d",to_check[i+5],to_check[i+6],to_check[i+7],to_check[i+8],to_check[i+9],to_check[i+10]);
-									rt_sprintf(date,"%02d-%02d-%02d %02d:%02d",rtc_tm->tm_year+1900,rtc_tm->tm_mon+1,rtc_tm->tm_mday,rtc_tm->tm_hour,rtc_tm->tm_min);
+									rt_sprintf(date,"20%02d-%02d-%02d %02d:%02d",to_check[i+5],to_check[i+6],to_check[i+7],to_check[i+8],to_check[i+9],to_check[i+10]);
+									//rt_sprintf(date,"%02d-%02d-%02d %02d:%02d",rtc_tm->tm_year+1900,rtc_tm->tm_mon+1,rtc_tm->tm_mday,rtc_tm->tm_hour,rtc_tm->tm_min);
 									rt_kprintf(SUB_PROCESS"date is %s\r\n",date);
 									list_date();
 									post_message=add_item(post_message,ID_DEVICE_CAP_TIME,date);
