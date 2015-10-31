@@ -653,26 +653,19 @@ void cap_thread(void* parameter)
 				{
 					crc|=ch;
 					//rt_kprintf(SUB_PROCESS"crc2 %02x\n",ch);
-					//rt_kprintf(SUB_PROCESS"GOT 0x6c 0xaa %04x %02x ",message_type,message_len);
+					rt_kprintf(SUB_PROCESS"GOT 0x6c 0xaa %04x %02x ",message_type,message_len);
 					for(i=0;i<message_len;i++)
 					{
-						//rt_kprintf("%02x ",message[i]);
+						rt_kprintf("%02x ",message[i]);
 						to_check[5+i]=message[i];
 					}
-					//rt_kprintf("%04x \r\n",crc);
+					rt_kprintf("%04x \r\n",crc);
 					to_check[0]=0x6c;to_check[1]=0xaa;to_check[2]=(message_type>>8)&0xff;to_check[3]=message_type&0xff;
 					to_check[4]=message_len;to_check[5+message_len]=(crc>>8)&0xff;
 					to_check[5+message_len+1]=crc&0xff;
-					//rt_kprintf(SUB_PROCESS"CRC Get %02x <> Count %02x\r\n",crc,CRC_check(to_check,message_len+5));
+					rt_kprintf(SUB_PROCESS"CRC Get %02x <> Count %02x\r\n",crc,CRC_check(to_check,message_len+5));
 					if(crc==CRC_check(to_check,message_len+5))
-					{
-						if(post_message==NULL)
-						{
-							post_message=add_item(NULL,ID_DGRAM_TYPE,TYPE_DGRAM_DATA);
-							post_message=add_item(post_message,ID_DEVICE_UID,"230FFEE9981283737D");
-							post_message=add_item(post_message,ID_DEVICE_IP_ADDR,"192.168.1.2");
-							post_message=add_item(post_message,ID_DEVICE_PORT,"9517");	
-						}
+					{						
 						i=0;
 						rt_memset(id,'\0',sizeof(id));
 						rt_memset(data,'\0',sizeof(data));
@@ -712,9 +705,26 @@ void cap_thread(void* parameter)
 									{
 										rt_sprintf(error,"%dth sensor possible error",to_check[i+3]);
 										post_message=add_item(post_message,ID_ALERT_CAP_FAILED,error);
+										if(post_message==NULL)
+										{
+											post_message=add_item(NULL,ID_DGRAM_TYPE,TYPE_DGRAM_WARNING);
+											post_message=add_item(post_message,ID_DEVICE_UID,"230FFEE9981283737D");
+											post_message=add_item(post_message,ID_DEVICE_IP_ADDR,"192.168.1.2");
+											post_message=add_item(post_message,ID_DEVICE_PORT,"9517");
+											can_send=1;
+										}
 									}
 									else
 									{
+										int high,low=0;
+										if(post_message==NULL)
+										{
+											post_message=add_item(NULL,ID_DGRAM_TYPE,TYPE_DGRAM_DATA);
+											post_message=add_item(post_message,ID_DEVICE_UID,"230FFEE9981283737D");
+											post_message=add_item(post_message,ID_DEVICE_IP_ADDR,"192.168.1.2");
+											post_message=add_item(post_message,ID_DEVICE_PORT,"9517");
+										}
+										#if 0
 										rt_sprintf(id,"%d",message_type);
 										rt_sprintf(data,"%d",to_check[i+5]<<8|to_check[i+6]);
 										//rt_kprintf("pre data %s %d\r\n",data,rt_rt_strlen(data));
@@ -739,37 +749,69 @@ void cap_thread(void* parameter)
 											}	
 											data[j]='.';
 										}
+										#else										
+										rt_sprintf(id,"%d",message_type);
+										rt_sprintf(data,"%d",to_check[i+5]<<8|to_check[i+6]);
+										high=to_check[i+5]<<8|to_check[i+6];										
+										if(to_check[i+7]!=0)
+										{//have .
+											int m;
+											if(to_check[i+7]>rt_strlen(data))
+											{
+												char tmp_buf[10]={0};
+												int dist=to_check[i+7]-rt_strlen(data);
+												strcpy(tmp_buf,"0.");
+												for(m=0;m<dist;m++)
+													strcat(tmp_buf,"0");
+												strcat(tmp_buf,data);
+												strcpy(data,tmp_buf);
+												high=0;
+												low=to_check[i+5]<<8|to_check[i+6];
+											}
+											else
+											{
+												int left,right,number,n=1;
+												number=(to_check[i+5]<<8)|to_check[i+6];
+												for(m=0;m<to_check[i+7];m++)
+													n=n*10;
+												right=number%n;
+												left=number/n;
+												rt_sprintf(data,"%d.%d",left,right);
+												high=left;low=right;												
+											}
+										}
+										#endif
 										if(strncmp(id,ID_CAP_CO,strlen(ID_CAP_CO))==0)
 										{
-											co=atoi(data);
-											write_data(VAR_DATE_TIME_1,co);
-											write_data(VAR_ALARM_TYPE_3,999);
-											write_data(VAR_ALARM_TYPE_4,999);			
+											//co=atoi(data);
+											write_data(VAR_DATE_TIME_1,to_check[i+5]<<8|to_check[i+6]);
+											//write_data(VAR_ALARM_TYPE_3,999);
+											//write_data(VAR_ALARM_TYPE_4,999);			
 										}
 										else if(strncmp(id,ID_CAP_CO2,strlen(ID_CAP_CO2))==0)
 										{
-											co2=atoi(data);											
-											write_data(VAR_DATE_TIME_2,co2);
+											//co2=atoi(data);											
+											write_data(VAR_DATE_TIME_2,to_check[i+5]<<8|to_check[i+6]);
 										}
-										else if(strncmp(id,ID_CAP_HCHO_EXT,strlen(ID_CAP_HCHO_EXT))==0)
+										else if(strncmp(id,ID_CAP_HCHO,strlen(ID_CAP_HCHO))==0)
 										{
-											hcho=atoi(data);
-											write_data(VAR_DATE_TIME_3,hcho);
+											//hcho=atoi(data);
+											write_data(VAR_DATE_TIME_3,to_check[i+5]<<8|to_check[i+6]);
 										}
 										else if(strncmp(id,ID_CAP_TEMPERATURE,strlen(ID_CAP_TEMPERATURE))==0)
 										{
-											temp=atoi(data);
-											write_data(VAR_DATE_TIME_4,temp);
+											//temp=atoi(data);
+											write_data(VAR_DATE_TIME_4,to_check[i+5]<<8|to_check[i+6]);
 										}
 										else if(strncmp(id,ID_CAP_SHI_DU,strlen(ID_CAP_SHI_DU))==0)
 										{
-											shidu=atoi(data);
-											write_data(VAR_ALARM_TYPE_1,shidu);
+											//shidu=atoi(data);
+											write_data(VAR_ALARM_TYPE_1,to_check[i+5]<<8|to_check[i+6]);
 										}
 										else if(strncmp(id,ID_CAP_PM_25,strlen(ID_CAP_PM_25))==0)
 										{
-											pm25=atoi(data);
-											write_data(VAR_ALARM_TYPE_2,pm25);
+											//pm25=atoi(data);
+											write_data(VAR_ALARM_TYPE_2,to_check[i+5]<<8|to_check[i+6]);
 										}
 										post_message=add_item(post_message,id,data);
 										//rt_kprintf(SUB_PROCESS"id %s data %s\r\n==>\n%s\n",id,data,post_message);
@@ -888,37 +930,37 @@ void lcd_ctl(int state)
 		{
 			rt_kprintf("STATE_ORIGIN state \n");
 			switch_pic(0);
-			write_data(VAR_TTR_TIME,1223+0);
-			write_data(VAR_TIME_SET,2231+0);
-			write_data(VAR_POWR_SET,4433+0);
+			//write_data(VAR_TTR_TIME,1223+0);
+			//write_data(VAR_TIME_SET,2231+0);
+			//write_data(VAR_POWR_SET,4433+0);
 			break;
 		}
 		case STATE_MAIN:
 		{
 			rt_kprintf("STATE_MAIN\n");				
-			write_data(VAR_TTR_TIME,1223+0);
-			write_data(VAR_TIME_SET,2231+0);
-			write_data(VAR_POWR_SET,4433+0);
+			//write_data(VAR_TTR_TIME,1223+0);
+			//write_data(VAR_TIME_SET,2231+0);
+			//write_data(VAR_POWR_SET,4433+0);
 			break;
 		}			
 		case STATE_ALARM_INFO:
 		{
 			rt_kprintf("STATE_ALARM_INFO\n");	
-			write_data(VAR_DATE_TIME_1,co);
-			write_data(VAR_DATE_TIME_2,co2);
-			write_data(VAR_DATE_TIME_3,hcho);
-			write_data(VAR_DATE_TIME_4,temp);
-			write_data(VAR_ALARM_TYPE_1,shidu);
-			write_data(VAR_ALARM_TYPE_2,pm25);
-			write_data(VAR_ALARM_TYPE_3,99);
-			write_data(VAR_ALARM_TYPE_4,99);			
+			//write_data(VAR_DATE_TIME_1,co);
+			//write_data(VAR_DATE_TIME_2,co2);
+			//write_data(VAR_DATE_TIME_3,hcho);
+			//write_data(VAR_DATE_TIME_4,temp);
+			//write_data(VAR_ALARM_TYPE_1,shidu);
+			//write_data(VAR_ALARM_TYPE_2,pm25);
+			//write_data(VAR_ALARM_TYPE_3,99);
+			//write_data(VAR_ALARM_TYPE_4,99);			
 			break;
 		}		
 		case STATE_START:
 		{
 			rt_kprintf("STATE_START \n");	
-			write_data(VAR_RUN_TIME,1122+0);
-			write_data(VAR_REAL_TIME_TEMP,3321+0);
+			//write_data(VAR_RUN_TIME,1122+0);
+			//write_data(VAR_REAL_TIME_TEMP,3321+0);
 			break;
 		}	
 		case STATE_MAIN_S1:
@@ -930,7 +972,7 @@ void lcd_ctl(int state)
 		case STATE_MAIN_S7:
 		case STATE_MAIN_S8:
 		{
-			write_data(VAR_CHANNEL_SET,state-4);
+			//write_data(VAR_CHANNEL_SET,state-4);
 		}
 		default:					
 		{
