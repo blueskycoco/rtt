@@ -165,7 +165,7 @@ void send_web_get(char *buf,int timeout)
 #endif
 void send_web_post(char *log,char *buf,int timeout)
 {
-	int i,j;
+	int i,j,ltimeout=0;
 	char ch;
 	char *httpd_send=(char *)sram_malloc(strlen(buf)+strlen("JSONStr=")+1);
 	strcpy(httpd_send,"JSONStr=");
@@ -180,14 +180,48 @@ void send_web_post(char *log,char *buf,int timeout)
 		rt_kprintf("no rcv ,timeout\n");
 		return;
 	}
-	while(rt_device_read(dev_wifi, 0, &ch, 1)==0);
+	if(timeout==-1)
+	{
+		while(rt_device_read(dev_wifi, 0, &ch, 1)==0);
+	}
+	else
+	{
+		while(rt_device_read(dev_wifi, 0, &ch, 1)==0)
+		{
+			ltimeout++;
+			rt_thread_delay(1);
+			if(ltimeout>=timeout)
+			{
+				sram_free(httpd_send);
+				rt_kprintf("first timeout\n");
+				return;
+			}
+		}
+	}
 	if(ch=='{')
 	{
 		wifi_result[0]='{';
 		while(1)
 		{
-			while(rt_device_read(dev_wifi, 0, &ch, 1)==0);
-			
+			if(timeout==-1)
+			{
+				while(rt_device_read(dev_wifi, 0, &ch, 1)==0);
+			}
+			else
+			{
+				ltimeout=0;
+				while(rt_device_read(dev_wifi, 0, &ch, 1)==0)
+				{
+					ltimeout++;
+					rt_thread_delay(1);
+					if(ltimeout>=timeout)
+					{
+						sram_free(httpd_send);
+						rt_kprintf("second timeout\n");
+						return;
+					}
+				}
+			}
 			if(ch=='}')
 			{
 				wifi_result[i++]='}';
@@ -399,7 +433,7 @@ void resend_history(char *date_begin,char *date_end)
 							rt_kprintf("\nsend done.\n");
 							//rt_mutex_take(&lock, RT_WAITING_FOREVER);
 							rt_kprintf(RESEND_PROCESS"rsend web:\n");
-							send_web_post(RESEND_PROCESS,line,100);
+							send_web_post(RESEND_PROCESS,line,1000);
 							//rt_mutex_release(&lock);
 						}
 					}
@@ -413,7 +447,7 @@ void resend_history(char *date_begin,char *date_end)
 							for(j=0;j<rt_strlen(line);j++)
 								rt_kprintf("%c",line[j]);
 							rt_kprintf("\nsend done.\n");
-							send_web_post(RESEND_PROCESS,line,100);
+							send_web_post(RESEND_PROCESS,line,1000);
 							//rt_mutex_release(&lock);							
 						}
 					}
@@ -484,7 +518,7 @@ void sync_server(int fd,int resend)
 	for(j=0;j<rt_strlen(sync_message);j++)
 		rt_kprintf("%c",sync_message[j]);
 	rt_kprintf("\nsend done.\n");
-	send_web_post(ALARM_PROCESS,sync_message,5000);
+	send_web_post(ALARM_PROCESS,sync_message,-1);
 	sram_free(sync_message);
 	if(rt_strlen(wifi_result)!=0)
 	{	
@@ -837,7 +871,7 @@ void cap_thread(void* parameter)
 						rt_kprintf("\nsend done.\n");
 						//rt_mutex_take(&lock, RT_WAITING_FOREVER);
 						if(server_time_got)
-						send_web_post(SUB_PROCESS,post_message,100);
+						send_web_post(SUB_PROCESS,post_message,1000);
 						sram_free(post_message);
 						post_message=NULL;
 						//rt_mutex_release(&lock);
