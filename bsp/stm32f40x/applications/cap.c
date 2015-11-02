@@ -689,17 +689,17 @@ void cap_thread(void* parameter)
 				{
 					crc|=ch;
 					//rt_kprintf(SUB_PROCESS"crc2 %02x\n",ch);
-					rt_kprintf(SUB_PROCESS"GOT 0x6c 0xaa %04x %02x ",message_type,message_len);
+					//rt_kprintf(SUB_PROCESS"GOT 0x6c 0xaa %04x %02x ",message_type,message_len);
 					for(i=0;i<message_len;i++)
 					{
-						rt_kprintf("%02x ",message[i]);
+						//rt_kprintf("%02x ",message[i]);
 						to_check[5+i]=message[i];
 					}
-					rt_kprintf("%04x \r\n",crc);
+					//rt_kprintf("%04x \r\n",crc);
 					to_check[0]=0x6c;to_check[1]=0xaa;to_check[2]=(message_type>>8)&0xff;to_check[3]=message_type&0xff;
 					to_check[4]=message_len;to_check[5+message_len]=(crc>>8)&0xff;
 					to_check[5+message_len+1]=crc&0xff;
-					rt_kprintf(SUB_PROCESS"CRC Get %02x <> Count %02x\r\n",crc,CRC_check(to_check,message_len+5));
+					//rt_kprintf(SUB_PROCESS"CRC Get %02x <> Count %02x\r\n",crc,CRC_check(to_check,message_len+5));
 					if(crc==CRC_check(to_check,message_len+5))
 					{						
 						i=0;
