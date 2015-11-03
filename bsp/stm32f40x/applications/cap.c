@@ -15,7 +15,7 @@
 #include "cap.h"
 //#define SUB_PROCESS "[CapProcess]"
 struct rt_semaphore cap_rx_sem,wifi_rx_sem,server_sem,lcd_rx_sem,alarm_sem;;
-rt_device_t dev_cap,dev_wifi,dev_lcd;
+rt_device_t dev_cap,dev_wifi,dev_lcd,dev_gprs;
 int data_co2=0,data_ch2o;
 char *post_message=NULL,can_send=0;
 char *server_time=RT_NULL;
@@ -1122,8 +1122,10 @@ void wifi_thread(void* parameter)
 	char ch;
 	while(1)
 	{		
-		if (rt_sem_take(&(wifi_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;
-		while(rt_device_read(dev_wifi, 0, &ch, 1)==0);
+		if (rt_sem_take(&(server_sem), RT_WAITING_FOREVER) != RT_EOK) continue;
+		while(rt_device_read(dev_gprs, 0, &ch, 1)==1)
+			rt_kprintf("%c",ch);
+		#if 0
 		if(ch=='{')
 		{
 			wifi_result[0]='{';
@@ -1154,7 +1156,7 @@ void wifi_thread(void* parameter)
 		for(j=0;j<i;j++)
 			rt_kprintf("%c",wifi_result[j]);
 		rt_kprintf("\n=====================>\n");
-		rt_sem_release(&(server_sem));
+		#endif
 	}	
 }
 void set_next_alarm(int step)
@@ -1210,6 +1212,11 @@ void alarm_thread(void* parameter)
 	}
 
 }
+static rt_err_t gprs_rx_ind(rt_device_t dev, rt_size_t size)
+{	
+	rt_sem_release(&(server_sem));
+	return RT_EOK;
+}
 
 //uart1 for debug
 //uart2 for wifi
@@ -1253,7 +1260,6 @@ int init_cap()
 		unsigned char switch_at='+';
 		unsigned char done='a';
 		char *cmd;
-		rt_sem_init(&(server_sem), "server_rx", 0, 0);
 		rt_sem_init(&(wifi_rx_sem), "wifi_rx", 0, 0);
 		rt_thread_delay(200);	
 		rt_device_write(dev_wifi, 0, (void *)&switch_at, 1);
@@ -1359,6 +1365,13 @@ int init_cap()
 	{
 		rt_kprintf("open cap board uart3 failed\r\n");
 		return -1;
+	}
+	dev_gprs=rt_device_find("uart5");
+	if (rt_device_open(dev_gprs, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)			
+	{		
+		rt_sem_init(&(server_sem), "server_rx", 0, 0);
+		rt_device_set_rx_indicate(dev_gprs, gprs_rx_ind);
+		rt_thread_startup(rt_thread_create("thread_wifi",wifi_thread, 0,512, 20, 10));
 	}
 	return 0;
 }
