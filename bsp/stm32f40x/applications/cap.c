@@ -1374,7 +1374,7 @@ int init_cap()
 		rt_kprintf("open cap board uart3 failed\r\n");
 		return -1;
 	}
-	#if 0
+	#if 1
 	dev_gprs=rt_device_find("uart5");
 	if (rt_device_open(dev_gprs, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)			
 	{		
