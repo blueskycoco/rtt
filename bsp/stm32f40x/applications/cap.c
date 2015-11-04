@@ -170,7 +170,13 @@ void send_web_post(char *log,char *buf,int timeout)
 	char *httpd_send=(char *)sram_malloc(strlen(buf)+strlen("JSONStr=")+1);
 	strcpy(httpd_send,"JSONStr=");
 	strcat(httpd_send,buf);
-	rt_device_write(dev_wifi, 0, (void *)httpd_send, rt_strlen(httpd_send));
+	rt_device_write(dev_wifi, 0, (void *)httpd_send, rt_strlen(httpd_send));	
+	//char *gprs_string=(char *)sram_malloc(rt_strlen(httpd_send)+rt_strlen(" HTTP/ 1.1\nhost:101.200.182.92")+1);
+	//strcpy(gprs_string,httpd_send);
+	//strcat(gprs_string," HTTP/ 1.1\nhost:101.200.182.92");
+	//rt_device_write(dev_gprs, 0, (void *)gprs_string, rt_strlen(gprs_string));
+	//rt_thread_delay(200);
+	#if 1
 	i=1;
 	j=0;
 	rt_err_t rt=rt_sem_take(&(wifi_rx_sem), 700);
@@ -250,7 +256,9 @@ void send_web_post(char *log,char *buf,int timeout)
 		rt_kprintf("%c",wifi_result[j]);
 	while(rt_device_read(dev_wifi, 0, &ch, 1)==1);
 	rt_kprintf("\n=====================>\n");
+	#endif
 	sram_free(httpd_send);
+	//sram_free(gprs_string);
 }
 
 char *doit_data(char *text,const char *item_str)
@@ -1366,13 +1374,63 @@ int init_cap()
 		rt_kprintf("open cap board uart3 failed\r\n");
 		return -1;
 	}
+	#if 0
 	dev_gprs=rt_device_find("uart5");
 	if (rt_device_open(dev_gprs, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)			
 	{		
 		rt_sem_init(&(server_sem), "server_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_gprs, gprs_rx_ind);
 		rt_thread_startup(rt_thread_create("thread_wifi",wifi_thread, 0,512, 20, 10));
+		#if 0
+		char *cmd=(char *)sram_malloc(512);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+CIPCFG=1,0,0,50,0,0\n");
+		rt_device_write(dev_gprs, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+CIPPACK=0,"",0\n");
+		rt_device_write(dev_gprs, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+CIPPACK=1,"",0\n");
+		rt_device_write(dev_gprs, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+CIPSCONT=1,\"TCP\",\"101.200.182.92\", 8080,1\n");
+		rt_device_write(dev_gprs, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+CIMOD=\"3\"\n");
+		rt_device_write(dev_gprs, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+CSTT=\"UNINET\"\n");
+		rt_device_write(dev_gprs, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		rt_memset(cmd,0,512);
+		cmd=(char *)sram_malloc(512);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+ICF=3,3\n");
+		rt_device_write(dev_gprs, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		cmd=(char *)sram_malloc(512);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+CIPR=115200\n");
+		rt_device_write(dev_gprs, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		cmd=(char *)sram_malloc(512);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"ATW\n");
+		rt_device_write(dev_gprs, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(10);
+		cmd=(char *)sram_malloc(512);
+		rt_memset(cmd,0,512);
+		strcpy(cmd,"AT+CIRESET\n");
+		rt_device_write(dev_gprs, 0, (void *)cmd, rt_strlen(cmd));
+		rt_thread_delay(300);
+		#endif
 	}
+	#endif
 	return 0;
 }
 #ifdef RT_USING_FINSH
