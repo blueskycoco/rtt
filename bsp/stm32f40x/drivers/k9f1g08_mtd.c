@@ -996,7 +996,6 @@ static rt_err_t nand_mtd_read(
 	rt_err_t result=RT_ERROR;
 	uint32_t index = 0x0000;
   	uint32_t status = NAND_READY;
-	uint32_t size = 0;
 	rt_mutex_take(&nand, RT_WAITING_FOREVER);
 	if (data != RT_NULL && data_len != 0)
 	{
@@ -1154,8 +1153,6 @@ void nand_mtd_init()
 	NAND_IDTypeDef NAND_ID;
 	#define NAND_HY_MakerID    0XEC
 	#define NAND_HY_DeviceID   0XF1
-	rt_uint8_t spare[64],spare1[64],*data,*data1;
-	int i;
 	NAND_Init();
 
 	NAND_ReadID(&NAND_ID);

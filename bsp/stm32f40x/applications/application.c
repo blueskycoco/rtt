@@ -38,8 +38,10 @@
 #include <gdb_stub.h>
 #endif
 #include "cap.h"
+#include "rtc.h"
 static rt_uint8_t led_stack[ 512 ];
 static struct rt_thread led_thread;
+extern void nand_mtd_init();
 static void led_thread_entry(void* parameter)
 {
     unsigned int count=0;
