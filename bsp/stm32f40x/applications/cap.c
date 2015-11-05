@@ -167,16 +167,20 @@ void send_web_post(char *log,char *buf,int timeout)
 {
 	int i,j,ltimeout=0;
 	char ch;
-	char *httpd_send=(char *)sram_malloc(strlen(buf)+strlen("JSONStr=")+1);
-	strcpy(httpd_send,"JSONStr=");
-	strcat(httpd_send,buf);
-	rt_device_write(dev_wifi, 0, (void *)httpd_send, rt_strlen(httpd_send));	
-	//char *gprs_string=(char *)sram_malloc(rt_strlen(httpd_send)+rt_strlen(" HTTP/ 1.1\nhost:101.200.182.92")+1);
-	//strcpy(gprs_string,httpd_send);
-	//strcat(gprs_string," HTTP/ 1.1\nhost:101.200.182.92");
-	//rt_device_write(dev_gprs, 0, (void *)gprs_string, rt_strlen(gprs_string));
+	#if 0
+	//char *httpd_send=(char *)sram_malloc(strlen(buf)+strlen("JSONStr=")+1);
+	//strcpy(httpd_send,"JSONStr=");
+	//strcat(httpd_send,buf);
+	//rt_device_write(dev_wifi, 0, (void *)httpd_send, rt_strlen(httpd_send));	
+	#else
+	char *gprs_string=(char *)sram_malloc(strlen(buf)+strlen("JSONStr=")+rt_strlen(" HTTP/ 1.1\nhost:101.200.182.92")+1);
+	strcpy(gprs_string,"JSONStr=");
+	strcat(gprs_string,buf);
+	strcat(gprs_string," HTTP/ 1.1\nhost:101.200.182.92");
+	rt_device_write(dev_gprs, 0, (void *)gprs_string, rt_strlen(gprs_string));
 	//rt_thread_delay(200);
-	#if 1
+	#endif
+	#if 0
 	i=1;
 	j=0;
 	rt_err_t rt=rt_sem_take(&(wifi_rx_sem), 700);
@@ -257,8 +261,8 @@ void send_web_post(char *log,char *buf,int timeout)
 	while(rt_device_read(dev_wifi, 0, &ch, 1)==1);
 	rt_kprintf("\n=====================>\n");
 	#endif
-	sram_free(httpd_send);
-	//sram_free(gprs_string);
+	//sram_free(httpd_send);
+	sram_free(gprs_string);
 }
 
 char *doit_data(char *text,const char *item_str)
@@ -916,9 +920,10 @@ unsigned short input_handle(char *input)
 	switch(addr)
 	{
 		
-		case ALARM_INFO_PRESS:
-			if(ALARM_INFO_DATA==data)
-				return STATE_ALARM_INFO;
+		case TOUCH_DETAIL_CO:
+			if((TOUCH_DETAIL_CO-0x100)==data)
+				return STATE_MAIN;
+			/*
 		case START_PRESS:
 			if(START_DATA==data)
 				return STATE_START;
@@ -947,7 +952,7 @@ unsigned short input_handle(char *input)
 		if(S8_DATA==data)
 			return STATE_MAIN_S8;
 		default:
-			return STATE_MAIN;
+			return STATE_MAIN;*/
 		
 	}
 	return STATE_MAIN;
@@ -968,43 +973,28 @@ void write_data(unsigned int Index,int data)	//??????????
 }
 void lcd_ctl(int state)
 {
+#if 0
 	switch(state)
 	{
 		case STATE_ORIGIN:
 		{
 			rt_kprintf("STATE_ORIGIN state \n");
 			switch_pic(0);
-			//write_data(VAR_TTR_TIME,1223+0);
-			//write_data(VAR_TIME_SET,2231+0);
-			//write_data(VAR_POWR_SET,4433+0);
 			break;
 		}
 		case STATE_MAIN:
 		{
 			rt_kprintf("STATE_MAIN\n");				
-			//write_data(VAR_TTR_TIME,1223+0);
-			//write_data(VAR_TIME_SET,2231+0);
-			//write_data(VAR_POWR_SET,4433+0);
 			break;
 		}			
 		case STATE_ALARM_INFO:
 		{
-			rt_kprintf("STATE_ALARM_INFO\n");	
-			//write_data(VAR_DATE_TIME_1,co);
-			//write_data(VAR_DATE_TIME_2,co2);
-			//write_data(VAR_DATE_TIME_3,hcho);
-			//write_data(VAR_DATE_TIME_4,temp);
-			//write_data(VAR_ALARM_TYPE_1,shidu);
-			//write_data(VAR_ALARM_TYPE_2,pm25);
-			//write_data(VAR_ALARM_TYPE_3,99);
-			//write_data(VAR_ALARM_TYPE_4,99);			
+			rt_kprintf("STATE_ALARM_INFO\n");		
 			break;
 		}		
 		case STATE_START:
 		{
 			rt_kprintf("STATE_START \n");	
-			//write_data(VAR_RUN_TIME,1122+0);
-			//write_data(VAR_REAL_TIME_TEMP,3321+0);
 			break;
 		}	
 		case STATE_MAIN_S1:
@@ -1024,7 +1014,7 @@ void lcd_ctl(int state)
 			break;
 		}
 	}
-
+#endif
 }
 void lcd_thread(void* parameter)
 {	
@@ -1443,7 +1433,7 @@ void wifi(char *arg)
 	strcpy(cmd,arg);
 	strcat(cmd,"\n");
 	rt_kprintf("%s",cmd);
-	rt_device_write(dev_wifi, 0, (void *)arg, rt_strlen(arg));
+	rt_device_write(dev_gprs, 0, (void *)arg, rt_strlen(arg));
 	sram_free(cmd);
 }
 void rst()
