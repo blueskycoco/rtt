@@ -253,15 +253,40 @@ void send_web_post(rt_bool_t wifi,char *log,char *buf,int timeout)
 		char *gprs_string=(char *)sram_malloc(strlen(buf)+strlen("/saveData/airmessage/messMgr.do?JSONStr=")+rt_strlen("\r\nHTTP/ 1.1\r\nhost:101.200.182.92")+1);
 		strcpy(gprs_string,"/saveData/airmessage/messMgr.do?JSONStr=");
 		strcat(gprs_string,buf);
-		strcat(gprs_string,"\r\nHTTP/ 1.1\r\nhost:101.200.182.92");
+		strcat(gprs_string,"\nHTTP/ 1.1\nhost:101.200.182.92");
 		rt_memset(wifi_result,'v',512);
 		rt_device_write(dev_gprs, 0, (void *)gprs_string, rt_strlen(gprs_string));	
 		dev=dev_gprs;
-		rt=rt_sem_take(&(server_sem), 700);
+		rt=rt_sem_take(&(server_sem), 1700);
+		i=0;
 		if(rt==RT_EOK)
 		{
-			while(rt_device_read(dev, 0, &ch, 1)==1)
-				rt_kprintf("%c",ch);			
+			//while(rt_device_read(dev, 0, &ch, 1)==0);
+			//rt_device_read(dev, 0, wifi_result, 512);
+			while(1)
+			{
+				if(rt_device_read(dev, 0, &ch, 1)==1)
+				{
+					wifi_result[i++]=ch;
+					//rt_kprintf("%c",ch);
+					if(ch=='}'||ch=='k')
+						break;
+				}
+				else
+				{
+					if(timeout!=-1)
+					{
+						ltimeout++;
+						rt_thread_delay(1);
+						if(ltimeout>=timeout)
+						{
+							rt_kprintf("gprs timeout\n");						
+							sram_free(gprs_string);
+							return;
+						}
+					}
+				}
+			}
 		}
 		else
 			rt_kprintf("GPRS rcv timeout\n");
@@ -1140,7 +1165,7 @@ void wifi_thread(void* parameter)
 	{		
 		if (rt_sem_take(&(server_sem), RT_WAITING_FOREVER) != RT_EOK) continue;
 		while(rt_device_read(dev_gprs, 0, &ch, 1)==1)
-			rt_kprintf("%c",ch);
+			rt_kprintf("==>%c",ch);
 		#if 0
 		if(ch=='{')
 		{

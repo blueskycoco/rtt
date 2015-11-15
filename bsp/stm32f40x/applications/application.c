@@ -127,6 +127,7 @@ void rt_init_thread_entry(void* parameter)
 		rt_kprintf("init cap failed\n");
 	else
 		rt_kprintf("init cap ok\n");
+//	list_mem();
     /* LwIP Initialization */
 #ifdef RT_USING_LWIP
     {
