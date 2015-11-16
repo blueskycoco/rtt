@@ -28,7 +28,7 @@ char *http_parse_result(const char*lpbuf);
 #define SRAM_MAPPING_ADDRESS 0x10000000
 struct rt_memheap system_heap;
 int g_index=0;
-rt_bool_t server_time_got=RT_FALSE,send_by_wifi=RT_FALSE;
+rt_bool_t server_time_got=RT_FALSE,send_by_wifi=RT_TRUE;
 void write_data(unsigned int Index,int data);
 void sram_init(void)
 {
@@ -952,7 +952,7 @@ static rt_err_t lcd_rx_ind(rt_device_t dev, rt_size_t size)
 	return RT_EOK;
 }
 
-
+FILE *history_fp=RT_NULL;
 unsigned short input_handle(char *input)
 {
 	int addr=0,data=0;
@@ -960,42 +960,64 @@ unsigned short input_handle(char *input)
 	input[0]=2;
 	addr=input[1]<<8|input[2];
 	data=input[4]<<8|input[5];
+	if(	addr==TOUCH_DETAIL_CO||
+		addr==TOUCH_DETAIL_CO2||
+		addr==TOUCH_DETAIL_HCHO||
+		addr==TOUCH_DETAIL_TEMP||
+		addr==TOUCH_DETAIL_SHIDU||
+		addr==TOUCH_DETAIL_PM25)
+		{
+			if(history_fp!=RT_NULL)
+			{
+				fclose(fp);
+				char *file_path=(char *)sram_malloc(256);
+				rt_memset(file_path,'\0',256);
+				rt_memset(date,'\0',32);
+				rt_sprintf(date,"%04d-%02d-%02d",year_b,month_b,day_b);
+				strcpy(file_path,FILE_PATH);
+				rt_memcpy(file_path+rt_strlen(FILE_PATH),date,10);
+				strcat(file_path,".dat");
+				rt_kprintf(RESEND_PROCESS"to open %s\r\n",file_path);
+				fp = fopen(file_path, "r");
+				if (fp != RT_NULL)
+				
+			}
+		}
 	switch(addr)
 	{
 		
 		case TOUCH_DETAIL_CO:
-			if((TOUCH_DETAIL_CO-0x100)==data)
-				return STATE_MAIN;
-			/*
-		case START_PRESS:
-			if(START_DATA==data)
-				return STATE_START;
-		case S1_PRESS:
-			if(S1_DATA==data)
-				return STATE_MAIN_S1;
-		case S2_PRESS:
-		if(S2_DATA==data)
-			return STATE_MAIN_S2;
-		case S3_PRESS:
-		if(S3_DATA==data)
-			return STATE_MAIN_S3;
-		case S4_PRESS:
-		if(S4_DATA==data)
-			return STATE_MAIN_S4;
-		case S5_PRESS:
-		if(S5_DATA==data)
-			return STATE_MAIN_S5;
-		case S6_PRESS:
-		if(S6_DATA==data)
-			return STATE_MAIN_S6;
-		case S7_PRESS:
-		if(S7_DATA==data)
-			return STATE_MAIN_S7;
-		case S8_PRESS:
-		if(S8_DATA==data)
-			return STATE_MAIN_S8;
+			{
+				if(history_fp!=RT_NULL)
+				{
+
+				}
+			}
+		case TOUCH_UPDATE_CO:
+			if((TOUCH_DETAIL_CO-0x100)==data||(TOUCH_UPDATE_CO-0x100)==data)
+				return STATE_DETAIL_CO;			
+		case TOUCH_DETAIL_CO2:
+		case TOUCH_UPDATE_CO2:
+			if(TOUCH_DETAIL_CO2-0x100==data||TOUCH_UPDATE_CO2-0x100==data)
+				return TOUCH_DETAIL_CO2;
+		case TOUCH_DETAIL_HCHO:
+		case TOUCH_UPDATE_HCHO:
+			if((TOUCH_DETAIL_HCHO-0x100)==data||(TOUCH_UPDATE_HCHO-0x100)==data)
+				return STATE_DETAIL_HCHO;
+		case TOUCH_DETAIL_TEMP:
+		case TOUCH_UPDATE_TEMP:
+			if((TOUCH_DETAIL_TEMP-0x100)==data||(TOUCH_UPDATE_TEMP-0x100)==data)
+				return STATE_DETAIL_TMP;
+		case TOUCH_DETAIL_SHIDU:
+		case TOUCH_UPDATE_SHIDU:
+			if((TOUCH_DETAIL_SHIDU-0x100)==data||(TOUCH_UPDATE_SHIDU-0x100)==data)
+				return STATE_DETAIL_SHIDU;
+		case TOUCH_DETAIL_PM25:
+		case TOUCH_UPDATE_PM25:
+			if((TOUCH_DETAIL_PM25-0x100)==data||(TOUCH_UPDATE_PM25-0x100)==data)
+				return STATE_DETAIL_PM25;
 		default:
-			return STATE_MAIN;*/
+			return STATE_MAIN;
 		
 	}
 	return STATE_MAIN;
@@ -1016,10 +1038,9 @@ void write_data(unsigned int Index,int data)	//??????????
 }
 void lcd_ctl(int state)
 {
-#if 0
 	switch(state)
 	{
-		case STATE_ORIGIN:
+		case STATE_LOGO:
 		{
 			rt_kprintf("STATE_ORIGIN state \n");
 			switch_pic(0);
@@ -1027,29 +1048,38 @@ void lcd_ctl(int state)
 		}
 		case STATE_MAIN:
 		{
-			rt_kprintf("STATE_MAIN\n");				
+			rt_kprintf("STATE_MAIN\n");
 			break;
 		}			
-		case STATE_ALARM_INFO:
+		case STATE_DETAIL_CO:
 		{
-			rt_kprintf("STATE_ALARM_INFO\n");		
+			rt_kprintf("STATE_DETAIL_CO\n");
 			break;
 		}		
-		case STATE_START:
+		case STATE_DETAIL_CO2:
 		{
-			rt_kprintf("STATE_START \n");	
+			rt_kprintf("STATE_DETAIL_CO2 \n");	
 			break;
 		}	
-		case STATE_MAIN_S1:
-		case STATE_MAIN_S2:
-		case STATE_MAIN_S3:
-		case STATE_MAIN_S4:
-		case STATE_MAIN_S5:
-		case STATE_MAIN_S6:
-		case STATE_MAIN_S7:
-		case STATE_MAIN_S8:
+		case STATE_DETAIL_HCHO:
 		{
-			//write_data(VAR_CHANNEL_SET,state-4);
+			rt_kprintf("STATE_DETAIL_HCHO \n");	
+			break;
+		}
+		case STATE_DETAIL_TMP:
+		{
+			rt_kprintf("STATE_DETAIL_TMP \n");	
+			break;
+		}
+		case STATE_DETAIL_SHIDU:
+		{
+			rt_kprintf("STATE_DETAIL_SHIDU \n");	
+			break;
+		}
+		case STATE_DETAIL_PM25:
+		{
+			rt_kprintf("STATE_DETAIL_PM25 \n");	
+			break;
 		}
 		default:					
 		{
@@ -1057,7 +1087,6 @@ void lcd_ctl(int state)
 			break;
 		}
 	}
-#endif
 }
 void lcd_thread(void* parameter)
 {	
