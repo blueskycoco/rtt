@@ -951,6 +951,41 @@ static rt_err_t lcd_rx_ind(rt_device_t dev, rt_size_t size)
 	rt_sem_release(&(lcd_rx_sem));    
 	return RT_EOK;
 }
+static char fullpath[256];
+void list_dir(const char* path)
+{
+	DIR *dir;
+
+	dir = opendir(path);
+	if (dir != RT_NULL)
+	{
+		struct dirent* dirent;
+		struct stat s;
+
+		do
+		{
+			dirent = readdir(dir);
+			if (dirent == RT_NULL) break;
+			rt_memset(&s, 0, sizeof(struct stat));
+
+			/* build full path for each file */
+			rt_sprintf(fullpath, "%s/%s", path, dirent->d_name);
+			rt_kprintf("%s\r\n",fullpath);
+			stat(fullpath, &s);
+			if ( s.st_mode & DFS_S_IFDIR )
+			{
+				rt_kprintf("%s\t\t<DIR>\n", dirent->d_name);
+			}
+			else
+			{
+				rt_kprintf("%s\t\t%lu\n", dirent->d_name, s.st_size);
+			}
+		} while (dirent != RT_NULL);
+
+		closedir(dir);
+	}
+	else rt_kprintf("open %s directory failed\n", path);
+}
 
 FILE *history_fp=RT_NULL;
 unsigned short input_handle(char *input)
@@ -960,6 +995,7 @@ unsigned short input_handle(char *input)
 	input[0]=2;
 	addr=input[1]<<8|input[2];
 	data=input[4]<<8|input[5];
+	#if 0
 	if(	addr==TOUCH_DETAIL_CO||
 		addr==TOUCH_DETAIL_CO2||
 		addr==TOUCH_DETAIL_HCHO||
@@ -983,6 +1019,7 @@ unsigned short input_handle(char *input)
 				
 			}
 		}
+	#endif
 	switch(addr)
 	{
 		
@@ -1294,6 +1331,7 @@ static rt_err_t gprs_rx_ind(rt_device_t dev, rt_size_t size)
 //uart4 for lcd
 int init_cap()
 {
+	list_dir("/history");
 	sram_init();	
 	set_date(2015,10,24);
 	set_time(14,44,30);
