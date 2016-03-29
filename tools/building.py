@@ -36,6 +36,44 @@ Projects = []
 Rtt_Root = ''
 Env = None
 
+# SCons PreProcessor patch
+def start_handling_includes(self, t=None):
+    """
+    Causes the PreProcessor object to start processing #import,
+    #include and #include_next lines.
+
+    This method will be called when a #if, #ifdef, #ifndef or #elif
+    evaluates True, or when we reach the #else in a #if, #ifdef,
+    #ifndef or #elif block where a condition already evaluated
+    False.
+
+    """
+    d = self.dispatch_table
+    p = self.stack[-1] if self.stack else self.default_table
+
+    for k in ('import', 'include', 'include_next', 'define'):
+        d[k] = p[k]
+
+def stop_handling_includes(self, t=None):
+    """
+    Causes the PreProcessor object to stop processing #import,
+    #include and #include_next lines.
+
+    This method will be called when a #if, #ifdef, #ifndef or #elif
+    evaluates False, or when we reach the #else in a #if, #ifdef,
+    #ifndef or #elif block where a condition already evaluated True.
+    """
+    d = self.dispatch_table
+    d['import'] = self.do_nothing
+    d['include'] =  self.do_nothing
+    d['include_next'] =  self.do_nothing
+    d['define'] =  self.do_nothing
+    
+PatchedPreProcessor = SCons.cpp.PreProcessor
+PatchedPreProcessor.start_handling_includes = start_handling_includes
+PatchedPreProcessor.stop_handling_includes = stop_handling_includes
+
+
 class Win32Spawn:
     def spawn(self, sh, escape, cmd, args, env):
         # deal with the cmd build-in commands which cannot be used in
@@ -123,7 +161,7 @@ def PrepareBuilding(env, root_directory, has_libcpu=False, remove_components = [
     Env.Append(BUILDERS = {'BuildLib': bld})
 
     # parse rtconfig.h to get used component
-    PreProcessor = SCons.cpp.PreProcessor()
+    PreProcessor = PatchedPreProcessor()
     f = file('rtconfig.h', 'r')
     contents = f.read()
     f.close()
@@ -267,11 +305,17 @@ def PrepareModuleBuilding(env, root_directory, bsp_directory):
     global Env
     global Rtt_Root
 
+    # patch for win32 spawn
+    if env['PLATFORM'] == 'win32':
+        win32_spawn = Win32Spawn()
+        win32_spawn.env = env
+        env['SPAWN'] = win32_spawn.spawn
+
     Env = env
     Rtt_Root = root_directory
 
     # parse bsp rtconfig.h to get used component
-    PreProcessor = SCons.cpp.PreProcessor()
+    PreProcessor = PatchedPreProcessor()
     f = file(bsp_directory + '/rtconfig.h', 'r')
     contents = f.read()
     f.close()
@@ -491,37 +535,35 @@ def DoBuilding(target, objects):
                 lst.append(item)
         return lst
 
-    objects = one_list(objects)
-
-    # remove source files with local flags setting
-    for group in Projects:
-        if group.has_key('LOCAL_CCFLAGS') or group.has_key('LOCAL_CPPPATH') or group.has_key('LOCAL_CPPDEFINES'):
-            for source in group['src']:
-                for obj in objects:
-                    if source.abspath == obj.abspath or (len(obj.sources) > 0 and source.abspath == obj.sources[0].abspath):
-                        objects.remove(obj)
-
-    # re-add the source files to the objects
-    for group in Projects:
+    # handle local group
+    def local_group(group, objects):
         if group.has_key('LOCAL_CCFLAGS') or group.has_key('LOCAL_CPPPATH') or group.has_key('LOCAL_CPPDEFINES'):
             CCFLAGS = Env.get('CCFLAGS', '') + group.get('LOCAL_CCFLAGS', '')
             CPPPATH = Env.get('CPPPATH', ['']) + group.get('LOCAL_CPPPATH', [''])
             CPPDEFINES = Env.get('CPPDEFINES', ['']) + group.get('LOCAL_CPPDEFINES', [''])
 
             for source in group['src']:
-                objects += Env.Object(source, CCFLAGS = CCFLAGS,
-                    CPPPATH = CPPPATH,
-                    CPPDEFINES = CPPDEFINES)
+                objects.append(Env.Object(source, CCFLAGS = CCFLAGS,
+                    CPPPATH = CPPPATH, CPPDEFINES = CPPDEFINES))
+
+            return True
+
+        return False
+
+    objects = one_list(objects)
 
     program = None
     # check whether special buildlib option
     lib_name = GetOption('buildlib')
     if lib_name:
+        objects = [] # remove all of objects
         # build library with special component
         for Group in Projects:
             if Group['name'] == lib_name:
                 lib_name = GroupLibName(Group['name'], Env)
-                objects = Env.Object(Group['src'])
+                if not local_group(Group, objects):
+                    objects = Env.Object(Group['src'])
+
                 program = Env.Library(lib_name, objects)
 
                 # add library copy action
@@ -529,6 +571,18 @@ def DoBuilding(target, objects):
 
                 break
     else:
+        # remove source files with local flags setting
+        for group in Projects:
+            if group.has_key('LOCAL_CCFLAGS') or group.has_key('LOCAL_CPPPATH') or group.has_key('LOCAL_CPPDEFINES'):
+                for source in group['src']:
+                    for obj in objects:
+                        if source.abspath == obj.abspath or (len(obj.sources) > 0 and source.abspath == obj.sources[0].abspath):
+                            objects.remove(obj)
+
+        # re-add the source files to the objects
+        for group in Projects:
+            local_group(group, objects)
+
         program = Env.Program(target, objects)
 
     EndBuilding(target, program)
@@ -615,7 +669,7 @@ def GetVersion():
     rtdef = os.path.join(Rtt_Root, 'include', 'rtdef.h')
 
     # parse rtdef.h to get RT-Thread version
-    prepcessor = SCons.cpp.PreProcessor()
+    prepcessor = PatchedPreProcessor()
     f = file(rtdef, 'r')
     contents = f.read()
     f.close()
