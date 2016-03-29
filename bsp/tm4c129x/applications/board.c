@@ -61,14 +61,6 @@ extern void HardFault_Handler(void);
  */
 void rt_hw_board_init()
 {
-    //init low level drivers. e.g. cpu uart etc.
-    rt_components_board_init();
-    //redirect RTT stdio to CONSOLE device
-    rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
-}
-
-int rt_hw_cpu_init(void)
-{
     MAP_IntMasterDisable();
     IntRegister(FAULT_HARD, HardFault_Handler);	
     IntRegister(FAULT_PENDSV, PendSV_Handler);
@@ -91,7 +83,19 @@ int rt_hw_cpu_init(void)
     MAP_SysTickIntEnable();
     MAP_SysTickEnable();	
 
-    return 0;
+    /* set pend exception priority */
+    //IntPrioritySet(FAULT_PENDSV, (1 << 5) - 1);
+    
+    /*init uart device*/		
+    rt_hw_uart_init(1);
+    //redirect RTT stdio to CONSOLE device
+	#ifdef RT_USING_CONSOLE 
+	rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
+	#endif
+    //
+    // Enable interrupts to the processor.
+    //
+    MAP_IntMasterEnable();
 }
 // rt_hw_cpu_init should be run before any other INIT_BOARD_EXPORT
 // We use INIT_EXPORT here and set the sequence index to "0.xxxx"

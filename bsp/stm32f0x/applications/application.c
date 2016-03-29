@@ -31,55 +31,86 @@
 /* led thread entry */
 static void led_thread_entry(void* parameter)
 {
-	while(1)
-	{
-        rt_hw_led_on();
-        rt_thread_delay(RT_TICK_PER_SECOND);
 
-        rt_hw_led_off();
-        rt_thread_delay(RT_TICK_PER_SECOND);
-	}
+	  while(1)
+	  {
+			rt_hw_led_on();
+			rt_thread_delay(RT_TICK_PER_SECOND);
+			rt_kprintf("led on\r\n");
+			rt_hw_led_off();
+			rt_thread_delay(RT_TICK_PER_SECOND);
+			rt_kprintf("led off\r\n");
+	  }
 }
-
+static void cc1101_thread_entry(void* parameter)
+{
+	  uint8_t buf[10],buf1[10],i;
+	  //for(i=0;i<10;i++)
+	  //	buf[i]=
+	  sprintf(buf,"%s","0000000000");
+	  cc1101_init();
+	  while(1)
+	  {
+			//rt_hw_led_on();
+			for(i=0;i<10;i++)
+			{
+				  if(buf[i]==255)
+						buf[i]=0;
+				  buf[i]=buf[i]+1;
+			}
+			//cc1101_send((uint8_t *)buf,10);
+			//rt_thread_delay(20);
+			cc1101_recv(50);
+			//rt_hw_led_off();
+			//rt_thread_delay(RT_TICK_PER_SECOND);
+			rt_thread_delay(10);
+			cc1101_send((uint8_t *)buf,10);
+	  }
+}
 static void rt_init_thread_entry(void* parameter)
 {
-	rt_thread_t led_thread;
+	  rt_thread_t led_thread;
 
-/* Initialization RT-Thread Components */
+	  /* Initialization RT-Thread Components */
 #ifdef RT_USING_COMPONENTS_INIT
-    rt_components_init();
+	  rt_components_init();
 #endif
 
-/* Set finsh device */
+	  /* Set finsh device */
 #ifdef  RT_USING_FINSH
-    finsh_set_device(RT_CONSOLE_DEVICE_NAME);
+	  finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif  /* RT_USING_FINSH */
 
-    /* Create led thread */
-    led_thread = rt_thread_create("led",
-    		led_thread_entry, RT_NULL,
-    		256, 20, 20);
-    if(led_thread != RT_NULL)
-    	rt_thread_startup(led_thread);
+	  /* Create led thread */
+	  led_thread = rt_thread_create("led",
+				  led_thread_entry, RT_NULL,
+				  256, 20, 20);
+	  if(led_thread != RT_NULL)
+			rt_thread_startup(led_thread);
+	  led_thread = rt_thread_create("cc1101",
+				  cc1101_thread_entry, RT_NULL,
+				  512, 20, 20);
+	  //if(led_thread != RT_NULL)
+	  //rt_thread_startup(led_thread);
 }
 
 int rt_application_init()
 {
-	rt_thread_t init_thread;
+	  rt_thread_t init_thread;
 
 #if (RT_THREAD_PRIORITY_MAX == 32)
-    init_thread = rt_thread_create("init",
-                                   rt_init_thread_entry, RT_NULL,
-                                   512, 8, 20);
+	  init_thread = rt_thread_create("init",
+				  rt_init_thread_entry, RT_NULL,
+				  512, 8, 20);
 #else
-    init_thread = rt_thread_create("init",
-                                   rt_init_thread_entry, RT_NULL,
-                                   512, 80, 20);
+	  init_thread = rt_thread_create("init",
+				  rt_init_thread_entry, RT_NULL,
+				  512, 80, 20);
 #endif
-    if(init_thread != RT_NULL)
-    	rt_thread_startup(init_thread);
+	  if(init_thread != RT_NULL)
+			rt_thread_startup(init_thread);
 
-    return 0;
+	  return 0;
 }
 
 

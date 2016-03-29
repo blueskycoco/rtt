@@ -67,8 +67,11 @@
 #include <lwip/snmp.h>
 #include "lwip/tcpip.h"
 #include "netif/etharp.h"
+#ifndef RT_USING_LWIP_HEAD
 #include "netif/ppp_oe.h"
-
+#else
+#include "netif/ppp/pppoe.h"
+#endif
 
 /**
  * Sanity Check:  This interface driver will NOT work if the following defines
@@ -490,7 +493,6 @@ tivaif_check_pbuf(struct pbuf *p)
                     tivaif_trace_pbuf("Copied:", pBuf);
 #endif
                     DRIVER_STATS_INC(TXCopyCount);
-
                     /* Reduce the reference count on the original pbuf since
                      * we're not going to hold on to it after returning from
                      * tivaif_transmit.  Note that we already bumped
@@ -871,6 +873,7 @@ tivaif_receive(net_device_t dev)
                       /* drop the packet */
                       LWIP_DEBUGF(NETIF_DEBUG, ("tivaif_input: input error\n"));
                       pbuf_free(pBuf);
+					  
 
                       /* Adjust the link statistics */
                       LINK_STATS_INC(link.memerr);
@@ -907,7 +910,7 @@ tivaif_receive(net_device_t dev)
       }
       else
       {
-          LWIP_DEBUGF(NETIF_DEBUG, ("tivaif_receive: pbuf_alloc error\n"));
+          LWIP_DEBUGF(NETIF_DEBUG, ("tivaif_receive: pbuf_alloc error %d\n",PBUF_POOL_BUFSIZE));
 
           pDescList->pDescriptors[pDescList->ui32Read].Desc.pvBuffer1 = 0;
 
@@ -940,6 +943,7 @@ tivaif_receive(net_device_t dev)
  * transmitter.
  *
  */
+ extern bool phy_link;
 void
 tivaif_process_phy_interrupt(net_device_t dev)
 {
@@ -971,6 +975,7 @@ tivaif_process_phy_interrupt(net_device_t dev)
 #else
             //tcpip_callback((tcpip_callback_fn)netif_set_link_up, psNetif);
 			eth_device_linkchange(&(dev->parent), RT_TRUE);
+			phy_link=true;
 #endif
 
             /* In this case we drop through since we may need to reconfigure
@@ -985,6 +990,7 @@ tivaif_process_phy_interrupt(net_device_t dev)
 #else
             //tcpip_callback((tcpip_callback_fn)netif_set_link_down, psNetif);
 			eth_device_linkchange(&(dev->parent), RT_FALSE);
+			phy_link=false;
 #endif
         }
     }
@@ -1376,7 +1382,7 @@ static struct pbuf* eth_dev_rx(rt_device_t dev)
 	rt_uint32_t temp =0;
 	net_device_t net_dev = (net_device_t)dev;
 	result = rt_mb_recv(net_dev->rx_pbuf_mb, &temp, RT_WAITING_NO);
-	
+
 	return (result == RT_EOK)? (struct pbuf*)temp : RT_NULL;
 }
 
@@ -1400,7 +1406,7 @@ int rt_hw_tiva_eth_init(void)
 	
 	result = rt_mb_init(&eth_rx_pbuf_mb, "epbuf",
                         &rx_pbuf_mb_pool[0], sizeof(rx_pbuf_mb_pool)/4,
-                        RT_IPC_FLAG_FIFO);
+                        RT_IPC_FLAG_PRIO);
 	RT_ASSERT(result == RT_EOK);
 	eth_dev->rx_pbuf_mb = &eth_rx_pbuf_mb;
 	
