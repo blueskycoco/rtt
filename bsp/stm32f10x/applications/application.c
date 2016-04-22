@@ -44,7 +44,7 @@
 
 #include "led.h"
 #include "usart.h"
-
+#include "esp8266.h"
 
 ALIGN(RT_ALIGN_SIZE)
   static rt_uint8_t led_stack[ 2048 ];
@@ -107,6 +107,7 @@ void rt_init_thread_entry(void* parameter)
 #ifdef  RT_USING_FINSH
   finsh_set_device(RT_CONSOLE_DEVICE_NAME);
 #endif  /* RT_USING_FINSH */
+  init_esp8266();
 
   //main_loop();
 //	dgus_loop();

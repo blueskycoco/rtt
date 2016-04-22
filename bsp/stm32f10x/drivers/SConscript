@@ -10,7 +10,7 @@ board.c
 stm32f10x_it.c
 led.c
 usart.c
-diwen.c
+esp8266.c
 """)
 
 # add Ethernet drvers.
