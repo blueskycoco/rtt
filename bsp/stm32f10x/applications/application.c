@@ -62,7 +62,7 @@ static void led_thread_entry(void* parameter)
   rt_hw_led_init();
   //dillon LCD_Init();
 #ifdef RT_USING_FINSH
-  ls("/");	
+//  ls("/");	
 #endif
   //stdbmp_decode("/FIGURE1.BMP");
   rt_kprintf("\r\nshow over\r\n");
@@ -80,7 +80,7 @@ static void led_thread_entry(void* parameter)
 	rt_hw_led_on(0);
 	rt_hw_led_on(1);
 	rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
-	write_data(0x0101,count);
+	//write_data(0x0101,count);
 
 	/* led1 off */
 //#ifndef RT_USING_FINSH
@@ -109,7 +109,7 @@ void rt_init_thread_entry(void* parameter)
 #endif  /* RT_USING_FINSH */
 
   //main_loop();
-	dgus_loop();
+//	dgus_loop();
   /* Filesystem Initialization */
 #if defined(RT_USING_DFS) && defined(RT_USING_DFS_ELMFAT)
   /* mount sd card fat partition 1 as root directory */
@@ -127,7 +127,7 @@ int rt_application_init(void)
   rt_thread_t init_thread;
 
   rt_err_t result;
-  uart_init();
+  //uart_init();
 
   /* init led thread */
   result = rt_thread_init(&led_thread,
