@@ -965,7 +965,10 @@ void list_dir(const char* path)
 		do
 		{
 			dirent = readdir(dir);
-			if (dirent == RT_NULL) break;
+			if (dirent == RT_NULL){
+				rt_kprintf("dirent is NULL\n");
+				break;
+				}
 			rt_memset(&s, 0, sizeof(struct stat));
 
 			/* build full path for each file */
@@ -984,7 +987,11 @@ void list_dir(const char* path)
 
 		closedir(dir);
 	}
-	else rt_kprintf("open %s directory failed\n", path);
+	else
+	{
+		mkdir(path,0777);
+		rt_kprintf("open %s directory failed\n", path);
+	}
 }
 
 FILE *history_fp=RT_NULL;

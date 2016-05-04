@@ -84,30 +84,45 @@ void rt_init_thread_entry(void* parameter)
 	if (dfs_mount("nand0", "/", "uffs", 0, 0) == 0)
 	{
 		rt_kprintf("uffs mount / partion ok\n");
+		DIR *dir;
+		if(dir = opendir("/history")==RT_NULL)
+		{
+			rt_kprintf("opendir /history failed!\n");
+			if(mkdir("/history",0777)==RT_EOK)
+				rt_kprintf("mkdir /history OK!\n");
+			else
+				rt_kprintf("mkdir /history failed!\n");
+		}
+		else
+		{
+			closedir(dir);
+			rt_kprintf("opendir /history OK!\n");
+		}
 		#if 0
-		if (dfs_mount("nand0", "/nand0", "uffs", 0, 0) == 0)
+		if (dfs_mount("nand0", "/history", "uffs", 0, 0) == 0)
 		{
 			rt_kprintf("uffs mount /nand0 partion ok\n");
 		}
 		else
 		{
-			if(mkdir("/nand0",0777)==RT_EOK)
+			if(mkdir("/history",0777)==RT_EOK)
 			{
-				if (dfs_mount("nand0", "/nand0", "uffs", 0, 0) == 0)
+				if (dfs_mount("nand0", "/history", "uffs", 0, 0) == 0)
 				{
-					rt_kprintf("uffs mount on /nand0 ok\n");
+					rt_kprintf("uffs mount on /history ok\n");
 				}
 				else
-					rt_kprintf("uffs mount on /nand0 failed!\n");
+					rt_kprintf("uffs mount on /history failed!\n");
 			}
 			else
-				rt_kprintf("uffs mount on /nand0 failed!\n");
+				rt_kprintf("mkdir /history failed!\n");
 		}
 		#endif
 	}
 	else
 		rt_kprintf("uffs mount / partion failed!\n");
 	#endif
+	
 #if 0
 #if defined(RT_USING_DFS_DEVFS)
 			devfs_init();
@@ -151,7 +166,7 @@ int rt_application_init()
 
     tid = rt_thread_create("init",
         rt_init_thread_entry, RT_NULL,
-        512, RT_THREAD_PRIORITY_MAX/3, 20);
+        2048, RT_THREAD_PRIORITY_MAX/3, 20);
 
     if (tid != RT_NULL)
   	    rt_thread_startup(tid);
