@@ -1,0 +1,65 @@
+import rtconfig
+Import('RTT_ROOT')
+from building import *
+
+# get current directory
+cwd = GetCurrentDir()
+
+# The set of source files associated with this SConscript file.
+src = Split("""
+CMSIS/Device/ST/STM32L1xx/Source/Templates/system_stm32l1xx.c
+STM32L1xx_StdPeriph_Driver/src/misc.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_adc.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_aes.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_aes_util.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_comp.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_crc.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_dac.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_dbgmcu.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_dma.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_exti.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_flash.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_flash_ramfunc.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_fsmc.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_gpio.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_i2c.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_iwdg.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_lcd.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_opamp.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_pwr.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_rcc.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_rtc.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_sdio.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_spi.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_syscfg.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_tim.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_usart.c
+STM32L1xx_StdPeriph_Driver/src/stm32l1xx_wwdg.c
+""")
+
+# starupt scripts for each STM32 kind
+startup_scripts = {}
+startup_scripts['STM32L1XX_HD']     = 'startup_stm32l1xx_hd.s'
+startup_scripts['STM32L1XX_MD']     = 'startup_stm32l1xx_md.s'
+startup_scripts['STM32L1XX_MDP']  	= 'startup_stm32l1xx_mdp.s'
+startup_scripts['STM32L1XX_XL']     = 'startup_stm32l1xx_xl.s'
+
+# add for startup script 
+if rtconfig.CROSS_TOOL == 'gcc':
+    src = src + ['CMSIS/Device/ST/STM32L1xx/Source/Templates/gcc_ride7/' + startup_scripts[rtconfig.STM32_TYPE]]
+elif rtconfig.CROSS_TOOL == 'keil':
+    src = src + ['CMSIS/Device/ST/STM32L1xx/Source/Templates/arm/' + startup_scripts[rtconfig.STM32_TYPE]]
+elif rtconfig.CROSS_TOOL == 'iar':
+    src = src + ['CMSIS/Device/ST/STM32L1xx/Source/Templates/iar/' + startup_scripts[rtconfig.STM32_TYPE]]
+
+path = [cwd + '/STM32L1xx_StdPeriph_Driver/inc', 
+    cwd + '/CMSIS/Device/ST/STM32L1xx/Include',
+    cwd + '/CMSIS/Include']
+
+if GetDepend(['RT_USING_RTT_CMSIS']):
+    path += [RTT_ROOT + '/components/CMSIS/Include']
+
+CPPDEFINES = ['USE_STDPERIPH_DRIVER', rtconfig.STM32_TYPE]
+group = DefineGroup('STM32_StdPeriph', src, depend = [''], CPPPATH = path, CPPDEFINES = CPPDEFINES)
+
+Return('group')
