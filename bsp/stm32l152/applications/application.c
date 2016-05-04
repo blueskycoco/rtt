@@ -104,6 +104,11 @@ static void power_thread_entry(void* parameter)
 	   power_man_timer_interrupt();
     }
 	#endif
+	while (1)
+    {
+        	   rt_thread_delay(100);
+			   rt_kprintf("power thread\n");
+		}
 }
 static void cc1101_thread_entry(void* parameter)
 {

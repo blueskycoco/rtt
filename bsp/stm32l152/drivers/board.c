@@ -184,13 +184,16 @@ void rt_hw_board_init(void)
 #if STM32_EXT_SRAM
     EXT_SRAM_Configuration();
 #endif
-
-    //rt_hw_usart_init();
-    rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
+	SWO_Enable();
+    rt_hw_usart_init();
+    //rt_console_set_device(RT_CONSOLE_DEVICE_NAME);
 
 #ifdef RT_USING_COMPONENTS_INIT
     rt_components_board_init();
 #endif
 }
-
+void rt_hw_console_output(const char *str)
+{
+    SWO_PrintString(str);
+}
 /*@}*/
