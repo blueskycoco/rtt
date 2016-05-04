@@ -15,6 +15,7 @@
 #include <board.h>
 #include <rtthread.h>
 #include <rtdevice.h>
+#include "gpio.h"
 #ifdef RT_USING_CAN
 #define CANRT1   8
 #define CANERR1  9
@@ -28,8 +29,8 @@ static struct canledtype
 {
 #ifdef USING_BXCAN1
     {
-        {CANRT1, PIN_MODE_OUTPUT_OD,},
-        {CANERR1, PIN_MODE_OUTPUT_OD,},
+        {CANRT1, PIN_MODE_OUTPUT,},
+        {CANERR1, PIN_MODE_OUTPUT,},
     },
 #endif /*USING_BXCAN1*/
 #ifdef USING_BXCAN2
@@ -244,10 +245,12 @@ int rt_can_app_init(void)
                            512, RT_THREAD_PRIORITY_MAX / 3 - 1, 20);
     if (tid != RT_NULL) rt_thread_startup(tid);
 
+#ifdef USING_BXCAN2
     tid = rt_thread_create("canapp2",
                            rt_can_thread_entry, &can_data[1],
                            512, RT_THREAD_PRIORITY_MAX / 3 - 1, 20);
     if (tid != RT_NULL) rt_thread_startup(tid);
+#endif
 
     return 0;
 }

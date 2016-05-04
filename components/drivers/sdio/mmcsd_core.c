@@ -26,6 +26,7 @@
 #include <drivers/mmcsd_core.h>
 #include <drivers/sd.h>
 #include <drivers/mmc.h>
+#include <drivers/sdio.h>
 
 #ifndef RT_MMCSD_STACK_SIZE
 #define RT_MMCSD_STACK_SIZE 1024
@@ -520,6 +521,7 @@ void mmcsd_set_data_timeout(struct rt_mmcsd_data       *data,
 rt_uint32_t mmcsd_select_voltage(struct rt_mmcsd_host *host, rt_uint32_t ocr)
 {
     int bit;
+    extern int __rt_ffs(int value);
 
     ocr &= host->valid_ocr;
 
@@ -649,6 +651,23 @@ void mmcsd_detect(void *param)
                 }
                 mmcsd_host_unlock(host);
             }
+            else
+            {
+            	/* card removed */
+            	mmcsd_host_lock(host);
+            	if (host->card->sdio_function_num != 0)
+            	{
+            		rt_kprintf("unsupport sdio card plug out!\n");
+            	}
+            	else
+            	{
+            		rt_mmcsd_blk_remove(host->card);
+            		rt_free(host->card);
+
+            		host->card = RT_NULL;
+            	}
+            	mmcsd_host_unlock(host);
+            }
         }
     }
 }
@@ -689,8 +708,8 @@ void rt_mmcsd_core_init(void)
 {
     rt_err_t ret;
 
-    /* init detect sd cart thread */
-    /* init mailbox and create detect sd card thread */
+    /* initialize detect SD cart thread */
+    /* initialize mailbox and create detect SD card thread */
     ret = rt_mb_init(&mmcsd_detect_mb, "mmcsdmb",
         &mmcsd_detect_mb_pool[0], sizeof(mmcsd_detect_mb_pool),
         RT_IPC_FLAG_FIFO);
@@ -705,3 +724,4 @@ void rt_mmcsd_core_init(void)
 
     rt_sdio_init();
 }
+

@@ -29,6 +29,7 @@
  * 2014-12-31     bernard      use open_flag for poll_tx stream mode.
  * 2015-05-19     Quintin      fix DMA tx mod tx_dma->activated flag !=RT_FALSE BUG 
  *                             in open function.
+ * 2015-11-10     bernard      fix the poll rx issue when there is no data.
  */
 
 #include <rthw.h>
@@ -49,6 +50,8 @@ rt_inline int _serial_poll_rx(struct rt_serial_device *serial, rt_uint8_t *data,
     while (length)
     {
         ch = serial->ops->getc(serial);
+        if (ch == -1) break;
+
         *data = ch; 
         data ++; length --;
 
@@ -355,7 +358,7 @@ static rt_err_t rt_serial_close(struct rt_device *dev)
         serial->serial_rx = RT_NULL;
         dev->open_flag &= ~RT_DEVICE_FLAG_INT_RX;
         /* configure low level device */
-        serial->ops->control(serial, RT_DEVICE_CTRL_CLR_INT, (void*)RT_DEVICE_FLAG_INT_TX);
+        serial->ops->control(serial, RT_DEVICE_CTRL_CLR_INT, (void*)RT_DEVICE_FLAG_INT_RX);
     }
     else if (dev->open_flag & RT_DEVICE_FLAG_DMA_RX)
     {
