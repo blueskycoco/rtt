@@ -442,3 +442,13 @@ _system(const char *s)
     /* not support this call */
     return;
 }
+
+void __libc_init_array(void)
+{
+	/* we not use __libc init_aray to initialize C++ objects */
+}
+
+void abort(void)
+{
+	return ;
+}

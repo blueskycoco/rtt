@@ -25,6 +25,8 @@
 #include <rtthread.h>
 #include <drivers/mmcsd_core.h>
 #include <drivers/sd.h>
+#include <drivers/mmc.h>
+#include <drivers/sdio.h>
 
 #ifndef RT_MMCSD_STACK_SIZE
 #define RT_MMCSD_STACK_SIZE 1024
@@ -60,22 +62,29 @@ void mmcsd_req_complete(struct rt_mmcsd_host *host)
 
 void mmcsd_send_request(struct rt_mmcsd_host *host, struct rt_mmcsd_req *req)
 {
-    req->cmd->err = 0;
-    req->cmd->mrq = req;
-    if (req->data)
-    {   
-        req->cmd->data = req->data;
-        req->data->err = 0;
-        req->data->mrq = req;
-        if (req->stop)
-        {
-            req->data->stop = req->stop;
-            req->stop->err = 0;
-            req->stop->mrq = req;
-        }       
-   }
-    host->ops->request(host, req);
-    rt_sem_take(&host->sem_ack, RT_WAITING_FOREVER);
+    do {
+        req->cmd->retries--;
+        req->cmd->err = 0;
+        req->cmd->mrq = req;
+        if (req->data)
+        {   
+            req->cmd->data = req->data;
+            req->data->err = 0;
+            req->data->mrq = req;
+            if (req->stop)
+            {
+                req->data->stop = req->stop;
+                req->stop->err = 0;
+                req->stop->mrq = req;
+            }       
+        }
+        host->ops->request(host, req);
+
+        rt_sem_take(&host->sem_ack, RT_WAITING_FOREVER);
+          
+    } while(req->cmd->err && (req->cmd->retries > 0));
+
+
 }
 
 rt_int32_t mmcsd_send_cmd(struct rt_mmcsd_host *host,
@@ -86,6 +95,7 @@ rt_int32_t mmcsd_send_cmd(struct rt_mmcsd_host *host,
 
     rt_memset(&req, 0, sizeof(struct rt_mmcsd_req));
     rt_memset(cmd->resp, 0, sizeof(cmd->resp));
+    cmd->retries = retries;
 
     req.cmd = cmd;
     cmd->data = RT_NULL;
@@ -511,6 +521,7 @@ void mmcsd_set_data_timeout(struct rt_mmcsd_data       *data,
 rt_uint32_t mmcsd_select_voltage(struct rt_mmcsd_host *host, rt_uint32_t ocr)
 {
     int bit;
+    extern int __rt_ffs(int value);
 
     ocr &= host->valid_ocr;
 
@@ -626,7 +637,36 @@ void mmcsd_detect(void *param)
                     mmcsd_host_unlock(host);
                     continue;
                 }
+                
+                /*
+                 * detect mmc card
+                 */
+                err = mmc_send_op_cond(host, 0, &ocr);
+                if (!err) 
+                {
+                    if (init_mmc(host, ocr))
+                        mmcsd_power_off(host);
+                    mmcsd_host_unlock(host);
+                    continue;
+                }
                 mmcsd_host_unlock(host);
+            }
+            else
+            {
+            	/* card removed */
+            	mmcsd_host_lock(host);
+            	if (host->card->sdio_function_num != 0)
+            	{
+            		rt_kprintf("unsupport sdio card plug out!\n");
+            	}
+            	else
+            	{
+            		rt_mmcsd_blk_remove(host->card);
+            		rt_free(host->card);
+
+            		host->card = RT_NULL;
+            	}
+            	mmcsd_host_unlock(host);
             }
         }
     }
@@ -668,8 +708,8 @@ void rt_mmcsd_core_init(void)
 {
     rt_err_t ret;
 
-    /* init detect sd cart thread */
-    /* init mailbox and create detect sd card thread */
+    /* initialize detect SD cart thread */
+    /* initialize mailbox and create detect SD card thread */
     ret = rt_mb_init(&mmcsd_detect_mb, "mmcsdmb",
         &mmcsd_detect_mb_pool[0], sizeof(mmcsd_detect_mb_pool),
         RT_IPC_FLAG_FIFO);
@@ -684,3 +724,4 @@ void rt_mmcsd_core_init(void)
 
     rt_sdio_init();
 }
+
