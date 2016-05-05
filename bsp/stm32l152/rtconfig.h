@@ -21,6 +21,7 @@
 
 #define RT_USING_OVERFLOW_CHECK
 #define RT_USING_SPI1
+#define RT_USING_SPI2
 #define RT_USING_SST25VFXX
 #define RT_USING_SPI
 /* Using Hook */

@@ -242,6 +242,51 @@ void rt_hw_spi_init(void)
         rt_spi_bus_attach_device(&spi_device, "spi10", "spi1", (void*)&spi_cs);
     }
 #endif /* RT_USING_SPI1 */
+#ifdef RT_USING_SPI2
+    /* register spi bus */
+    {
+        static struct stm32_spi_bus stm32_spi1;
+        GPIO_InitTypeDef GPIO_InitStructure1;
+
+        /* Enable GPIO clock */
+        RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB,ENABLE);
+		GPIO_PinAFConfig(GPIOB, GPIO_PinSource13, GPIO_AF_SPI2);	 
+		GPIO_PinAFConfig(GPIOB, GPIO_PinSource14, GPIO_AF_SPI2);	 
+		GPIO_PinAFConfig(GPIOB, GPIO_PinSource15, GPIO_AF_SPI2);	 
+
+        GPIO_InitStructure1.GPIO_Pin   = GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
+        GPIO_InitStructure1.GPIO_Speed = GPIO_Speed_40MHz;
+        GPIO_InitStructure1.GPIO_Mode  = GPIO_Mode_AF;
+		GPIO_InitStructure1.GPIO_OType  = GPIO_OType_PP;
+		GPIO_InitStructure1.GPIO_PuPd  = GPIO_PuPd_NOPULL;
+        GPIO_Init(GPIOB, &GPIO_InitStructure1);
+
+        stm32_spi_register(SPI2, &stm32_spi1, "spi2");
+    }
+
+    /* attach cs */
+    {
+        static struct rt_spi_device spi_device1;
+        static struct stm32_spi_cs  spi_cs1;
+
+        GPIO_InitTypeDef GPIO_InitStructure2;
+
+        GPIO_InitStructure2.GPIO_Speed = GPIO_Speed_10MHz;
+        GPIO_InitStructure2.GPIO_Mode = GPIO_Mode_OUT;
+
+        /* spi21: PG10 */
+        spi_cs1.GPIOx = GPIOB;
+        spi_cs1.GPIO_Pin = GPIO_Pin_12;
+        RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+
+        GPIO_InitStructure2.GPIO_Pin = spi_cs1.GPIO_Pin;
+        GPIO_SetBits(spi_cs1.GPIOx, spi_cs1.GPIO_Pin);
+        GPIO_Init(spi_cs1.GPIOx, &GPIO_InitStructure2);
+
+        rt_spi_bus_attach_device(&spi_device1, "spi11", "spi2", (void*)&spi_cs1);
+    }
+#endif /* RT_USING_SPI1 */
+
 }
 
 /*@}*/

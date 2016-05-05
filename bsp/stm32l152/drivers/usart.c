@@ -313,9 +313,11 @@ static void RCC_Configuration(void)
 {
 #if defined(RT_USING_UART1)
     /* Enable UART GPIO clocks */
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
     /* Enable UART clock */
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_USART1);    
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_USART1);
 #endif /* RT_USING_UART1 */
 
 #if defined(RT_USING_UART2)
@@ -329,9 +331,11 @@ static void RCC_Configuration(void)
 
 #if defined(RT_USING_UART3)
     /* Enable UART GPIO clocks */
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
     /* Enable UART clock */
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
+	GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_USART2);    
+	GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_USART2);
 #endif /* RT_USING_UART3 */
 
 #if defined(RT_USING_UART4)
@@ -351,11 +355,13 @@ static void GPIO_Configuration(void)
 
 #if defined(RT_USING_UART1)
     /* Configure USART Rx/tx PIN */
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_Pin = UART1_GPIO_RX;
     GPIO_Init(UART1_GPIO, &GPIO_InitStructure);
 
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStructure.GPIO_Pin = UART1_GPIO_TX;
     GPIO_Init(UART1_GPIO, &GPIO_InitStructure);
 #endif /* RT_USING_UART1 */
@@ -375,11 +381,13 @@ static void GPIO_Configuration(void)
 
 #if defined(RT_USING_UART3)
     /* Configure USART Rx/tx PIN */
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_Pin = UART3_GPIO_RX;
     GPIO_Init(UART3_GPIO, &GPIO_InitStructure);
 
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStructure.GPIO_Pin = UART3_GPIO_TX;
     GPIO_Init(UART3_GPIO, &GPIO_InitStructure);
 #endif /* RT_USING_UART3 */

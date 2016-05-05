@@ -111,9 +111,9 @@ static void power_thread_entry(void* parameter)
 	sst25vfxx_init("sd0","spi10");
 	while (1)
     {
-        	   rt_thread_delay(100);
-			  // rt_kprintf("power thread\n");
-		}
+	   rt_thread_delay(100);
+	   rt_kprintf("power thread\n");
+	}
 }
 static void cc1101_thread_entry(void* parameter)
 {
@@ -267,8 +267,8 @@ void rt_init_thread_entry(void* parameter)
         rt_kprintf("File System initialized!\n");
 		list_dir("/");
 		readwrite(RT_NULL);
-		writespeed("/t.dat",3*1024*1024,512);
-		readspeed("/t.dat",512);
+		writespeed("/t.dat",3*1024*1024,128);
+		readspeed("/t.dat",128);
 		seekdir_test();
 		list_dir("/");
 		df("/");
