@@ -1,6 +1,7 @@
 bsp/tm4c129x/tm4c129x.*
 bsp/tm4c129x/checkin.sh
 bsp/stm32f10x/make.sh
+bsp/stm32l152/burn.txt
 *.pyc
 *.map
 *.dblite

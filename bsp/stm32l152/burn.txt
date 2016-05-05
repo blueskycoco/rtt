@@ -2,7 +2,7 @@ r
 h
 speed 1200
 exec device=stm32l152rb
-loadbin D:\rtt\bsp\stm32l152\rtthread.bin 0x08000000
+loadbin e:\project\esp8266\rtt\bsp\stm32l152\rtthread.bin 0x08000000
 r
 g
 qc

@@ -20,6 +20,7 @@
 
 #include <board.h>
 #include <rtthread.h>
+#include "spi_flash_sst25vfxx.h"
 
 #ifdef  RT_USING_COMPONENTS_INIT
 #include <components.h>
@@ -87,7 +88,7 @@ static void led_thread_entry(void* parameter)
     }
 	#endif
 }
-static rt_uint8_t power_stack[ 1024 ];
+static rt_uint8_t power_stack[ 2048 ];
 static struct rt_thread power_thread;
 static void power_thread_entry(void* parameter)
 {
@@ -104,6 +105,12 @@ static void power_thread_entry(void* parameter)
 	   power_man_timer_interrupt();
     }
 	#endif
+	rt_thread_delay(1000);
+	rt_kprintf("power_thread_entry\n");
+	rt_hw_spi_init();
+	rt_kprintf("rt_hw_spi_init\n");
+	sst25vfxx_init("sd0","spi10");
+	rt_kprintf("sst25vfxx_init\n");
 	while (1)
     {
         	   rt_thread_delay(100);
@@ -206,7 +213,7 @@ void rt_init_thread_entry(void* parameter)
     /* initialization RT-Thread Components */
     rt_components_init();
 #endif
-
+	rt_thread_delay(2000);
     /* Filesystem Initialization */
 #if defined(RT_USING_DFS) && defined(RT_USING_DFS_ELMFAT)
     /* mount sd card fat partition 1 as root directory */

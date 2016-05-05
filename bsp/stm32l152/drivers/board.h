@@ -44,7 +44,8 @@
 #define RT_USING_UART2
 //#define RT_USING_UART3
 //#define USING_BXCAN1
-
+#define USING_SPI1 1
 void rt_hw_board_init(void);
+void rt_hw_spi_init(void);
 
 #endif /* __BOARD_H__ */
