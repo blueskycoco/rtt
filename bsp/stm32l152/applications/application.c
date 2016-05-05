@@ -106,11 +106,8 @@ static void power_thread_entry(void* parameter)
     }
 	#endif
 	rt_thread_delay(1000);
-	rt_kprintf("power_thread_entry\n");
 	rt_hw_spi_init();
-	rt_kprintf("rt_hw_spi_init\n");
 	sst25vfxx_init("sd0","spi10");
-	rt_kprintf("sst25vfxx_init\n");
 	while (1)
     {
         	   rt_thread_delay(100);
@@ -209,20 +206,28 @@ void cali_store(struct calibration_data *data)
 
 void rt_init_thread_entry(void* parameter)
 {
+	int result=0;
+	rt_thread_delay(2000);
 #ifdef RT_USING_COMPONENTS_INIT
     /* initialization RT-Thread Components */
     rt_components_init();
 #endif
-	rt_thread_delay(2000);
     /* Filesystem Initialization */
 #if defined(RT_USING_DFS) && defined(RT_USING_DFS_ELMFAT)
     /* mount sd card fat partition 1 as root directory */
-    if (dfs_mount("sd0", "/", "elm", 0, 0) == 0)
+	//dfs_mkfs("elm", "sd0");
+    if ((result=dfs_mount("sd0", "/", "elm", 0, 0)) == 0)
     {
         rt_kprintf("File System initialized!\n");
+		list_dir("/");
+		readwrite(RT_NULL);
+		writespeed("/t.dat",2048,120);
+		readspeed("/t.dat",120);
+		seekdir_test();
+		list_dir("/");
     }
     else
-        rt_kprintf("File System initialzation failed!\n");
+        rt_kprintf("File System initialzation failed! %d\n",result);
 #endif  /* RT_USING_DFS */
 
 #ifdef RT_USING_RTGUI
