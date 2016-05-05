@@ -1,5 +1,7 @@
 #include "rt_stm32f10x_spi.h"
-
+typedef uint32_t  u32;
+typedef uint16_t u16;
+typedef uint8_t  u8;
 static rt_err_t configure(struct rt_spi_device* device, struct rt_spi_configuration* configuration);
 static rt_uint32_t xfer(struct rt_spi_device* device, struct rt_spi_message* message);
 

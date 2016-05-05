@@ -187,6 +187,33 @@ static void lcd_thread_entry(void* parameter)
 		}
 	#endif
 }
+
+void cat(const char* filename)
+{
+	static struct dfs_fd fd;
+    rt_uint32_t length;
+    char buffer[81];
+
+    if (dfs_file_open(&fd, filename, DFS_O_RDONLY) < 0)
+    {
+        rt_kprintf("Open %s failed\n", filename);
+
+        return;
+    }
+
+    do
+    {
+        rt_memset(buffer, 0, sizeof(buffer));
+        length = dfs_file_read(&fd, buffer, sizeof(buffer)-1 );
+        if (length > 0)
+        {
+            rt_kprintf("%s", buffer);
+        }
+    }while (length > 0);
+
+    dfs_file_close(&fd);
+}
+
 #ifdef RT_USING_RTGUI
 rt_bool_t cali_setup(void)
 {
@@ -225,6 +252,8 @@ void rt_init_thread_entry(void* parameter)
 		readspeed("/t.dat",120);
 		seekdir_test();
 		list_dir("/");
+		cat("/t.dat");
+		cat("/test.dat");
     }
     else
         rt_kprintf("File System initialzation failed! %d\n",result);
