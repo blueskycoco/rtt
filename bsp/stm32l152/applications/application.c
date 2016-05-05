@@ -106,12 +106,13 @@ static void power_thread_entry(void* parameter)
     }
 	#endif
 	rt_thread_delay(1000);
+	//list_mem();
 	rt_hw_spi_init();
 	sst25vfxx_init("sd0","spi10");
 	while (1)
     {
         	   rt_thread_delay(100);
-			   rt_kprintf("power thread\n");
+			  // rt_kprintf("power thread\n");
 		}
 }
 static void cc1101_thread_entry(void* parameter)
@@ -213,6 +214,24 @@ void cat(const char* filename)
 
     dfs_file_close(&fd);
 }
+int df(const char *path)
+{
+    int result;
+    long long cap;
+    struct statfs buffer;
+
+    result = dfs_statfs(path ? path : RT_NULL, &buffer);
+    if (result != 0)
+    {
+        rt_kprintf("dfs_statfs failed.\n");
+        return -1;
+    }
+
+    cap = buffer.f_bsize * buffer.f_bfree / 1024;
+    rt_kprintf("disk free: %d KB [ %d block, %d bytes per block ]\n",
+    (unsigned long)cap, buffer.f_bfree, buffer.f_bsize);
+    return 0;
+}
 
 #ifdef RT_USING_RTGUI
 rt_bool_t cali_setup(void)
@@ -248,12 +267,14 @@ void rt_init_thread_entry(void* parameter)
         rt_kprintf("File System initialized!\n");
 		list_dir("/");
 		readwrite(RT_NULL);
-		writespeed("/t.dat",2048,120);
-		readspeed("/t.dat",120);
+		writespeed("/t.dat",3*1024*1024,512);
+		readspeed("/t.dat",512);
 		seekdir_test();
 		list_dir("/");
-		cat("/t.dat");
-		cat("/test.dat");
+		df("/");
+		//cat("/t.dat");
+		//cat("/test.dat");
+		//list_mem();
     }
     else
         rt_kprintf("File System initialzation failed! %d\n",result);

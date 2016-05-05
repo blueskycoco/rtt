@@ -101,7 +101,7 @@ rt_inline uint16_t get_spi_BaudRatePrescaler(rt_uint32_t max_hz)
     uint16_t SPI_BaudRatePrescaler;
 
     /* STM32F10x SPI MAX 18Mhz */
-    if(max_hz >= SystemCoreClock/2 && SystemCoreClock/2 <= 18000000)
+    if(max_hz >= SystemCoreClock/2)
     {
         SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_2;
     }
@@ -134,7 +134,6 @@ rt_inline uint16_t get_spi_BaudRatePrescaler(rt_uint32_t max_hz)
         /* min prescaler 256 */
         SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_256;
     }
-
     return SPI_BaudRatePrescaler;
 }
 
