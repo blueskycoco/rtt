@@ -1,0 +1,1 @@
+"E:\Program Files\STMicroelectronics\Software\Flash Loader Demo\STMFlashLoader.exe" -c --pn 3 --br 115200 --db 8 --pr EVEN --sb 1 --ec OFF --to 10000 -i STM32F1_High-density_256K -e --sec 14 0 1 2 3 4 5 6 7 8 9 10 11 12 13 -d --fn rtthread.bin --a 0x08000000 --v -r --a 8000000
