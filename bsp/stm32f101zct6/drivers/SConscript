@@ -25,8 +25,8 @@ if GetDepend('RT_USING_LWIP'):
     src += ['dm9000a.c']
 
 # add Ethernet drivers.
-if GetDepend('RT_USING_DFS'):
-    src += ['sdcard.c']
+#if GetDepend('RT_USING_DFS'):
+#    src += ['sdcard.c']
 
 # add Ethernet drivers.
 if GetDepend('RT_USING_RTC'):
