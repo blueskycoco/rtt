@@ -20,7 +20,7 @@
 
 #include <board.h>
 #include <rtthread.h>
-
+#include "spi_flash_w25qxx.h"
 #ifdef  RT_USING_COMPONENTS_INIT
 #include <components.h>
 #endif  /* RT_USING_COMPONENTS_INIT */
@@ -48,76 +48,75 @@ static rt_uint8_t cc1101_stack[ 512 ];
 static struct rt_thread cc1101_thread;
 
 ALIGN(RT_ALIGN_SIZE)
-static rt_uint8_t led_stack[ 512 ];
-static struct rt_thread led_thread;
+	static rt_uint8_t led_stack[ 512 ];
+	static struct rt_thread led_thread;
 static void led_thread_entry(void* parameter)
 {
-    unsigned int count=0;
- 
-    rt_hw_led_init();
+	unsigned int count=0;
 
-    while (1)
-    {
-        /* led1 on */
+	rt_hw_led_init();
+	while (1)
+	{
+		/* led1 on */
 #ifndef RT_USING_FINSH
-        rt_kprintf("led on, count : %d\r\n",count);
+		rt_kprintf("led on, count : %d\r\n",count);
 #endif
-        count++;
-        rt_hw_led_on(0);
-        rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
+		count++;
+		rt_hw_led_on(0);
+		rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
 
-        /* led1 off */
+		/* led1 off */
 #ifndef RT_USING_FINSH
-        rt_kprintf("led off\r\n");
+		rt_kprintf("led off\r\n");
 #endif
-        rt_hw_led_off(0);
-        rt_thread_delay( RT_TICK_PER_SECOND/2 );
-    }
+		rt_hw_led_off(0);
+		rt_thread_delay( RT_TICK_PER_SECOND/2 );
+	}
 }
 #if 0
 static rt_uint8_t power_stack[ 1024 ];
 static struct rt_thread power_thread;
 static void power_thread_entry(void* parameter)
 {
-    unsigned int count=0;
-//SD_PowerON();
- //return ;
-    power_man_init(100,2000);
+	unsigned int count=0;
+	//SD_PowerON();
+	//return ;
+	power_man_init(100,2000);
 
-    while (1)
-    {
-        	   rt_thread_delay(100);
-	   power_man_timer_poll(100,2000);
-	   power_man_timer_interrupt();
-    }
+	while (1)
+	{
+		rt_thread_delay(100);
+		power_man_timer_poll(100,2000);
+		power_man_timer_interrupt();
+	}
 }
 static void cc1101_thread_entry(void* parameter)
 {
-    unsigned int count=0;
-//	rt_kprintf("Enter cc1101 init\r\n");
-    cc1101_init();
-uint8_t buf[10],buf1[10],i;
-//for(i=0;i<10;i++)
-//	buf[i]=
-sprintf(buf,"%s","123456789a");
-//rt_kprintf("Enter cc1101 end\r\n");
-    while (1)
-    {
-    //rt_kprintf("Enter cc1101 send\r\n");
-    	for(i=0;i<10;i++)
+	unsigned int count=0;
+	//	rt_kprintf("Enter cc1101 init\r\n");
+	cc1101_init();
+	uint8_t buf[10],buf1[10],i;
+	//for(i=0;i<10;i++)
+	//	buf[i]=
+	sprintf(buf,"%s","123456789a");
+	//rt_kprintf("Enter cc1101 end\r\n");
+	while (1)
+	{
+		//rt_kprintf("Enter cc1101 send\r\n");
+		for(i=0;i<10;i++)
 		{
 			if(buf[i]==255)
 				buf[i]=0;
 			buf[i]=buf[i]+1;
-    		}
-	//rt_thread_delay(20);
-	cc1101_send((uint8_t *)buf,10);
-	//cc1101_recv(31);
-	//rt_kprintf("Enter cc1101 send 2\r\n");
-	//rt_thread_delay(20);
-	cc1101_recv(100);
-	
-    }
+		}
+		//rt_thread_delay(20);
+		cc1101_send((uint8_t *)buf,10);
+		//cc1101_recv(31);
+		//rt_kprintf("Enter cc1101 send 2\r\n");
+		//rt_thread_delay(20);
+		cc1101_recv(100);
+
+	}
 }
 static void lcd_thread_entry(void* parameter)
 {
@@ -158,149 +157,158 @@ static void lcd_thread_entry(void* parameter)
 			bat1=0;
 		if(bat2==100)
 			bat2=0;
-		}
+	}
 }
 #endif
 #ifdef RT_USING_RTGUI
 rt_bool_t cali_setup(void)
 {
-    rt_kprintf("cali setup entered\n");
-    return RT_FALSE;
+	rt_kprintf("cali setup entered\n");
+	return RT_FALSE;
 }
 
 void cali_store(struct calibration_data *data)
 {
-    rt_kprintf("cali finished (%d, %d), (%d, %d)\n",
-               data->min_x,
-               data->max_x,
-               data->min_y,
-               data->max_y);
+	rt_kprintf("cali finished (%d, %d), (%d, %d)\n",
+			data->min_x,
+			data->max_x,
+			data->min_y,
+			data->max_y);
 }
 #endif /* RT_USING_RTGUI */
 
 void rt_init_thread_entry(void* parameter)
 {
 #ifdef RT_USING_COMPONENTS_INIT
-    /* initialization RT-Thread Components */
-    rt_components_init();
+	/* initialization RT-Thread Components */
+	rt_components_init();
 #endif
 
-    /* Filesystem Initialization */
+	/* Filesystem Initialization */
 #if defined(RT_USING_DFS) && defined(RT_USING_DFS_ELMFAT)
-    /* mount sd card fat partition 1 as root directory */
-    if (dfs_mount("sd0", "/", "elm", 0, 0) == 0)
-    {
-        rt_kprintf("File System initialized!\n");
-    }
-    else
-        rt_kprintf("File System initialzation failed!\n");
+	rt_hw_spi_init();
+	w25qxx_init("sd0","spi10");
+	/* mount sd card fat partition 1 as root directory */
+	if (dfs_mount("sd0", "/", "elm", 0, 0) == 0)
+	{
+		rt_kprintf("File System initialized!\n");
+		//list_dir("/");
+		//readwrite(RT_NULL);
+		//writespeed("/t.dat",3*1024*1024,128);
+		//readspeed("/t.dat",128);
+		//seekdir_test();
+		//list_dir("/");
+		//df("/");
+	}
+	else
+		rt_kprintf("File System initialzation failed!\n");
 #endif  /* RT_USING_DFS */
 
 #ifdef RT_USING_RTGUI
-    {
-        extern void rt_hw_lcd_init();
-        extern void rtgui_touch_hw_init(void);
+	{
+		extern void rt_hw_lcd_init();
+		extern void rtgui_touch_hw_init(void);
 
-        rt_device_t lcd;
+		rt_device_t lcd;
 
-        /* init lcd */
-        rt_hw_lcd_init();
+		/* init lcd */
+		rt_hw_lcd_init();
 
-        /* init touch panel */
-        rtgui_touch_hw_init();
+		/* init touch panel */
+		rtgui_touch_hw_init();
 
-        /* find lcd device */
-        lcd = rt_device_find("lcd");
+		/* find lcd device */
+		lcd = rt_device_find("lcd");
 
-        /* set lcd device as rtgui graphic driver */
-        rtgui_graphic_set_device(lcd);
+		/* set lcd device as rtgui graphic driver */
+		rtgui_graphic_set_device(lcd);
 
 #ifndef RT_USING_COMPONENTS_INIT
-        /* init rtgui system server */
-        rtgui_system_server_init();
+		/* init rtgui system server */
+		rtgui_system_server_init();
 #endif
 
-        calibration_set_restore(cali_setup);
-        calibration_set_after(cali_store);
-        calibration_init();
-    }
+		calibration_set_restore(cali_setup);
+		calibration_set_after(cali_store);
+		calibration_init();
+	}
 #endif /* #ifdef RT_USING_RTGUI */
 }
 
 int rt_application_init(void)
 {
-    rt_thread_t init_thread;
-    
-    rt_err_t result;
+	rt_thread_t init_thread;
 
-   
- //   while(1);
-    /* init led thread */
-    result = rt_thread_init(&led_thread,
-                            "led",
-                            led_thread_entry,
-                            RT_NULL,
-                            (rt_uint8_t*)&led_stack[0],
-                            sizeof(led_stack),
-                            20,
-                            5);
-    if (result == RT_EOK)
-    {
-        rt_thread_startup(&led_thread);
-    }
+	rt_err_t result;
+
+
+	//   while(1);
+	/* init led thread */
+	result = rt_thread_init(&led_thread,
+			"led",
+			led_thread_entry,
+			RT_NULL,
+			(rt_uint8_t*)&led_stack[0],
+			sizeof(led_stack),
+			20,
+			5);
+	if (result == RT_EOK)
+	{
+		rt_thread_startup(&led_thread);
+	}
 #if 0 
-/* init led thread */
-    result = rt_thread_init(&lcd_thread,
-                            "oled",
-                            lcd_thread_entry,
-                            RT_NULL,
-                            (rt_uint8_t*)&lcd_stack[0],
-                            sizeof(lcd_stack),
-                            20,
-                            5);
-    if (result == RT_EOK)
-    {
-       rt_thread_startup(&lcd_thread);
-    }
-    result = rt_thread_init(&cc1101_thread,
-                            "cc1101",
-                            cc1101_thread_entry,
-                            RT_NULL,
-                            (rt_uint8_t*)&cc1101_stack[0],
-                            sizeof(cc1101_stack),
-                            20,
-                            5);
-    if (result == RT_EOK)
-    {
-       rt_thread_startup(&cc1101_thread);
-    }
-    result = rt_thread_init(&power_thread,
-                            "power",
-                            power_thread_entry,
-                            RT_NULL,
-                            (rt_uint8_t*)&power_stack[0],
-                            sizeof(power_stack),
-                            20,
-                            5);
-    if (result == RT_EOK)
-    {
-        rt_thread_startup(&power_thread);
-    }
-    #endif
+	/* init led thread */
+	result = rt_thread_init(&lcd_thread,
+			"oled",
+			lcd_thread_entry,
+			RT_NULL,
+			(rt_uint8_t*)&lcd_stack[0],
+			sizeof(lcd_stack),
+			20,
+			5);
+	if (result == RT_EOK)
+	{
+		rt_thread_startup(&lcd_thread);
+	}
+	result = rt_thread_init(&cc1101_thread,
+			"cc1101",
+			cc1101_thread_entry,
+			RT_NULL,
+			(rt_uint8_t*)&cc1101_stack[0],
+			sizeof(cc1101_stack),
+			20,
+			5);
+	if (result == RT_EOK)
+	{
+		rt_thread_startup(&cc1101_thread);
+	}
+	result = rt_thread_init(&power_thread,
+			"power",
+			power_thread_entry,
+			RT_NULL,
+			(rt_uint8_t*)&power_stack[0],
+			sizeof(power_stack),
+			20,
+			5);
+	if (result == RT_EOK)
+	{
+		rt_thread_startup(&power_thread);
+	}
+#endif
 #if (RT_THREAD_PRIORITY_MAX == 32)
-    init_thread = rt_thread_create("init",
-                                   rt_init_thread_entry, RT_NULL,
-                                   2048, 8, 20);
+	init_thread = rt_thread_create("init",
+			rt_init_thread_entry, RT_NULL,
+			2048, 8, 20);
 #else
-    init_thread = rt_thread_create("init",
-                                   rt_init_thread_entry, RT_NULL,
-                                   2048, 80, 20);
+	init_thread = rt_thread_create("init",
+			rt_init_thread_entry, RT_NULL,
+			2048, 80, 20);
 #endif
 
-    if (init_thread != RT_NULL)
-        rt_thread_startup(init_thread);
+	if (init_thread != RT_NULL)
+		rt_thread_startup(init_thread);
 
-    return 0;
+	return 0;
 }
 
 /*@}*/
