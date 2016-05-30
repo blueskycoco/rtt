@@ -76,7 +76,7 @@ void EXT_SRAM_Configuration(void)
 		   FSMC_D4 ~ FSMC_D12
 		   PE7 ~ PE15  FSMC_D4 ~ FSMC_D12
 		   */
-		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10
+		GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3 | GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_10
 			| GPIO_Pin_11 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
 		GPIO_Init(GPIOE,&GPIO_InitStructure);
 
@@ -132,9 +132,9 @@ void EXT_SRAM_Configuration(void)
 	p.FSMC_DataLatency = 0;
 	p.FSMC_AccessMode = FSMC_AccessMode_A;
 
-	FSMC_NORSRAMInitStructure.FSMC_Bank = FSMC_Bank1_NORSRAM3;
+	FSMC_NORSRAMInitStructure.FSMC_Bank = FSMC_Bank1_NORSRAM1;
 	FSMC_NORSRAMInitStructure.FSMC_DataAddressMux = FSMC_DataAddressMux_Disable;
-	FSMC_NORSRAMInitStructure.FSMC_MemoryType = FSMC_MemoryType_SRAM;
+	FSMC_NORSRAMInitStructure.FSMC_MemoryType = FSMC_MemoryType_PSRAM;
 	FSMC_NORSRAMInitStructure.FSMC_MemoryDataWidth = FSMC_MemoryDataWidth_16b;
 	FSMC_NORSRAMInitStructure.FSMC_BurstAccessMode = FSMC_BurstAccessMode_Disable;
 	FSMC_NORSRAMInitStructure.FSMC_AsynchronousWait = FSMC_AsynchronousWait_Disable;
@@ -151,7 +151,7 @@ void EXT_SRAM_Configuration(void)
 	FSMC_NORSRAMInit(&FSMC_NORSRAMInitStructure);
 
 	/* Enable FSMC Bank1_SRAM Bank */
-	FSMC_NORSRAMCmd(FSMC_Bank1_NORSRAM3, ENABLE);
+	FSMC_NORSRAMCmd(FSMC_Bank1_NORSRAM1, ENABLE);
 }
 #endif
 
