@@ -203,6 +203,15 @@ void rt_init_thread_entry(void* parameter)
 	else
 		rt_kprintf("File System initialzation failed!\n");
 #endif  /* RT_USING_DFS */
+	char *test=malloc(2048*200);
+	if(test!=RT_NULL)
+	{
+		memset(test,0,2048*200);
+		rt_kprintf("malloc 2048*200 ok\n");
+		//free(test);
+	}
+	else
+		rt_kprintf("malloc 2048*200 failed\n");
 
 #ifdef RT_USING_RTGUI
 	{
