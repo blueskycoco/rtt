@@ -1,37 +1,30 @@
+#include <rtthread.h>
 #include "stm32f10x.h"
 #include "numfont.h"
 #include "LM096.h"
 #include "led.h"
 #define SSD1306_LCDWIDTH                    128
 #define SSD1306_LCDHEIGHT                   64
-#define I2C1_DR_Address                     0x40005410
 #define _BV(bit) (1<<(bit))
 I2C_InitTypeDef  I2C_InitStructure;
-/*延时函数*/
-void myDelay(__IO uint32_t nCount)
-{
-	 for(; nCount != 0; nCount--);
-}
-/*stm32 iic初始化*/
 void pin_init()
 {
 	 GPIO_InitTypeDef GPIO_InitStructure;
-	 /* Enable GPIOB clock */
 	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
-	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
-	 /* Enable I2C1 clock */
+	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);
+	 //RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 	 RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
-	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_8 | GPIO_Pin_9;
+	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_6 | GPIO_Pin_7;
 	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
 	 GPIO_Init(GPIOB, &GPIO_InitStructure);
-	 GPIO_PinRemapConfig(GPIO_Remap_I2C1, ENABLE);
-	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_0 | GPIO_Pin_1;
+	 //GPIO_PinRemapConfig(GPIO_Remap_I2C1, ENABLE);
+	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_2;
 	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	 GPIO_Init(GPIOD, &GPIO_InitStructure);
+	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
 	 GPIO_Init(GPIOE, &GPIO_InitStructure);
-
-	 //I2C Config
 	 I2C_SoftwareResetCmd(I2C1,ENABLE);
 	 I2C_SoftwareResetCmd(I2C1,DISABLE);
 	 I2C_Cmd(I2C1, ENABLE);
@@ -43,7 +36,6 @@ void pin_init()
 	 I2C_InitStructure.I2C_ClockSpeed = 100000;
 	 I2C_Init(I2C1, &I2C_InitStructure);
 }
-/*寄存器写操作，data是要写的数据，iscommand用于区分是显示数据还是寄存器数据*/
 
 void ssd1306_send_byte_cmd(uint8_t data)
 {
@@ -62,6 +54,7 @@ void ssd1306_send_byte_cmd(uint8_t data)
 
 	 I2C_GenerateSTOP(I2C1, ENABLE);
 }
+
 void ssd1306_fill_frame_buffer()
 {
 	 int i=0;
@@ -85,23 +78,26 @@ void ssd1306_fill_frame_buffer()
 
 }
 
-/*对ssd1306进行复位操作*/
+void display(void) 
+{
+	ssd1306_fill_frame_buffer();
+}
+
 void device_rst()
 {
-	 GPIO_ResetBits(GPIOE, GPIO_Pin_1);//config iic address
-	 GPIO_SetBits(GPIOE, GPIO_Pin_0);//rst
-	 myDelay(10000);
-	 GPIO_ResetBits(GPIOE, GPIO_Pin_0);
-	 myDelay(10000);
-	 GPIO_SetBits(GPIOE, GPIO_Pin_0);
+	 GPIO_ResetBits(GPIOD, GPIO_Pin_2);	//config iic address
+	 GPIO_SetBits(GPIOE, GPIO_Pin_4);	//rst
+	 rt_thread_delay(10);
+	 GPIO_ResetBits(GPIOE, GPIO_Pin_4);
+	 rt_thread_delay(10);
+	 GPIO_SetBits(GPIOE, GPIO_Pin_4);
 }    
 
-/*清除显示缓冲区*/
 void clear(void) 
 {
-	 memset(buffer, 0, (SSD1306_LCDWIDTH*SSD1306_LCDHEIGHT/8));
+	 rt_memset(buffer, 0, (SSD1306_LCDWIDTH*SSD1306_LCDHEIGHT/8));
 }
-/*ssd1306芯片的初始化*/
+
 void ssd1306_init() 
 {
 	 int i;
@@ -112,41 +108,30 @@ void ssd1306_init()
 		  ssd1306_send_byte_cmd(init_reg[i]);
 	 }
 	 clear();
-	 /*写入显示序列命令*/
-
 	 for(i=0;i<sizeof(draw_reg);i++)
 	 {						
 		  ssd1306_send_byte_cmd(draw_reg[i]);
 	 }
 }
 
-/*绘制指定点的像素*/
 void setpixel(uint8_t x, uint8_t y,uint8_t clear) {
-	 /*判断是否超出了边界128×64*/
 	 if ((x >= SSD1306_LCDWIDTH) || (y >= SSD1306_LCDHEIGHT))
 		  return;
 
-	 // x is which column
-	 //if (color == WHITE) 
-	 /*clear用于确定是背景色黑色，还是前景色，主要在绘制电池图标时使用，TRUE是背景色，FALSE是前景色*/
 	 if(clear)
 		  buffer[x+ (y/8)*SSD1306_LCDWIDTH] = 0;  
 	 else
 		  buffer[x+ (y/8)*SSD1306_LCDWIDTH] |= _BV((y%8));  
-	 //else
-	 //buffer[x+ (y/8)*SSD1306_LCDWIDTH] &= ~_BV((y%8)); 
 }
-/*画线接口，从(x0,y0)到(x1,y1)画一条直线*/
-void drawline(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
-	 /*确定x,y坐标的位差,原则是从小坐标的点画向大坐标的点*/
+
+void drawline(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) 
+{
 	 uint8_t steep = abs(y1 - y0) > abs(x1 - x0);
 	 uint8_t dx, dy,tmp;
 	 int8_t err;
 	 int8_t ystep;
-	 /*交替x0,y0 x1,y1*/
-	 if (steep) {
-		  //swap(x0, y0);
-		  //swap(x1, y1);
+	 if (steep) 
+	 {
 		  tmp=x0;
 		  x0=y0;
 		  y0=tmp;
@@ -154,10 +139,8 @@ void drawline(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
 		  x1=y1;
 		  y1=tmp;
 	 }
-	 /*交替x0,x1 y0,y1*/
-	 if (x0 > x1) {
-		  //swap(x0, x1);
-		  //swap(y0, y1);
+	 if (x0 > x1) 
+	 {
 		  tmp=x0;
 		  x0=x1;
 		  x1=tmp;
@@ -166,18 +149,15 @@ void drawline(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
 		  y1=tmp;
 	 }
 
-	 /*计算画点xy长度*/
 	 dx = x1 - x0;
 	 dy = abs(y1 - y0);
 
 	 err = dx / 2;
-
-	 /*根据y0,y1的大小，计算step大小*/
 	 if (y0 < y1) {
 		  ystep = 1;
 	 } else {
 		  ystep = -1;}
-	 /*从x0开始画点*/
+
 	 for (; x0<x1; x0++) {
 		  if (steep) {
 			   setpixel(y0, x0,0);
@@ -192,10 +172,8 @@ void drawline(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
 	 }
 }
 
-/*从xy坐标开始填充宽度w，高度h的区域*/
-void fillrect(uint8_t x, uint8_t y, uint8_t w, uint8_t h,uint8_t clear) {
-
-	 // stupidest version - just pixels - but fast with internal buffer!
+void fillrect(uint8_t x, uint8_t y, uint8_t w, uint8_t h,uint8_t clear) 
+{
 	 uint8_t i,j;
 	 for (i=x; i<x+w; i++) {
 		  for (j=y; j<y+h; j++) {
@@ -203,14 +181,142 @@ void fillrect(uint8_t x, uint8_t y, uint8_t w, uint8_t h,uint8_t clear) {
 		  }
 	 }
 }
-/*绘图电池图标和数字信息，bat1是第一个电池的电量，bat2是第二个电池的电量，从0到100,c是数字串，总共6个数字，一个.*/
-void draw(uint8_t bat1,uint8_t bat2,char *c)
+void draw_num(int *pos,int *l,char *num)
+{
+	char *p=num;
+	int j=0;
+	int x=*pos;
+	while(*p!=0)
+	{
+		if(*p=='.')
+			*p=58;
+		x=*pos;
+		for(j=0;j<32;j++)
+		{				
+			buffer[x+((*l)*128)]=font32[(*p-48)*128+j];
+			x++;				
+		}
+		for(j=0;j<32;j++)
+		{				
+			buffer[x+((*l+1)*128)-32]=font32[(*p-48)*128+32+j];
+			x++;				
+		}
+		for(j=0;j<32;j++)
+		{				
+			buffer[x+((*l+2)*128)-64]=font32[(*p-48)*128+64+j];
+			x++;				
+		}
+		for(j=0;j<32;j++)
+		{				
+			buffer[x+((*l+3)*128)-96]=font32[(*p-48)*128+96+j];
+			x++;				
+		}		  
+		*pos=*pos+31;
+		if(*pos+31>SSD1306_LCDWIDTH)
+		{
+			*pos=0;
+			*l=*l+4;
+			break;
+		}
+		p++;
+	}
+}
+void draw(char *co2,char *co1)
+{
+   int x=0,line=0,x1=0,j;
+   for(j=0;j<8;j++)
+   {
+		buffer[x]=hzdot[j];
+		x++;				
+   }
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+128-8]=hzdot[j+8];
+		x++;				
+   }   
+   x1+=8;
+   x=x1;
+   for(j=0;j<8;j++)
+   {				
+		buffer[x]=hzdot[16+j];
+		x++;				
+   }
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+128-8]=hzdot[16+j+8];
+		x++;				
+   }
+   x1+=8;
+    x=x1;
+   for(j=0;j<8;j++)
+   {				
+		buffer[x]=hzdot[6*8+j];
+		x++;				
+   }
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+128-8]=hzdot[6*8+j+8];
+		x++;				
+   }
+   x1+=8;
+   draw_num(&x1,&line,co2);
+   
+   x=0;
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+((line)*128)]=hzdot[j];
+		x++;				
+   }
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+((line+1)*128)-8]=hzdot[j+8];
+		x++;				
+   }  
+   x1+=8;
+   x=x1;
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+((line)*128)]=hzdot[8*8+j];
+		x++;				
+   }
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+((line+1)*128)-8]=hzdot[8*8+j+8];
+		x++;				
+   } 
+   x1+=8;
+   x=x1;
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+((line)*128)]=hzdot[6*8+j];
+		x++;				
+   }
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+((line+1)*128)-8]=hzdot[6*8+j+8];
+		x++;				
+   }
+   x1+=8;
+   x=x1;
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+((line)*128)]=hzdot[2*8+j];
+		x++;				
+   }
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+((line+1)*128)-8]=hzdot[2*8+j+8];
+		x++;				
+   }
+   x1+=8;   
+   draw_num(&x1,&line,co1);
+}
+
+void draw1(uint8_t bat1,uint8_t bat2,char *c)
 {
 	 int x=0,line=0,x1=0,i,j;
-	 /*确定参数是否合法*/
-	 if(bat1>100||bat1<0||bat2>100||bat2<0||strlen(c)!=7)
+	 if(bat1>100||bat1<0||bat2>100||bat2<0||rt_strlen(c)!=7)
 		  return ;
-	 /*当bat1，bat2是1时，对电池图标做清空处理*/
 	 if(bat1==1)
 	 {
 		  fillrect(2,31,28,15,1);
@@ -219,7 +325,6 @@ void draw(uint8_t bat1,uint8_t bat2,char *c)
 	 {
 		  fillrect(2,48,28,15,1);
 	 }
-	 /*绘制电池1*/
 	 drawline(1,32,28,32);
 	 drawline(28,32,28,36);
 	 drawline(28,36,32,36);
@@ -229,7 +334,6 @@ void draw(uint8_t bat1,uint8_t bat2,char *c)
 	 drawline(28,47,1,47);
 	 drawline(1,47,1,32);
 	 fillrect(1,32,(uint8_t)(bat1*28/100),15,0);
-	 /*绘制电池2*/
 	 drawline(1,49,28,49);
 	 drawline(28,49,28,52);
 	 drawline(28,52,32,52);
@@ -241,11 +345,9 @@ void draw(uint8_t bat1,uint8_t bat2,char *c)
 	 fillrect(1,49,(uint8_t)(bat2*28/100),15,0);
 	 while(c[0]!=0)
 	 {
-		  //need to draw char ,like 3300 4.7
 		  if(c[0]!='.')
-		  {	/*绘制数字0到9*/
+		  {
 			   x=x1;
-			   /*从字库里提取数字的字模到显示缓冲区，一个数字占用4行每行32个点*/
 			   for(j=0;j<32;j++)
 			   {				
 					buffer[x+((line)*128)]=font32[(c[0]-48)*128+j];
@@ -269,7 +371,6 @@ void draw(uint8_t bat1,uint8_t bat2,char *c)
 		  }
 		  else
 		  {
-			   /*绘制 .*/
 			   x=x1;
 			   for(j=0;j<32;j++)
 			   {				
@@ -292,10 +393,10 @@ void draw(uint8_t bat1,uint8_t bat2,char *c)
 					x++;				
 			   }
 		  }
-		  /*x坐标增加31，一个数字或者.需要32个点*/
+
 		  x1=x1+31;
 		  if(x1+31>SSD1306_LCDWIDTH)
-		  {/*超过了一行的边界，则行数+4，x从33开始绘制数字，绕过了电池的区域*/
+		  {
 			   x1=33;
 			   line=line+4;
 		  }
@@ -304,10 +405,3 @@ void draw(uint8_t bat1,uint8_t bat2,char *c)
 
 	 }	
 }
-void display(void) 
-{
-
-	 /*填充显示缓冲区到ssd1306*/
-	 ssd1306_fill_frame_buffer();
-}
-
