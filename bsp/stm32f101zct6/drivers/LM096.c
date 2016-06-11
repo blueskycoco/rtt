@@ -35,6 +35,8 @@ void pin_init()
 	 I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
 	 I2C_InitStructure.I2C_ClockSpeed = 100000;
 	 I2C_Init(I2C1, &I2C_InitStructure);
+//	 GPIO_ResetBits(GPIOB, GPIO_Pin_6);
+//	 GPIO_SetBits(GPIOB, GPIO_Pin_7);
 }
 
 void ssd1306_send_byte_cmd(uint8_t data)
@@ -103,15 +105,18 @@ void ssd1306_init()
 	 int i;
 	 pin_init();
 	 device_rst();
+	 rt_kprintf("ssd1306_init 1\n");
 	 for(i=0;i<sizeof(init_reg);i++)
 	 {
 		  ssd1306_send_byte_cmd(init_reg[i]);
 	 }
+	 rt_kprintf("ssd1306_init 2\n");
 	 clear();
 	 for(i=0;i<sizeof(draw_reg);i++)
 	 {						
 		  ssd1306_send_byte_cmd(draw_reg[i]);
 	 }
+	 rt_kprintf("ssd1306_init 3\n");
 }
 
 void setpixel(uint8_t x, uint8_t y,uint8_t clear) {

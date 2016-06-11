@@ -748,7 +748,7 @@ static void SetSysClockTo36(void)
 #else    
     /*  PLL configuration: PLLCLK = (HSE / 4) * 9 = 36 MHz */
     RCC->CFGR &= (uint32_t)((uint32_t)~(RCC_CFGR_PLLSRC | RCC_CFGR_PLLXTPRE | RCC_CFGR_PLLMULL));
-    RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_HSE | RCC_CFGR_PLLXTPRE_HSE_Div2 | RCC_CFGR_PLLMULL5);	
+    RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_HSE | RCC_CFGR_PLLXTPRE_HSE_Div2 | RCC_CFGR_PLLMULL4);	
 #endif /* STM32F10X_CL */
 
     /* Enable PLL */

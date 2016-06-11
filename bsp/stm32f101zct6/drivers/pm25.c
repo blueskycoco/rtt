@@ -5,8 +5,9 @@
 rt_device_t dev_pm25;
 struct rt_semaphore pm25_rx_sem;
 int data_pm25=0,data_pm10;
-unsigned char FucCheckSum(unsigned char *i,unsigned char ln)
+unsigned int FucCheckSum(unsigned char *i,unsigned char ln)
 {
+#if 0
 	unsigned char j,tempq=0;
 	i+=1;
 
@@ -17,6 +18,16 @@ unsigned char FucCheckSum(unsigned char *i,unsigned char ln)
 		}
 	tempq=(~tempq)+1;
 	return tempq;
+	#else
+	long crc=0;
+	int j;
+	for(j=0;j<ln;j++)
+	{
+		crc+=*i;
+		i++;
+	}
+	return crc;
+	#endif
 }
 static rt_err_t co2_rx_ind(rt_device_t dev, rt_size_t size)
 {
@@ -26,6 +37,7 @@ static rt_err_t co2_rx_ind(rt_device_t dev, rt_size_t size)
 void thread_pm25(void* parameter)
 {	
 	int len1=0,m=0;
+	int got=0,j=0;
 	char str_pm25[4]={0};
 	char str_pm10[4]={0};
 	char *ptr=rt_malloc(128);			
@@ -37,28 +49,38 @@ void thread_pm25(void* parameter)
 		{	
 			int i;		
 			len1=len1+len;
-			if(len1==9)
-			{
-				if(ptr[8]==FucCheckSum(ptr,len1))
+			got=0;
+			for(i=0;i<len1;i++)
+				if(ptr[i]==0x42 && ptr[i+1]==0x4d)
 				{
-					rt_kprintf("Get from PM25:\n");
-					for(i=0;i<len1;i++)		
+					got=1;
+					break;
+				}
+			if(got)
+			{				
+				
+				if((ptr[i+22]*256+ptr[i+23])==FucCheckSum(ptr+i,22))
+				{
+					rt_kprintf("\nGet from PM25:\n");
+					for(j=i;j<i+0x18;j++)		
 					{		
-						rt_kprintf("%x ",ptr[i]);
-					}	
-					data_pm25=ptr[2]*256+ptr[3];
-					data_pm10=ptr[6]*256+ptr[7];
-					rt_kprintf(" %d<> %d\n",data_pm25,data_pm10);
+						rt_kprintf("%02X ",ptr[j]);
+					}						
+					data_pm25=ptr[i+12]*256+ptr[i+13];
+					data_pm10=ptr[i+14]*256+ptr[i+15];
+					rt_kprintf("\n %d<> %d\n",data_pm25,data_pm10);
 					rt_sprintf(str_pm25,"%03d",data_pm25);
 					rt_sprintf(str_pm10,"%03d",data_pm10);
-					clear();
-					draw(str_pm25,str_pm10);
-					display();
+					//clear();
+					//draw(str_pm25,str_pm10);
+					//display();
 					len1=0;
 					m=0;
+					memset(ptr,0,128);
 				}
-				else
-					rt_kprintf("pm25 crc error, %d , %d\n",ptr[8],FucCheckSum(ptr,len1));
+				//else
+				//	rt_kprintf("\npm25 crc error, %d , %d\n",(ptr[i+22]*256+ptr[i+23]),FucCheckSum(ptr+i,22));
+				
 			}
 			else
 				m=m+len;
@@ -68,7 +90,12 @@ void thread_pm25(void* parameter)
 void ask_pm25()
 {
 	unsigned char cmd[]={0xff,0x01,0x86,0x00,0x00,0x00,0x00,0x00,0x79};
-	rt_device_write(dev_pm25, 0, (void *)cmd, sizeof(cmd));
+	//rt_device_write(dev_pm25, 0, (void *)cmd, sizeof(cmd));
+	return ;
+	GPIO_SetBits(GPIOE, GPIO_Pin_5);
+	rt_thread_delay(100);
+	GPIO_ResetBits(GPIOE, GPIO_Pin_5);
+	rt_kprintf("ask_pm25\n");
 }
 void pm25_init()
 {
@@ -89,10 +116,19 @@ void pm25_init()
 		rt_device_set_rx_indicate(dev_pm25, co2_rx_ind);
 		rt_thread_startup(rt_thread_create("thread_co2",thread_pm25, 0,512, 20, 10));
 		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
+		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
 		GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_5;
 	 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+		GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	 	GPIO_Init(GPIOE, &GPIO_InitStructure);
-		GPIO_ResetBits(GPIOE, GPIO_Pin_5);
+		GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_3;
+		GPIO_Init(GPIOC, &GPIO_InitStructure);
+		GPIO_SetBits(GPIOE, GPIO_Pin_5);
+		GPIO_SetBits(GPIOC, GPIO_Pin_3);
+		rt_thread_delay(20);
+		GPIO_ResetBits(GPIOC, GPIO_Pin_3);
+		rt_thread_delay(20);
+		GPIO_SetBits(GPIOC, GPIO_Pin_3);
 	}
 }
 
