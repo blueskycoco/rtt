@@ -7,7 +7,7 @@ struct rt_semaphore pm25_rx_sem;
 int data_pm25=0,data_pm10;
 unsigned int FucCheckSum(unsigned char *i,unsigned char ln)
 {
-#if 0
+	#if 0
 	unsigned char j,tempq=0;
 	i+=1;
 
@@ -46,48 +46,56 @@ void thread_pm25(void* parameter)
 	while(1)	
 	{	
 		#if 0
-		if (rt_sem_take(&(pm25_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;		
-		int len=rt_device_read(dev_pm25, 0, ptr+m, 128);		
-		if(len>0)	
-		{	
-			int i;		
-			len1=len1+len;
-			got=0;
-			for(i=0;i<len1;i++)
-				if(ptr[i]==0x42 && ptr[i+1]==0x4d)
+		if(rt_device_read(dev_pm25, 0, &ch, 1)==1)
+		{
+			//rt_kprintf(">%02X\r\n",ch);
+			if(ch==0xff && state==0)
+			{
+				//rt_kprintf("GET_42\r\n");
+				state=1;
+				ptr[0]=0xff;
+			}
+			else if(ch==0x86 && state==1)
+			{
+				//rt_kprintf("GET_4d\r\n");
+				state=2;
+				len1=7;
+				m=len1;
+				ptr[1]=0x86;
+			}			
+			else if(state==2)
+			{
+				ptr[m-len1+2]=ch;
+				len1--;
+				if(len1==1)
 				{
-					got=1;
-					break;
+					state=3;
+					crc=-1;
 				}
-			if(got)
-			{				
-				rt_kprintf("\nGet from PM25:\n");
-				for(j=i;j<i+0x18;j++)		
-				{		
-					rt_kprintf("%02X ",ptr[j]);
-				}						
-
-				if((ptr[i+22]*256+ptr[i+23])==FucCheckSum(ptr+i,22))
+			}
+			else if(state==3)
+			{
+				//rt_kprintf("GET_CRC\r\n");
+				ptr[8]=ch;
+				crc=ch;
+				state=0;
+				//rt_kprintf("\nGet from PM25:\n");
+				//for(j=0;j<24;j++)		
+				//{		
+				//	rt_kprintf("%02X ",ptr[j]);
+				//}	
+				if(crc==FucCheckSum(ptr,8))
 				{
-					data_pm25=ptr[i+12]*256+ptr[i+13];
-					data_pm10=ptr[i+14]*256+ptr[i+15];
-					rt_kprintf("\n %d<> %d\n",data_pm25,data_pm10);
+					data_pm25=ptr[2]*256+ptr[3];
+					data_pm10=ptr[6]*256+ptr[7];
+					rt_kprintf("\npm25 %d<>pm10 %d\n",data_pm25,data_pm10);
 					rt_sprintf(str_pm25,"%03d",data_pm25);
 					rt_sprintf(str_pm10,"%03d",data_pm10);
-					//clear();
-					//draw(str_pm25,str_pm10);
-					//display();
-					len1=0;
-					m=0;
-					memset(ptr,0,128);
 				}
-				//else
-				//	rt_kprintf("\npm25 crc error, %d , %d\n",(ptr[i+22]*256+ptr[i+23]),FucCheckSum(ptr+i,22));
-				
+				else
+					rt_kprintf("\npm25 crc error, %d , %d\n",crc,FucCheckSum(ptr,22));			
 			}
-			else
-				m=m+len;
-		}	
+		}
 		#else
 		if(rt_device_read(dev_pm25, 0, &ch, 1)==1)
 		{
@@ -157,6 +165,9 @@ void thread_pm25(void* parameter)
 						rt_kprintf("\npm25 %d<>pm10 %d\n",data_pm25,data_pm10);
 						rt_sprintf(str_pm25,"%03d",data_pm25);
 						rt_sprintf(str_pm10,"%03d",data_pm10);
+						clear();
+						draw(str_pm25,str_pm10);
+						display();
 					}
 					else
 						rt_kprintf("\npm25 crc error, %d , %d\n",crc,FucCheckSum(ptr,22));
@@ -169,12 +180,12 @@ void thread_pm25(void* parameter)
 void ask_pm25()
 {
 	unsigned char cmd[]={0xff,0x01,0x86,0x00,0x00,0x00,0x00,0x00,0x79};
-	//rt_device_write(dev_pm25, 0, (void *)cmd, sizeof(cmd));
-	return ;
 	GPIO_SetBits(GPIOE, GPIO_Pin_5);
 	rt_thread_delay(100);
 	GPIO_ResetBits(GPIOE, GPIO_Pin_5);
 	rt_kprintf("ask_pm25\n");
+	rt_device_write(dev_pm25, 0, (void *)cmd, sizeof(cmd));
+	return ;
 }
 void pm25_init()
 {

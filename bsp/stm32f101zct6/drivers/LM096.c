@@ -7,6 +7,7 @@
 #define SSD1306_LCDHEIGHT                   64
 #define _BV(bit) (1<<(bit))
 I2C_InitTypeDef  I2C_InitStructure;
+#if 1
 void pin_init()
 {
 	 GPIO_InitTypeDef GPIO_InitStructure;
@@ -60,7 +61,7 @@ void ssd1306_send_byte_cmd(uint8_t data)
 void ssd1306_fill_frame_buffer()
 {
 	 int i=0;
-
+	 rt_kprintf("fill buffer begin\n");
 	 I2C_GenerateSTART(I2C1, ENABLE);
 	 while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT));
 
@@ -77,9 +78,108 @@ void ssd1306_fill_frame_buffer()
 		  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
 	 } 
 	 I2C_GenerateSTOP(I2C1, ENABLE);
-
+	 rt_kprintf("fill buffer end\n");
+}
+#else
+GPIO_InitTypeDef GPIO_InitStructure;
+static void delay()
+{
+    volatile unsigned int dl;
+    for(dl=0; dl<6; dl++);
+}
+int i2c_start()  
+{  
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7|GPIO_Pin_6;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	GPIO_SetBits(GPIOB, GPIO_Pin_7);
+	GPIO_SetBits(GPIOB, GPIO_Pin_6);
+	delay();               
+	GPIO_ResetBits(GPIOB, GPIO_Pin_7);
+	delay();  
+}  
+void i2c_stop()  
+{  
+	GPIO_SetBits(GPIOB, GPIO_Pin_6);
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_7);
+	delay();
+	GPIO_SetBits(GPIOB, GPIO_Pin_7);
+}   
+unsigned char i2c_read_ack()  
+{  
+	unsigned char r;  
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	GPIO_ResetBits(GPIOB, GPIO_Pin_6);
+	r = GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_7);
+	delay();  
+	GPIO_SetBits(GPIOB, GPIO_Pin_6);
+	delay();  
+	return r;  
+}  
+void i2c_write_byte(unsigned char b)  
+{  
+	int i;  
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	for (i=7; i>=0; i--) 
+	{  
+		GPIO_ResetBits(GPIOB, GPIO_Pin_6);
+		delay();
+		if(b & (1<<i))
+			GPIO_SetBits(GPIOB, GPIO_Pin_7);
+		else
+			GPIO_ResetBits(GPIOB, GPIO_Pin_7);
+		GPIO_SetBits(GPIOB, GPIO_Pin_6);
+		delay();  
+	}  
+	i2c_read_ack();
+}  
+void ssd1306_send_byte_cmd (uint8_t data)  
+{  
+	rt_hw_interrupt_disable();
+	i2c_start();
+	i2c_write_byte(0x78);  
+	i2c_write_byte(data);  
+	i2c_stop();
+	rt_hw_interrupt_enable();
+}
+void ssd1306_fill_frame_buffer()
+{
+	 int i=0;
+	 rt_hw_interrupt_disable();
+	 i2c_start();
+	 i2c_write_byte(0x78);  
+	 i2c_write_byte(0x40);
+	 for(i=0;i<sizeof(buffer)/sizeof(uint8_t);i++)
+	 {
+		  i2c_write_byte(buffer[i]);
+	 } 
+	 i2c_stop();
+	 rt_hw_interrupt_enable();
+}
+void pin_init()
+{
+	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
+	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);
+	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_6 | GPIO_Pin_7;
+	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD;
+	 GPIO_Init(GPIOB, &GPIO_InitStructure);
+	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_2;
+	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	 GPIO_Init(GPIOD, &GPIO_InitStructure);
+	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
+	 GPIO_Init(GPIOE, &GPIO_InitStructure);
 }
 
+#endif
 void display(void) 
 {
 	ssd1306_fill_frame_buffer();

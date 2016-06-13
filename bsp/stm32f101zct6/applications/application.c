@@ -60,7 +60,7 @@ static void led_thread_entry(void* parameter)
 
 		if(count==10)
 		{
-			ask_pm25();
+			//ask_pm25();
 			count=0;
 		}
 	}
@@ -93,7 +93,7 @@ void rt_init_thread_entry(void* parameter)
 	}
 	else
 		rt_kprintf("malloc 2048*200 failed\n");
-	//ssd1306_init();
+	ssd1306_init();
 	/*while(1)
 	{
 		rt_sprintf(str,"%03d",count);
