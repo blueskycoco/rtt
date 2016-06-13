@@ -36,13 +36,16 @@ static rt_err_t co2_rx_ind(rt_device_t dev, rt_size_t size)
 }
 void thread_pm25(void* parameter)
 {	
-	int len1=0,m=0;
+	int len1=0,m=0,crc=0;
 	int got=0,j=0;
 	char str_pm25[4]={0};
 	char str_pm10[4]={0};
-	char *ptr=rt_malloc(128);			
+	char *ptr=rt_malloc(128);
+	char ch;
+	int state=0;
 	while(1)	
-	{		
+	{	
+		#if 0
 		if (rt_sem_take(&(pm25_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;		
 		int len=rt_device_read(dev_pm25, 0, ptr+m, 128);		
 		if(len>0)	
@@ -58,14 +61,14 @@ void thread_pm25(void* parameter)
 				}
 			if(got)
 			{				
-				
+				rt_kprintf("\nGet from PM25:\n");
+				for(j=i;j<i+0x18;j++)		
+				{		
+					rt_kprintf("%02X ",ptr[j]);
+				}						
+
 				if((ptr[i+22]*256+ptr[i+23])==FucCheckSum(ptr+i,22))
 				{
-					rt_kprintf("\nGet from PM25:\n");
-					for(j=i;j<i+0x18;j++)		
-					{		
-						rt_kprintf("%02X ",ptr[j]);
-					}						
 					data_pm25=ptr[i+12]*256+ptr[i+13];
 					data_pm10=ptr[i+14]*256+ptr[i+15];
 					rt_kprintf("\n %d<> %d\n",data_pm25,data_pm10);
@@ -84,7 +87,83 @@ void thread_pm25(void* parameter)
 			}
 			else
 				m=m+len;
-		}		
+		}	
+		#else
+		if(rt_device_read(dev_pm25, 0, &ch, 1)==1)
+		{
+			//rt_kprintf(">%02X\r\n",ch);
+			if(ch==0x42 && state==0)
+			{
+				//rt_kprintf("GET_42\r\n");
+				state=1;
+				ptr[0]=0x42;
+			}
+			else if(ch==0x4d && state==1)
+			{
+				//rt_kprintf("GET_4d\r\n");
+				state=2;
+				len1=-1;
+				ptr[1]=0x4d;
+			}
+			else if(state==2)
+			{
+				//rt_kprintf("GET_LEN\r\n");
+				if(len1==-1)
+				{
+					len1=ch;
+					ptr[2]=ch;
+				}
+				else
+				{
+					len1=len1*256+ch;
+					state=3;
+					memset(ptr+4,0,124);
+					m=len1;
+					ptr[3]=ch;
+				}
+			}
+			else if(state==3)
+			{
+				ptr[m-len1+4]=ch;
+				len1--;
+				if(len1==2)
+				{
+					state=4;
+					crc=-1;
+				}
+			}
+			else if(state==4)
+			{
+				//rt_kprintf("GET_CRC\r\n");
+				if(crc==-1)
+				{
+					crc=ch;
+					ptr[22]=ch;
+				}
+				else
+				{
+					ptr[23]=ch;
+					crc=crc*256+ch;
+					state=0;
+					//rt_kprintf("\nGet from PM25:\n");
+					//for(j=0;j<24;j++)		
+					//{		
+					//	rt_kprintf("%02X ",ptr[j]);
+					//}	
+					if(crc==FucCheckSum(ptr,22))
+					{
+						data_pm25=ptr[12]*256+ptr[13];
+						data_pm10=ptr[14]*256+ptr[15];
+						rt_kprintf("\npm25 %d<>pm10 %d\n",data_pm25,data_pm10);
+						rt_sprintf(str_pm25,"%03d",data_pm25);
+						rt_sprintf(str_pm10,"%03d",data_pm10);
+					}
+					else
+						rt_kprintf("\npm25 crc error, %d , %d\n",crc,FucCheckSum(ptr,22));
+				}
+			}
+		}
+		#endif
 	}	
 }
 void ask_pm25()
@@ -114,7 +193,7 @@ void pm25_init()
 		rt_device_control(dev_pm25,RT_DEVICE_CTRL_CONFIG,&config);	
 		rt_sem_init(&(pm25_rx_sem), "pm25_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_pm25, co2_rx_ind);
-		rt_thread_startup(rt_thread_create("thread_co2",thread_pm25, 0,512, 20, 10));
+		rt_thread_startup(rt_thread_create("pm25",thread_pm25, 0,512, 20, 10));
 		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
 		RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
 		GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_5;
