@@ -87,6 +87,11 @@ static void delay()
     volatile unsigned int dl;
     for(dl=0; dl<6; dl++);
 }
+static void delay1()
+{
+    volatile unsigned int dl;
+    for(dl=0; dl<3; dl++);
+}
 int i2c_start()  
 {  
 	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7|GPIO_Pin_6;
@@ -96,14 +101,14 @@ int i2c_start()
 	GPIO_SetBits(GPIOB, GPIO_Pin_6);
 	delay();               
 	GPIO_ResetBits(GPIOB, GPIO_Pin_7);
-	delay();  
+	//delay();  
 }  
 void i2c_stop()  
 {  
-	GPIO_SetBits(GPIOB, GPIO_Pin_6);
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	//GPIO_SetBits(GPIOB, GPIO_Pin_6);
+	//GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
+	//GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	//GPIO_Init(GPIOB, &GPIO_InitStructure);
 	GPIO_ResetBits(GPIOB, GPIO_Pin_7);
 	delay();
 	GPIO_SetBits(GPIOB, GPIO_Pin_7);
@@ -115,36 +120,42 @@ unsigned char i2c_read_ack()
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
 	GPIO_Init(GPIOB, &GPIO_InitStructure);
 	GPIO_ResetBits(GPIOB, GPIO_Pin_6);
+	delay();  
 	r = GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_7);
-	delay();  
+	//delay();  
 	GPIO_SetBits(GPIOB, GPIO_Pin_6);
-	delay();  
+	//delay();  
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 	return r;  
 }  
 void i2c_write_byte(unsigned char b)  
 {  
 	int i;  
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	//GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
+	//GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	//GPIO_Init(GPIOB, &GPIO_InitStructure);
 	for (i=7; i>=0; i--) 
 	{  
 		GPIO_ResetBits(GPIOB, GPIO_Pin_6);
-		delay();
 		if(b & (1<<i))
 			GPIO_SetBits(GPIOB, GPIO_Pin_7);
 		else
-			GPIO_ResetBits(GPIOB, GPIO_Pin_7);
+			GPIO_ResetBits(GPIOB, GPIO_Pin_7);	
+		delay();	
 		GPIO_SetBits(GPIOB, GPIO_Pin_6);
 		delay();  
-	}  
-	i2c_read_ack();
+	}
+	//delay1();
+	//i2c_read_ack();
 }  
 void ssd1306_send_byte_cmd (uint8_t data)  
 {  
 	rt_hw_interrupt_disable();
 	i2c_start();
 	i2c_write_byte(0x78);  
+	i2c_write_byte(0x00);
 	i2c_write_byte(data);  
 	i2c_stop();
 	rt_hw_interrupt_enable();
