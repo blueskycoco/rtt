@@ -43,6 +43,7 @@ void thread_pm25(void* parameter)
 	char *ptr=rt_malloc(128);
 	char ch;
 	int state=0;
+	int times=0;
 	while(1)	
 	{	
 		#if 0
@@ -165,9 +166,15 @@ void thread_pm25(void* parameter)
 						rt_kprintf("\npm25 %d<>pm10 %d\n",data_pm25,data_pm10);
 						rt_sprintf(str_pm25,"%03d",data_pm25);
 						rt_sprintf(str_pm10,"%03d",data_pm10);
-						clear();
-						draw(str_pm25,str_pm10);
-						display();
+						if(times==10)
+						{
+							clear();
+							draw(str_pm25,str_pm10);
+							display();
+							times=0;
+						}
+						else
+							times++;
 					}
 					else
 						rt_kprintf("\npm25 crc error, %d , %d\n",crc,FucCheckSum(ptr,22));
