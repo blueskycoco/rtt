@@ -1,3 +1,4 @@
 #! /bin/bash
 scons.bat
-jlink.exe burn.txt
+openocd -f openocd.cfg -c "flash_image"
+#jlink.exe burn.txt

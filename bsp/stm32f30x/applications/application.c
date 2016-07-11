@@ -29,10 +29,11 @@
 #ifdef RT_USING_GDB
 #include <gdb_stub.h>
 #endif
-#include "cJSON.h"
+//#include "cJSON.h"
 
 static rt_uint8_t led_stack[ 512 ];
 static struct rt_thread led_thread;
+#if 0
 char *add_item(char *old,char *id,char *text)
 {
 	cJSON *root;
@@ -49,14 +50,14 @@ char *add_item(char *old,char *id,char *text)
 	
 	return out;
 }
-
+#endif
 
 static void led_thread_entry(void* parameter)
 {
     unsigned int count=0;
 	char buf[256]={0};
 	char *tmp=RT_NULL;
- 	tmp=add_item(RT_NULL,"12","34");
+ 	//tmp=add_item(RT_NULL,"12","34");
     rt_hw_led_init();
     while (1)
     {
@@ -65,8 +66,8 @@ static void led_thread_entry(void* parameter)
         rt_kprintf("led on, count : %d\r\n",count);
 #endif
 		rt_sprintf(buf,"led on , count : %d",count);
-		tmp=add_item(tmp,"12",buf);
-		rt_kprintf("==>%s",tmp);
+		//tmp=add_item(tmp,"12",buf);
+		//rt_kprintf("==>%s",tmp);
         count++;
         rt_hw_led_on(0);
         rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
