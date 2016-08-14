@@ -54,6 +54,7 @@ int check_event(uint32_t event)
 		if(dl>40)
 		{
 			I2C_GenerateSTOP(I2C1, ENABLE);
+			rt_kprintf("check_event time out\n");
 			return 0;
 		}
 	}
@@ -84,26 +85,40 @@ void ssd1306_send_byte_cmd(uint8_t data)
 void ssd1306_fill_frame_buffer()
 {
 	 int i=0;
-	 rt_kprintf("fill buffer begin\n");
+	 //rt_kprintf("fill buffer begin\n");
+	 rt_hw_interrupt_disable();
 	 I2C_GenerateSTART(I2C1, ENABLE);
 	 if(!check_event(I2C_EVENT_MASTER_MODE_SELECT))
+	 {
+	 	 rt_hw_interrupt_enable();
 	 	return ;
+	 }
 
 	 I2C_Send7bitAddress(I2C1, 0x78, I2C_Direction_Transmitter);
 	 if(!check_event(I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED))
-	 	return ;
+	 {
+	 	 rt_hw_interrupt_enable();
+		 return ;
+	 }
 	 I2C_SendData(I2C1,0x40);
 	 if(!check_event(I2C_EVENT_MASTER_BYTE_TRANSMITTED))
-	 	return ;
+	 {
+	 	 rt_hw_interrupt_enable();
+		 return ;
+	 }
 	 for(i=0;i<sizeof(buffer)/sizeof(uint8_t);i++)
 	 {
 
 		  I2C_SendData(I2C1,buffer[i]);
 		  if(!check_event(I2C_EVENT_MASTER_BYTE_TRANSMITTED))
-		  	return ;
+		  {
+	 	 	rt_hw_interrupt_enable();
+		 	return ;
+		  }
 	 } 
 	 I2C_GenerateSTOP(I2C1, ENABLE);
-	 rt_kprintf("fill buffer end\n");
+	 rt_hw_interrupt_enable();
+	 //rt_kprintf("fill buffer end\n");
 	 //delay();
 	 //delay();
 	 //delay();
@@ -392,15 +407,27 @@ void draw(char *co2,char *co1)
     x=x1;
    for(j=0;j<8;j++)
    {				
-		buffer[x]=hzdot[6*8+j];
+		buffer[x]=hzdot[4*8+j];
 		x++;				
    }
    for(j=0;j<8;j++)
    {				
-		buffer[x+128-8]=hzdot[6*8+j+8];
+		buffer[x+128-8]=hzdot[4*8+j+8];
 		x++;				
    }
    x1+=8;
+   x=x1;
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+((line)*128)]=hzdot[6*8+j];
+		x++;				
+   }
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+((line+1)*128)-8]=hzdot[6*8+j+8];
+		x++;				
+   }
+   x1+=8; 
    draw_num(&x1,&line,co2);
    
    x=0;
@@ -418,6 +445,18 @@ void draw(char *co2,char *co1)
    x=x1;
    for(j=0;j<8;j++)
    {				
+		buffer[x+((line)*128)]=hzdot[2*8+j];
+		x++;				
+   }
+   for(j=0;j<8;j++)
+   {				
+		buffer[x+((line+1)*128)-8]=hzdot[2*8+j+8];
+		x++;				
+   } 
+   x1+=8;
+   x=x1;
+   for(j=0;j<8;j++)
+   {				
 		buffer[x+((line)*128)]=hzdot[8*8+j];
 		x++;				
    }
@@ -425,29 +464,17 @@ void draw(char *co2,char *co1)
    {				
 		buffer[x+((line+1)*128)-8]=hzdot[8*8+j+8];
 		x++;				
-   } 
-   x1+=8;
-   x=x1;
-   for(j=0;j<8;j++)
-   {				
-		buffer[x+((line)*128)]=hzdot[6*8+j];
-		x++;				
-   }
-   for(j=0;j<8;j++)
-   {				
-		buffer[x+((line+1)*128)-8]=hzdot[6*8+j+8];
-		x++;				
    }
    x1+=8;
    x=x1;
    for(j=0;j<8;j++)
    {				
-		buffer[x+((line)*128)]=hzdot[2*8+j];
+		buffer[x+((line)*128)]=hzdot[10*8+j];
 		x++;				
    }
    for(j=0;j<8;j++)
    {				
-		buffer[x+((line+1)*128)-8]=hzdot[2*8+j+8];
+		buffer[x+((line+1)*128)-8]=hzdot[10*8+j+8];
 		x++;				
    }
    x1+=8;   
