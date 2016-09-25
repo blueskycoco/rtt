@@ -28,5 +28,5 @@ void LCD_Clear(uint16_t Color);	  									/*ÇåÆÁ*/
 void SetWindow(unsigned int X_Start,unsigned int X_End,unsigned int Y_Start,unsigned int Y_End);
 void LCD_SetPoint(uint16_t Xpos,uint16_t Ypos,uint16_t point);
 void Draw_Pixel(uint16_t X,uint16_t Y,uint16_t color);				//´¥Ãþ»­µã
-
+void LCD_PutChar(unsigned short x, unsigned short y, char c, unsigned int fColor, unsigned int bColor);
 #endif 

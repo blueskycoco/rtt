@@ -1,7 +1,7 @@
 
 
 #include "ILI93XX.h"
-
+#include "8x16.h"
 #define  MAX_X  240
 #define  MAX_Y  320  
 
@@ -249,10 +249,10 @@ void LCD_SetPoint(uint16_t Xpos,uint16_t Ypos,uint16_t point)
 =========================================*/
 void Draw_Pixel(uint16_t X,uint16_t Y,uint16_t color)
 {	    
-	LCD_SetPoint(X,		Y,	color);//中心点 
+	LCD_SetPoint(X,		Y,	color);
 	LCD_SetPoint(X+1,	Y,	color);
 	LCD_SetPoint(X,		Y+1,color);
-	LCD_SetPoint(X+1, Y+1,color); 	  	
+	LCD_SetPoint(X+1, 	Y+1,color); 	  	
 }		
 
 /*=========================================
@@ -299,3 +299,22 @@ u16 RGB(u8 R,u8 G,u8 B)
 {
 	return((u16)(R&0XF8)<<8|(u16)(G&0XFC)<<3|(u16)(B&0XF8)>>3);
 } 
+
+void LCD_PutChar(unsigned short x, unsigned short y, char c, unsigned int fColor, unsigned int bColor)
+{
+ unsigned int i,j;
+ SetWindow(x,x+8-1,y,y+16-1);
+ for(i=0; i<16;i++) {
+		unsigned char m=Font8x16[c*16+i];
+		for(j=0;j<8;j++) {
+			if((m&0x80)==0x80) {
+				LCD_Write_Data(fColor);
+				}
+			else {
+				LCD_Write_Data(bColor);
+				}
+			m<<=1;
+			}
+		}
+}
+

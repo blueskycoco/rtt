@@ -29,10 +29,11 @@
 #ifdef RT_USING_GDB
 #include <gdb_stub.h>
 #endif
-#include "cJSON.h"
+//#include "cJSON.h"
 
 static rt_uint8_t led_stack[ 512 ];
 static struct rt_thread led_thread;
+#if 0
 char *add_item(char *old,char *id,char *text)
 {
 	cJSON *root;
@@ -49,24 +50,28 @@ char *add_item(char *old,char *id,char *text)
 	
 	return out;
 }
-
+#endif
 
 static void led_thread_entry(void* parameter)
 {
     unsigned int count=0;
 	char buf[256]={0};
-	char *tmp=RT_NULL;
- 	tmp=add_item(RT_NULL,"12","34");
+	int i;
+//	char *tmp=RT_NULL;
+ 	//tmp=add_item(RT_NULL,"12","34");
     rt_hw_led_init();
+	LCD_Clear(White);
+
     while (1)
     {
         /* led1 on */
+		memset(buf,0,256);
 #ifndef RT_USING_FINSH
         rt_kprintf("led on, count : %d\r\n",count);
 #endif
-		rt_sprintf(buf,"led on , count : %d",count);
-		tmp=add_item(tmp,"12",buf);
-		rt_kprintf("==>%s",tmp);
+		rt_sprintf(buf,"HCHO : %04d",count);
+		//tmp=add_item(tmp,"12",buf);
+		//rt_kprintf("==>%s",tmp);
         count++;
         rt_hw_led_on(0);
         rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
@@ -80,12 +85,25 @@ static void led_thread_entry(void* parameter)
 		//LCD_Clear(Black);
         rt_hw_led_off(0);
         rt_thread_delay( RT_TICK_PER_SECOND/2 );
-		LCD_Clear(White);
+		
 	   	rt_hw_led_off(1);
         rt_thread_delay( RT_TICK_PER_SECOND/2 );
 		//LCD_Clear(Red);
-
-		LCD_DrawLine(0,0,240,320);
+		for(i=0;i<strlen(buf);i++)
+		{
+			LCD_PutChar(80+i*8, 160,buf[i],Black,White);
+		}
+		/*
+		LCD_PutChar(80+0, 160,'H',Black,White);
+		LCD_PutChar(80+8, 160,'C',Black,White);
+		LCD_PutChar(80+16,160,'H',Black,White);
+		LCD_PutChar(80+24,160,'O',Black,White);
+		LCD_PutChar(80+32,160,':',Black,White);
+		LCD_PutChar(80+40,160,'0',Black,White);
+		LCD_PutChar(80+48,160,'.',Black,White);
+		LCD_PutChar(80+56,160,'1',Black,White);
+		LCD_PutChar(80+64,160,'2',Black,White);*/
+		//LCD_DrawLine(0,0,240,320);
     }
 }
 
