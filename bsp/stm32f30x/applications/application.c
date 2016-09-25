@@ -15,6 +15,8 @@
 
 #include <board.h>
 #include <rtthread.h>
+#include <rtdevice.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -30,8 +32,10 @@
 #include <gdb_stub.h>
 #endif
 //#include "cJSON.h"
+rt_device_t dev_ch2o;
+struct rt_semaphore ch2o_rx_sem;
 
-static rt_uint8_t led_stack[ 512 ];
+static rt_uint8_t led_stack[ 1024 ];
 static struct rt_thread led_thread;
 #if 0
 char *add_item(char *old,char *id,char *text)
@@ -51,16 +55,76 @@ char *add_item(char *old,char *id,char *text)
 	return out;
 }
 #endif
+static rt_err_t ch2o_rx_ind(rt_device_t dev, rt_size_t size)
+{
+	rt_sem_release(&(ch2o_rx_sem));    
+	return RT_EOK;
+}
+void ch2o_rcv(void* parameter)
+{	
+	int len1=0,m=0;
+	char buf[256]={0};
+	char *ptr=rt_malloc(32);	
+	LCD_Clear(White);		
+	while(1)	
+	{		
+		if (rt_sem_take(&(ch2o_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;		
+		int len=rt_device_read(dev_ch2o, 0, ptr+m, 128);		
+		if(len>0)	
+		{	
+			int i;		
+			len1=len1+len;
+			if(len1==7)
+			{
+				rt_kprintf("Get from CH2O:\n");
+				for(i=0;i<len1;i++)		
+				{		
+					rt_kprintf("%x ",ptr[i]);
+				}	
+				rt_kprintf("\n");
+				int data_ch2o=ptr[3]*256+ptr[4];
+				memset(buf,0,256);
+				rt_sprintf(buf,"AS04-T HCHO: %d.%d ppm",data_ch2o/100,data_ch2o%100);
+				
+				for(i=0;i<strlen(buf);i++)
+				{
+					LCD_PutChar(40+i*8, 160,buf[i],Black,White);
+				}
+				len1=0;
+				m=0;
+				//rt_free(ptr);
+			}
+			else
+				m=m+len;
+		}		
+	}	
+}
 
 static void led_thread_entry(void* parameter)
 {
     unsigned int count=0;
 	char buf[256]={0};
 	int i;
+	unsigned char read_ch2o[8]={0x01,0x03,0x00,0x00,0x00,0x01,0x84,0x0a};
 //	char *tmp=RT_NULL;
  	//tmp=add_item(RT_NULL,"12","34");
     rt_hw_led_init();
-	LCD_Clear(White);
+	dev_ch2o=rt_device_find("uart1");
+	if (rt_device_open(dev_ch2o, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX) == RT_EOK)			
+	{
+		struct serial_configure config; 		
+		config.baud_rate=9600;
+		config.bit_order = BIT_ORDER_LSB;			
+		config.data_bits = DATA_BITS_8; 		
+		config.parity	 = PARITY_NONE; 		
+		config.stop_bits = STOP_BITS_1; 			
+		config.invert	 = NRZ_NORMAL;				
+		config.bufsz	 = RT_SERIAL_RB_BUFSZ;			
+		rt_device_control(dev_ch2o,RT_DEVICE_CTRL_CONFIG,&config);	
+		rt_sem_init(&(ch2o_rx_sem), "ch2o_rx", 0, 0);
+		rt_device_set_rx_indicate(dev_ch2o, ch2o_rx_ind);
+		rt_thread_startup(rt_thread_create("thread_ch2o",ch2o_rcv, 0,512, 20, 10));
+	}
 
     while (1)
     {
@@ -69,7 +133,7 @@ static void led_thread_entry(void* parameter)
 #ifndef RT_USING_FINSH
         rt_kprintf("led on, count : %d\r\n",count);
 #endif
-		rt_sprintf(buf,"HCHO : %04d",count);
+		rt_sprintf(buf,"AS04-T HCHO : %04f",count);
 		//tmp=add_item(tmp,"12",buf);
 		//rt_kprintf("==>%s",tmp);
         count++;
@@ -77,7 +141,8 @@ static void led_thread_entry(void* parameter)
         rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
 		//LCD_Clear(Blue);
         rt_hw_led_on(1);
-        rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */		
+        rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */	
+		rt_device_write(dev_ch2o, 0, (void *)read_ch2o, 8);
         /* led1 off */
 #ifndef RT_USING_FINSH
         rt_kprintf("led off\r\n");
@@ -89,10 +154,7 @@ static void led_thread_entry(void* parameter)
 	   	rt_hw_led_off(1);
         rt_thread_delay( RT_TICK_PER_SECOND/2 );
 		//LCD_Clear(Red);
-		for(i=0;i<strlen(buf);i++)
-		{
-			LCD_PutChar(80+i*8, 160,buf[i],Black,White);
-		}
+		rt_device_write(dev_ch2o, 0, (void *)read_ch2o, 8);
 		/*
 		LCD_PutChar(80+0, 160,'H',Black,White);
 		LCD_PutChar(80+8, 160,'C',Black,White);
