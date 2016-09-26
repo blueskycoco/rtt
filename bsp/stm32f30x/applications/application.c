@@ -84,7 +84,7 @@ void ch2o_rcv(void* parameter)
 				rt_kprintf("\n");
 				int data_ch2o=ptr[3]*256+ptr[4];
 				memset(buf,0,256);
-				rt_sprintf(buf,"AS04-T HCHO: %d.%d ppm",data_ch2o/100,data_ch2o%100);
+				rt_sprintf(buf,"AS04-T HCHO: %d.%02d ppm",data_ch2o/100,data_ch2o%100);
 				
 				for(i=0;i<strlen(buf);i++)
 				{
