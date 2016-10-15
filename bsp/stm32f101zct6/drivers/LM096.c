@@ -81,7 +81,7 @@ void ssd1306_send_byte_cmd(uint8_t data)
 	 I2C_GenerateSTOP(I2C1, ENABLE);
 }
 
-void ssd1306_fill_frame_buffer()
+int ssd1306_fill_frame_buffer()
 {
 	 int i=0;
 	 rt_hw_interrupt_disable();
@@ -90,7 +90,7 @@ void ssd1306_fill_frame_buffer()
 	 {
 	 	rt_hw_interrupt_enable();	 	
 		rt_kprintf("check_event time out,I2C_GenerateSTART\n");
-	 	return ;
+	 	return 0;
 	 }
 
 	 I2C_Send7bitAddress(I2C1, 0x78, I2C_Direction_Transmitter);
@@ -98,14 +98,14 @@ void ssd1306_fill_frame_buffer()
 	 {
 	 	rt_hw_interrupt_enable();
 	 	rt_kprintf("check_event time out,I2C_Send7bitAddress\n");
-		 return ;
+		 return 0;
 	 }
 	 I2C_SendData(I2C1,0x40);
 	 if(!check_event(I2C_EVENT_MASTER_BYTE_TRANSMITTED))
 	 {
 	 	rt_hw_interrupt_enable();
 	 	rt_kprintf("check_event time out,I2C_SendData1\n");
-		 return ;
+		 return 0;
 	 }
 	 //rt_thread_delay(1);
 	 //rt_hw_interrupt_disable();
@@ -116,12 +116,13 @@ void ssd1306_fill_frame_buffer()
 		  {
 	 	 	rt_hw_interrupt_enable();
 	 	 	rt_kprintf("check_event time out,I2C_SendData2 %d\n",i);
-		 	return ;
+		 	return 0;
 		  }
 		  //rt_thread_delay(2);
 	 } 
 	 I2C_GenerateSTOP(I2C1, ENABLE);
 	 rt_hw_interrupt_enable();
+	 return 1;
 }
 #else
 GPIO_InitTypeDef GPIO_InitStructure;
@@ -235,20 +236,20 @@ void pin_init()
 }
 
 #endif
-void display(void) 
+int display(void) 
 {
-	ssd1306_fill_frame_buffer();
+	return ssd1306_fill_frame_buffer();
 }
 
 void device_rst()
 {
 	 GPIO_ResetBits(GPIOD, GPIO_Pin_2);	//config iic address
 	 GPIO_SetBits(GPIOE, GPIO_Pin_4);	//rst
-	 rt_thread_delay(50);
+	 rt_thread_delay(10);
 	 GPIO_ResetBits(GPIOE, GPIO_Pin_4);
 	 rt_thread_delay(100);
 	 GPIO_SetBits(GPIOE, GPIO_Pin_4);
-	 rt_thread_delay(50);
+	 rt_thread_delay(10);
 }    
 
 void clear(void) 

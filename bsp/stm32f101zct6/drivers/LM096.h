@@ -5,7 +5,7 @@
  extern "C" {
 #endif
 void ssd1306_init(void);
-void display(void);
+int display(void);
 void clear(void);
 void draw1(uint8_t bat1,uint8_t bat2,char *c);
 void draw(char *co2,char *co1);

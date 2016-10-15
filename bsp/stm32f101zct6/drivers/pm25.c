@@ -163,14 +163,18 @@ void thread_pm25(void* parameter)
 					{
 						data_pm25=ptr[12]*256+ptr[13];
 						data_pm10=ptr[14]*256+ptr[15];
-						rt_kprintf("\npm25 %d<>pm10 %d\n",data_pm25,data_pm10);
+						//rt_kprintf("\npm25 %d<>pm10 %d\n",data_pm25,data_pm10);
 						rt_sprintf(str_pm25,"%03d",data_pm25);
 						rt_sprintf(str_pm10,"%03d",data_pm10);
 						if(times==10)
 						{
 							clear();
 							draw(str_pm25,str_pm10);
-							display();
+							if(!display())
+							{
+								ssd1306_init();
+								display();
+							}
 							times=0;
 						}
 						else
