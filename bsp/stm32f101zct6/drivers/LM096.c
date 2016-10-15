@@ -40,7 +40,7 @@ void pin_init()
 	 I2C_InitStructure.I2C_OwnAddress1 = 0x79;
 	 I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
 	 I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
-	 I2C_InitStructure.I2C_ClockSpeed = 100000;
+	 I2C_InitStructure.I2C_ClockSpeed = 95000;
 	 I2C_Init(I2C1, &I2C_InitStructure);
 //	 GPIO_ResetBits(GPIOB, GPIO_Pin_6);
 //	 GPIO_SetBits(GPIOB, GPIO_Pin_7);
@@ -54,7 +54,6 @@ int check_event(uint32_t event)
 		if(dl>40)
 		{
 			I2C_GenerateSTOP(I2C1, ENABLE);
-			rt_kprintf("check_event time out\n");
 			return 0;
 		}
 	}
@@ -85,43 +84,44 @@ void ssd1306_send_byte_cmd(uint8_t data)
 void ssd1306_fill_frame_buffer()
 {
 	 int i=0;
-	 //rt_kprintf("fill buffer begin\n");
 	 rt_hw_interrupt_disable();
 	 I2C_GenerateSTART(I2C1, ENABLE);
 	 if(!check_event(I2C_EVENT_MASTER_MODE_SELECT))
 	 {
-	 	 rt_hw_interrupt_enable();
+	 	rt_hw_interrupt_enable();	 	
+		rt_kprintf("check_event time out,I2C_GenerateSTART\n");
 	 	return ;
 	 }
 
 	 I2C_Send7bitAddress(I2C1, 0x78, I2C_Direction_Transmitter);
 	 if(!check_event(I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED))
 	 {
-	 	 rt_hw_interrupt_enable();
+	 	rt_hw_interrupt_enable();
+	 	rt_kprintf("check_event time out,I2C_Send7bitAddress\n");
 		 return ;
 	 }
 	 I2C_SendData(I2C1,0x40);
 	 if(!check_event(I2C_EVENT_MASTER_BYTE_TRANSMITTED))
 	 {
-	 	 rt_hw_interrupt_enable();
+	 	rt_hw_interrupt_enable();
+	 	rt_kprintf("check_event time out,I2C_SendData1\n");
 		 return ;
 	 }
+	 //rt_thread_delay(1);
+	 //rt_hw_interrupt_disable();
 	 for(i=0;i<sizeof(buffer)/sizeof(uint8_t);i++)
 	 {
-
 		  I2C_SendData(I2C1,buffer[i]);
 		  if(!check_event(I2C_EVENT_MASTER_BYTE_TRANSMITTED))
 		  {
 	 	 	rt_hw_interrupt_enable();
+	 	 	rt_kprintf("check_event time out,I2C_SendData2 %d\n",i);
 		 	return ;
 		  }
+		  //rt_thread_delay(2);
 	 } 
 	 I2C_GenerateSTOP(I2C1, ENABLE);
 	 rt_hw_interrupt_enable();
-	 //rt_kprintf("fill buffer end\n");
-	 //delay();
-	 //delay();
-	 //delay();
 }
 #else
 GPIO_InitTypeDef GPIO_InitStructure;
@@ -244,10 +244,11 @@ void device_rst()
 {
 	 GPIO_ResetBits(GPIOD, GPIO_Pin_2);	//config iic address
 	 GPIO_SetBits(GPIOE, GPIO_Pin_4);	//rst
-	 rt_thread_delay(10);
+	 rt_thread_delay(50);
 	 GPIO_ResetBits(GPIOE, GPIO_Pin_4);
-	 rt_thread_delay(10);
+	 rt_thread_delay(100);
 	 GPIO_SetBits(GPIOE, GPIO_Pin_4);
+	 rt_thread_delay(50);
 }    
 
 void clear(void) 
