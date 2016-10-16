@@ -89,7 +89,7 @@ void rt_init_thread_entry(void* parameter)
 	{
 		memset(test,0,2048*200);
 		rt_kprintf("malloc 2048*200 ok\n");
-		//free(test);
+		free(test);
 	}
 	else
 		rt_kprintf("malloc 2048*200 failed\n");

@@ -13,20 +13,17 @@ static void delay()
     for(dl=0; dl<40; dl++);
 }
 
-#if 1
 void pin_init()
 {
 	 GPIO_InitTypeDef GPIO_InitStructure;
 	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
 	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);
-	 //RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 	 RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
 	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_6 | GPIO_Pin_7;
 	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_OD;
 	 GPIO_Init(GPIOB, &GPIO_InitStructure);
-	 //GPIO_PinRemapConfig(GPIO_Remap_I2C1, ENABLE);
 	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_2;
 	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	 GPIO_Init(GPIOD, &GPIO_InitStructure);
@@ -42,8 +39,6 @@ void pin_init()
 	 I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
 	 I2C_InitStructure.I2C_ClockSpeed = 95000;
 	 I2C_Init(I2C1, &I2C_InitStructure);
-//	 GPIO_ResetBits(GPIOB, GPIO_Pin_6);
-//	 GPIO_SetBits(GPIOB, GPIO_Pin_7);
 }
 int check_event(uint32_t event)
 {
@@ -107,8 +102,6 @@ int ssd1306_fill_frame_buffer()
 	 	rt_kprintf("check_event time out,I2C_SendData1\n");
 		 return 0;
 	 }
-	 //rt_thread_delay(1);
-	 //rt_hw_interrupt_disable();
 	 for(i=0;i<sizeof(buffer)/sizeof(uint8_t);i++)
 	 {
 		  I2C_SendData(I2C1,buffer[i]);
@@ -118,124 +111,11 @@ int ssd1306_fill_frame_buffer()
 	 	 	rt_kprintf("check_event time out,I2C_SendData2 %d\n",i);
 		 	return 0;
 		  }
-		  //rt_thread_delay(2);
 	 } 
 	 I2C_GenerateSTOP(I2C1, ENABLE);
 	 rt_hw_interrupt_enable();
 	 return 1;
 }
-#else
-GPIO_InitTypeDef GPIO_InitStructure;
-static void delay1()
-{
-    volatile unsigned int dl;
-    for(dl=0; dl<1; dl++);
-}
-int i2c_start()  
-{  
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7|GPIO_Pin_6;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	GPIO_SetBits(GPIOB, GPIO_Pin_7);
-	GPIO_SetBits(GPIOB, GPIO_Pin_6);
-	delay();               
-	GPIO_ResetBits(GPIOB, GPIO_Pin_7);
-	//delay();  
-}  
-void i2c_stop()  
-{  
-	//GPIO_SetBits(GPIOB, GPIO_Pin_6);
-	//GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
-	//GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	//GPIO_Init(GPIOB, &GPIO_InitStructure);
-	GPIO_ResetBits(GPIOB, GPIO_Pin_7);
-	delay();
-	GPIO_SetBits(GPIOB, GPIO_Pin_7);
-	GPIO_SetBits(GPIOB, GPIO_Pin_7);
-	GPIO_SetBits(GPIOB, GPIO_Pin_7);
-	delay();
-}   
-unsigned char i2c_read_ack()  
-{  
-	unsigned char r;  
-	GPIO_ResetBits(GPIOB, GPIO_Pin_6);
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	delay();
-	r = GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_7);
-	GPIO_SetBits(GPIOB, GPIO_Pin_6);
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	delay1();
-	return r;  
-}  
-void i2c_write_byte(unsigned char b)  
-{  
-	int i;  
-	//GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_7;
-	//GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	//GPIO_Init(GPIOB, &GPIO_InitStructure);
-	for (i=7; i>=0; i--) 
-	{  
-		GPIO_ResetBits(GPIOB, GPIO_Pin_6);
-		if(b & (1<<i))
-			GPIO_SetBits(GPIOB, GPIO_Pin_7);
-		else
-			GPIO_ResetBits(GPIOB, GPIO_Pin_7);	
-		delay();	
-		GPIO_SetBits(GPIOB, GPIO_Pin_6);
-		delay();  
-	}
-	//GPIO_ResetBits(GPIOB, GPIO_Pin_6);
-	//delay();
-	//GPIO_SetBits(GPIOB, GPIO_Pin_6);
-	//delay();
-	//delay1();
-	i2c_read_ack();
-}  
-void ssd1306_send_byte_cmd (uint8_t data)  
-{  
-	//rt_hw_interrupt_disable();
-	i2c_start();
-	i2c_write_byte(0x78);  
-	i2c_write_byte(0x00);
-	i2c_write_byte(data);  
-	i2c_stop();
-	//rt_hw_interrupt_enable();
-}
-void ssd1306_fill_frame_buffer()
-{
-	 int i=0;
-	 //rt_hw_interrupt_disable();
-	 i2c_start();
-	 i2c_write_byte(0x78);  
-	 i2c_write_byte(0x40);
-	 for(i=0;i<sizeof(buffer)/sizeof(uint8_t);i++)
-	 {
-		  i2c_write_byte(buffer[i]);
-	 } 
-	 i2c_stop();
-	 //rt_hw_interrupt_enable();
-}
-void pin_init()
-{
-	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
-	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOE, ENABLE);
-	 RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE);
-	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_6 | GPIO_Pin_7;
-	 GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	 GPIO_Init(GPIOB, &GPIO_InitStructure);
-	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_2;
-	 GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	 GPIO_Init(GPIOD, &GPIO_InitStructure);
-	 GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_4;
-	 GPIO_Init(GPIOE, &GPIO_InitStructure);
-}
-
-#endif
 int display(void) 
 {
 	return ssd1306_fill_frame_buffer();
@@ -483,96 +363,3 @@ void draw(char *co2,char *co1)
    draw_num(&x1,&line,co1);
 }
 
-void draw1(uint8_t bat1,uint8_t bat2,char *c)
-{
-	 int x=0,line=0,x1=0,i,j;
-	 if(bat1>100||bat1<0||bat2>100||bat2<0||rt_strlen(c)!=7)
-		  return ;
-	 if(bat1==1)
-	 {
-		  fillrect(2,31,28,15,1);
-	 }
-	 if(bat2==1)
-	 {
-		  fillrect(2,48,28,15,1);
-	 }
-	 drawline(1,32,28,32);
-	 drawline(28,32,28,36);
-	 drawline(28,36,32,36);
-	 drawline(32,36,32,43);
-	 drawline(32,43,28,43);
-	 drawline(28,43,28,47);
-	 drawline(28,47,1,47);
-	 drawline(1,47,1,32);
-	 fillrect(1,32,(uint8_t)(bat1*28/100),15,0);
-	 drawline(1,49,28,49);
-	 drawline(28,49,28,52);
-	 drawline(28,52,32,52);
-	 drawline(32,52,32,59);
-	 drawline(32,59,28,59);
-	 drawline(28,59,28,63);
-	 drawline(28,63,1,63);
-	 drawline(1,63,1,49);
-	 fillrect(1,49,(uint8_t)(bat2*28/100),15,0);
-	 while(c[0]!=0)
-	 {
-		  if(c[0]!='.')
-		  {
-			   x=x1;
-			   for(j=0;j<32;j++)
-			   {				
-					buffer[x+((line)*128)]=font32[(c[0]-48)*128+j];
-					x++;				
-			   }
-			   for(j=0;j<32;j++)
-			   {				
-					buffer[x+((line+1)*128)-32]=font32[(c[0]-48)*128+32+j];
-					x++;				
-			   }
-			   for(j=0;j<32;j++)
-			   {				
-					buffer[x+((line+2)*128)-64]=font32[(c[0]-48)*128+64+j];
-					x++;				
-			   }
-			   for(j=0;j<32;j++)
-			   {				
-					buffer[x+((line+3)*128)-96]=font32[(c[0]-48)*128+96+j];
-					x++;				
-			   }
-		  }
-		  else
-		  {
-			   x=x1;
-			   for(j=0;j<32;j++)
-			   {				
-					buffer[x+((line)*128)]=font32[1280+j];
-					x++;				
-			   }
-			   for(j=0;j<32;j++)
-			   {				
-					buffer[x+((line+1)*128)-32]=font32[1280+32+j];
-					x++;				
-			   }
-			   for(j=0;j<32;j++)
-			   {				
-					buffer[x+((line+2)*128)-64]=font32[1280+64+j];
-					x++;				
-			   }
-			   for(j=0;j<32;j++)
-			   {				
-					buffer[x+((line+3)*128)-96]=font32[1280+96+j];
-					x++;				
-			   }
-		  }
-
-		  x1=x1+31;
-		  if(x1+31>SSD1306_LCDWIDTH)
-		  {
-			   x1=33;
-			   line=line+4;
-		  }
-
-		  c++;
-
-	 }	
-}
