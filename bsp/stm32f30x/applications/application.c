@@ -62,13 +62,21 @@ static rt_err_t ch2o_rx_ind(rt_device_t dev, rt_size_t size)
 }
 void ch2o_rcv(void* parameter)
 {	
-	int len1=0,m=0;
+#define BEGIN 0
+#define READ_3 1
+#define READ_2 2
+#define READ_DATA 3
+	int len1=0,m=0,mode=BEGIN;
+	int i;
 	char buf[256]={0};
+	int data_ch2o = 0;
+	char ch = 0;
 	char *ptr=rt_malloc(32);	
 	LCD_Clear(White);		
 	while(1)	
 	{		
-		if (rt_sem_take(&(ch2o_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;		
+		if (rt_sem_take(&(ch2o_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;	
+#if 0
 		int len=rt_device_read(dev_ch2o, 0, ptr+m, 128);		
 		if(len>0)	
 		{	
@@ -97,6 +105,88 @@ void ch2o_rcv(void* parameter)
 			else
 				m=m+len;
 		}		
+#else
+		int len = rt_device_read(dev_ch2o, 0, &ch, 1);
+		//rt_kprintf("ch is %d\n",ch);
+		if(len == 1)
+		{
+			switch (mode)
+			{
+				case BEGIN:
+				{
+					if(ch == 0x01)
+					{
+						mode = READ_3;
+						ptr[0] = 0x01;
+					}
+					else
+						mode = BEGIN;
+				}
+				break;
+
+				case READ_3:
+				{
+					if(ch == 0x03)
+					{
+						mode = READ_2;
+						ptr[1] = 0x03;
+					}
+					else
+						mode = BEGIN;
+				}
+				break;
+
+				case READ_2:
+				{
+					if(ch == 0x02)
+					{
+						mode = READ_DATA;
+						m = 0;
+						ptr[2] = 0x02;
+					}
+					else
+						mode = BEGIN;
+				}
+				break;
+
+				case READ_DATA:
+				{
+					if(m == 0)
+					{
+						data_ch2o = ch*256;
+						ptr[3] = ch;
+						m=1;
+					}
+					else
+					{
+						data_ch2o = data_ch2o+ch;
+						ptr[4] = ch;
+						mode = BEGIN;
+						rt_kprintf("Get from CH2O:\n");
+						for(i=0;i<5;i++)		
+						{		
+							rt_kprintf("%d ",ptr[i]);
+						}	
+						rt_kprintf("\n");
+						memset(buf,0,256);
+						rt_sprintf(buf,"AS04-T HCHO: %d.%02d ppm",data_ch2o/100,data_ch2o%100);
+				
+						for(i=0;i<strlen(buf);i++)
+						{
+							LCD_PutChar(40+i*8, 160,buf[i],Black,White);
+						}
+					}
+				}
+				break;
+				
+				default:
+				{
+					mode = BEGIN;
+				}
+				break;
+			}
+		}
+#endif
 	}	
 }
 
@@ -123,9 +213,9 @@ static void led_thread_entry(void* parameter)
 		rt_device_control(dev_ch2o,RT_DEVICE_CTRL_CONFIG,&config);	
 		rt_sem_init(&(ch2o_rx_sem), "ch2o_rx", 0, 0);
 		rt_device_set_rx_indicate(dev_ch2o, ch2o_rx_ind);
-		rt_thread_startup(rt_thread_create("thread_ch2o",ch2o_rcv, 0,512, 20, 10));
+		rt_thread_startup(rt_thread_create("thread_ch2o",ch2o_rcv, 0,1024, 20, 10));
 	}
-
+	rt_kprintf("begin to rcv \n");
     while (1)
     {
         /* led1 on */
