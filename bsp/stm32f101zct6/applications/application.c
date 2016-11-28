@@ -57,12 +57,6 @@ static void led_thread_entry(void* parameter)
 #endif
 		rt_hw_led_off(0);
 		rt_thread_delay( RT_TICK_PER_SECOND/2 );
-
-		if(count==10)
-		{
-			//ask_pm25();
-			count=0;
-		}
 	}
 }
 void rt_init_thread_entry(void* parameter)
@@ -84,24 +78,7 @@ void rt_init_thread_entry(void* parameter)
 	else
 		rt_kprintf("File System initialzation failed!\n");
 #endif  /* RT_USING_DFS */
-	char *test=rt_malloc(2048*200);
-	if(test!=RT_NULL)
-	{
-		memset(test,0,2048*200);
-		rt_kprintf("malloc 2048*200 ok\n");
-		free(test);
-	}
-	else
-		rt_kprintf("malloc 2048*200 failed\n");
 	ssd1306_init();
-	/*while(1)
-	{
-		rt_sprintf(str,"%03d",count);
-		clear();
-		draw(str,str);
-		display();
-		rt_thread_delay(1000);
-	}*/
 	pm25_init();
 }
 
