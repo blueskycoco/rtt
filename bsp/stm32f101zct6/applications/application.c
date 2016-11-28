@@ -17,7 +17,7 @@
  * @addtogroup STM32
  */
 /*@{*/
-
+#include <stdlib.h>
 #include <board.h>
 #include <rtthread.h>
 #include "spi_flash_w25qxx.h"
