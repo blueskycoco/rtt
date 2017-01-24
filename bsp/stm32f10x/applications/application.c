@@ -194,11 +194,16 @@ rt_uint8_t *key = RT_NULL;
 rt_uint32_t key_len = 0;
 void sburn(void)
 {
-	//rym_null("uart1");
+	rym_null("uart1");
 	if (key == RT_NULL || key_len == 0)
 	{
 		rt_kprintf("no config file got\r\n");
 		return;
+	}
+	else
+	{
+		for (int i = 0; i < key_len; i++)
+			rt_kprintf("%c",key[i]);
 	}
 	parse_json(key, "ROOT_KEY");
 }
