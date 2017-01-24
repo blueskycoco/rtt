@@ -65,11 +65,11 @@ static void led_thread_entry(void* parameter)
 	{
 		count++;
 		rt_hw_led_on(0);
-		rt_hw_led_on(1);
-		rt_thread_delay( RT_TICK_PER_SECOND/2 );
+		//rt_hw_led_on(1);
+		rt_thread_delay( RT_TICK_PER_SECOND );
 		rt_hw_led_off(0);
-		rt_hw_led_off(1);
-		rt_thread_delay( RT_TICK_PER_SECOND/2 );
+		//rt_hw_led_off(1);
+		rt_thread_delay( RT_TICK_PER_SECOND );
 	}
 }
 
@@ -194,7 +194,7 @@ rt_uint8_t *key = RT_NULL;
 rt_uint32_t key_len = 0;
 void sburn(void)
 {
-	rym_null("uart1");
+	//rym_null("uart1");
 	if (key == RT_NULL || key_len == 0)
 	{
 		rt_kprintf("no config file got\r\n");
