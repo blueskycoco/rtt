@@ -12,12 +12,14 @@ void uart_esp8266_rx(void* parameter)
 	rt_kprintf("uart_esp8266_rx thread\r\n");
 	while(1)
 	{
-		if (rt_sem_take(&rx_esp8266_sem, RT_WAITING_FOREVER) != RT_EOK) continue;
-		while (rt_device_read((rt_device_t)parameter, 0, &ch, 1) == 1)
+		if (rt_sem_take(&rx_esp8266_sem, 
+			RT_WAITING_FOREVER) != RT_EOK) 
+			continue;
+		while (rt_device_read((rt_device_t)parameter, 
+			0, &ch, 1) == 1)
 		{
 			rt_kprintf("%c",ch);
-		}
-		
+		}		
 	}
 	return ;
 }
@@ -32,7 +34,8 @@ void config_gpio()
 	GPIO_InitTypeDef GPIO_InitStructure;	
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_InitStructure.GPIO_Pin = (GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_10|GPIO_Pin_11);
+	GPIO_InitStructure.GPIO_Pin = 
+		(GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_10|GPIO_Pin_11);
 	GPIO_Init(GPIOB, &GPIO_InitStructure);	
 	
 	GPIO_SetBits(GPIOB,GPIO_Pin_10);
@@ -49,16 +52,17 @@ rt_device_t init_esp8266()
 	uart = rt_device_find("uart2");
 	if (uart == RT_NULL)
 	{
-	  rt_kprintf("init_esp8266: can not find device: uart2\n");
-	  return;
+		rt_kprintf("init_esp8266: can not find device: uart2\n");
+		return RT_NULL;
 	}
 
 	if (rt_device_open(uart, RT_DEVICE_OFLAG_RDWR) == RT_EOK)
 	{		
-	  rt_sem_init(&rx_esp8266_sem, "shrx", 0, 0);
-	  rt_device_set_rx_indicate(uart, uart_esp8266_rx_ind);
+		rt_sem_init(&rx_esp8266_sem, "shrx", 0, 0);
+		rt_device_set_rx_indicate(uart, uart_esp8266_rx_ind);
 	}
-	rt_thread_t rx_thread = rt_thread_create("rx_thread",uart_esp8266_rx, (void *)(uart),2048, 20, 10);	
+	rt_thread_t rx_thread = rt_thread_create("rx_thread",
+	uart_esp8266_rx, (void *)(uart),2048, 20, 10);	
 	if(rx_thread!=RT_NULL)
 		rt_thread_startup(rx_thread);
 	config_gpio();
@@ -66,16 +70,14 @@ rt_device_t init_esp8266()
 }
 #ifdef RT_USING_FINSH
 #include <finsh.h>
-
 void AT(unsigned char *cmd)
 {
-	unsigned char *out=(unsigned char *)rt_malloc(
-		rt_strlen(cmd)+3);
+	unsigned char *out=(unsigned char *)
+		rt_malloc(rt_strlen(cmd)+3);
 	rt_memset(out,'0',rt_strlen(cmd)+3);
 	strcpy(out,cmd);
 	strcat(out,"\r\n");
     rt_device_write(uart, 0, out, rt_strlen(out));
-	//rt_device_write(uart, 0, &end, 1);
 	rt_free(out);
 }
 FINSH_FUNCTION_EXPORT(AT, send at to esp8266. e.g: at(at))

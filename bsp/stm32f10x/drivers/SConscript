@@ -13,6 +13,7 @@ usart.c
 esp8266.c
 g.c
 s.c
+cJSON.c
 """)
 
 # add Ethernet drvers.

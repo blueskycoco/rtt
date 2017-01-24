@@ -115,7 +115,7 @@ static rt_err_t _rym_do_handshake(
         int tm_sec)
 {
     enum rym_code code;
-    rt_size_t i;
+    rt_size_t i, data_sz;
     rt_uint16_t recv_crc, cal_crc;
 
     ctx->stage = RYM_STAGE_ESTABLISHING;
@@ -126,21 +126,29 @@ static rt_err_t _rym_do_handshake(
         code = _rym_read_code(ctx,
                 RYM_CHD_INTV_TICK);
         if (code == RYM_CODE_SOH)
-            break;
+		{
+			data_sz = _RYM_SOH_PKG_SZ;
+			break;
+		}
+        if (code == RYM_CODE_STX)
+		{
+			data_sz = _RYM_STX_PKG_SZ;
+			break;
+		}
     }
     if (i == tm_sec)
         return -RYM_ERR_TMO;
 
-    i = _rym_read_data(ctx, _RYM_SOH_PKG_SZ-1);
-    if (i != (_RYM_SOH_PKG_SZ-1))
+    i = _rym_read_data(ctx, data_sz-1);
+    if (i != (data_sz-1))
         return -RYM_ERR_DSZ;
 
     /* sanity check */
     if (ctx->buf[1] != 0 || ctx->buf[2] != 0xFF)
         return -RYM_ERR_SEQ;
 
-    recv_crc = (rt_uint16_t)(*(ctx->buf+_RYM_SOH_PKG_SZ-2) << 8) | *(ctx->buf+_RYM_SOH_PKG_SZ-1);
-    cal_crc = CRC16(ctx->buf+3, _RYM_SOH_PKG_SZ-5);
+    recv_crc = (rt_uint16_t)(*(ctx->buf+data_sz-2) << 8) | *(ctx->buf+data_sz-1);
+    cal_crc = CRC16(ctx->buf+3, data_sz-5);
     if (recv_crc != cal_crc)
         return -RYM_ERR_CRC;
 

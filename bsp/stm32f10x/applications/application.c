@@ -23,12 +23,10 @@
 
 #ifdef  RT_USING_COMPONENTS_INIT
 #include <components.h>
-#endif  /* RT_USING_COMPONENTS_INIT */
+#endif
 
 #ifdef RT_USING_DFS
-/* dfs filesystem:ELM filesystem init */
 #include <dfs_elm.h>
-/* dfs Filesystem APIs */
 #include <dfs_fs.h>
 #endif
 #ifdef RT_USING_FINSH
@@ -46,11 +44,13 @@
 #include "usart.h"
 #include "esp8266.h"
 #include "s.h"
+#include "cJSON.h"
 ALIGN(RT_ALIGN_SIZE)
-	static rt_uint8_t led_stack[ 2048 ];
-	static struct rt_thread led_thread;
-	extern void main_loop();
-	extern void dgus_loop();
+static rt_uint8_t led_stack[ 2048 ];
+static struct rt_thread led_thread;
+extern void main_loop();
+extern void dgus_loop();
+void sburn(void);
 static void led_thread_entry(void* parameter)
 {
 	unsigned int count=0;
@@ -60,35 +60,13 @@ static void led_thread_entry(void* parameter)
 	char ch;
 
 	rt_hw_led_init();
-	//dillon LCD_Init();
-#ifdef RT_USING_FINSH
-	//  ls("/");	
-#endif
-	//stdbmp_decode("/FIGURE1.BMP");
-	rt_kprintf("\r\nshow over\r\n");
-	//LCD_ShowString(60,50,200,16,16,"Mini STM32");
+	
 	while (1)
 	{
-		/* led1 on */
-		//#ifndef RT_USING_FINSH
-		//rt_kprintf("led on, count : %d\r\n",count);
-		////#endif
-		//LCD_Clear(0XF81F);
-		//LCD_ShowString(120,240,24,24,24,"Led onn");
-		//uart2_tx("123456\r\n",rt_strlen("123456\r\n"));
 		count++;
 		rt_hw_led_on(0);
 		rt_hw_led_on(1);
-		rt_thread_delay( RT_TICK_PER_SECOND/2 ); /* sleep 0.5 second and switch to other thread */
-		//write_data(0x0101,count);
-
-		/* led1 off */
-		//#ifndef RT_USING_FINSH
-		//rt_kprintf("led off\r\n");
-		//#endif
-		//LCD_Clear(0xF800);
-		//LCD_ShowString(120,240,24,24,24,"Led off");
-		//uart2_tx("654321\r\n",rt_strlen("654321\r\n"));
+		rt_thread_delay( RT_TICK_PER_SECOND/2 );
 		rt_hw_led_off(0);
 		rt_hw_led_off(1);
 		rt_thread_delay( RT_TICK_PER_SECOND/2 );
@@ -100,37 +78,26 @@ void rt_init_thread_entry(void* parameter)
 {
 
 #ifdef RT_USING_COMPONENTS_INIT
-	/* initialization RT-Thread Components */
 	rt_components_init();
 #endif
-	delay_init(72);
-#ifdef  RT_USING_FINSH
-	finsh_set_device(RT_CONSOLE_DEVICE_NAME);
-#endif  /* RT_USING_FINSH */
 	init_esp8266();
+	sburn();
 
-	//main_loop();
-	//	dgus_loop();
-	/* Filesystem Initialization */
 #if defined(RT_USING_DFS) && defined(RT_USING_DFS_ELMFAT)
-	/* mount sd card fat partition 1 as root directory */
 	if (dfs_mount("sd0", "/", "elm", 0, 0) == 0)
 	{
 		rt_kprintf("File System initialized!\n");
 	}
 	else
 		rt_kprintf("File System initialzation failed!\n");
-#endif  /* RT_USING_DFS */
+#endif
 }
 
 int rt_application_init(void)
 {
 	rt_thread_t init_thread;
-
 	rt_err_t result;
-	//uart_init();
 
-	/* init led thread */
 	result = rt_thread_init(&led_thread,
 			"led",
 			led_thread_entry,
@@ -159,11 +126,11 @@ int rt_application_init(void)
 
 	return 0;
 }
-void s_test(void)
+void sinit(void)
 {
-	int one_page_max=0;//one page size
-	int one_userzone_max=0;//one user zone size
-	int userzone_num=0;//userzone num
+	int one_page_max=0;
+	int one_userzone_max=0;
+	int userzone_num=0;
 	unsigned char chip_info[24] = {0};
 	unsigned char chip_at88sc0104c[] ={0x3b,0xb2,0x11,0x00,0x10,0x80,0x00,0x01,0x10,0x10};
 	unsigned char chip_at88sc0204c[] ={0x3b,0xb2,0x11,0x00,0x10,0x80,0x00,0x02,0x20,0x20};
@@ -189,5 +156,52 @@ void s_test(void)
 	else
 		rt_kprintf("read config failed\r\n");
 }
-FINSH_FUNCTION_EXPORT(s_test, read s)
-/*@}*/
+char *parse_json(char *text,const char *item_str)
+{	
+	char *out=RT_NULL;
+	cJSON *item_json;	
+	item_json=cJSON_Parse(text);	
+	if (!item_json)
+	{
+		rt_kprintf("Error before: [%s]\n",cJSON_GetErrorPtr());
+	}
+	else	
+	{	
+		if (item_json)
+		{	 		
+			cJSON *data;	
+			data=cJSON_GetObjectItem(item_json,item_str);
+			if(data)		
+			{			
+				int nLen = rt_strlen(data->valuestring);
+				//rt_kprintf("%s ,%d %s\n",item_str,nLen,data->valuestring);			
+				out=(char *)rt_malloc(nLen+1);		
+				rt_memset(out,'\0',nLen+1);	
+				rt_memcpy(out,data->valuestring,nLen);	
+			}		
+			else		
+				rt_kprintf("can not find %s\n",item_str);	
+		} 
+		else	
+			rt_kprintf("get %s failed\n",item_str); 
+			cJSON_Delete(item_json);	
+	}	
+	return out;
+}
+
+extern rt_err_t rym_null(char *devname);
+rt_uint8_t *key = RT_NULL;
+rt_uint32_t key_len = 0;
+void sburn(void)
+{
+	rym_null("uart1");
+	if (key == RT_NULL || key_len == 0)
+	{
+		rt_kprintf("no config file got\r\n");
+		return;
+	}
+	parse_json(key, "ROOT_KEY");
+}
+#ifdef RT_USING_FINSH
+FINSH_FUNCTION_EXPORT(sinit, init security)
+#endif

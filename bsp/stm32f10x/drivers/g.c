@@ -6,40 +6,27 @@
 #include <stm32f10x.h>
 
 GPIO_InitTypeDef  GPIO_InitStructure;
-static unsigned char  fac_us=0;
-static unsigned short fac_ms=0;
-void delay_init(unsigned char SYSCLK)
+void delay_us(int us)
 {
-	SysTick->VAL=0X00000000;
-	SysTick->CTRL&=0xfffffffb;
-	fac_us=SYSCLK/8;	   
-	fac_ms=(unsigned short)fac_us*1000;
-	SysTick->CTRL&=0XFFFFFFFE;
-	SysTick->VAL=0X00000000;
-}			  
-void sleep_ms(unsigned long nms)
-{	  
-	SysTick->LOAD=(unsigned long)nms*fac_ms;
-	SysTick->CTRL|=0x01;
-	while(!(SysTick->CTRL&(1<<16)));
-	SysTick->CTRL&=0XFFFFFFFE;
-	SysTick->VAL=0X00000000; 
-}	 
-void delay_us(unsigned long Nus)
-{ 
-	SysTick->LOAD=Nus*fac_us;
-	SysTick->CTRL|=0x01;
-	while(!(SysTick->CTRL&(1<<16)));
-	SysTick->CTRL=0X00000000;
-	SysTick->VAL=0X00000000;
-} 
+	volatile unsigned long delay = 0;
+	for (delay = 0; delay < us; )
+	{
+		delay++;
+	}
+}
+void sleep_ms(unsigned long n)
+{
+	volatile long i,j;
+	for(i=0;i<n;i++)
+	for(j=0;j<10;j++)
+	;
+}
+
 void i2c_init(void)
 {
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOB, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	//GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-	//GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9|GPIO_Pin_10;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);

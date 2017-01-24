@@ -158,7 +158,7 @@ void rt_hw_rtc_init(void)
 
     return;
 }
-
+#if 0
 #include <time.h>
 #if defined (__IAR_SYSTEMS_ICC__) &&  (__VER__) >= 6020000   /* for IAR 6.2 later Compiler */
 #pragma module_name = "?time"
@@ -246,4 +246,5 @@ void list_date(void)
     rt_kprintf("%s\n", ctime(&now));
 }
 FINSH_FUNCTION_EXPORT(list_date, show date and time.)
+#endif
 #endif

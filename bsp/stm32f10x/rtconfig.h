@@ -75,14 +75,14 @@
 #define RT_CONSOLE_DEVICE_NAME	    "uart1"
 
 /* SECTION: finsh, a C-Express shell */
-#define RT_USING_FINSH
+/*#define RT_USING_FINSH*/
 /* Using symbol table */
 #define FINSH_USING_SYMTAB
 #define FINSH_USING_DESCRIPTION
 
 /* SECTION: device filesystem */
 /*#define RT_USING_DFS*/
-#define RT_USING_DFS_ELMFAT
+/*#define RT_USING_DFS_ELMFAT*/
 /* Reentrancy (thread safe) of the FatFs module.  */
 #define RT_DFS_ELM_REENTRANT
 /* Number of volumes (logical drives) to be used. */
@@ -184,4 +184,6 @@
 // <bool name="RT_USING_BSP_CMSIS" description="Using CMSIS in BSP" default="true" />
 // #define RT_USING_BSP_CMSIS
 
+#define RT_USING_RTC
+#define RT_USING_RYM
 #endif
