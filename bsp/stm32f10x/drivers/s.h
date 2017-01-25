@@ -99,15 +99,22 @@ typedef void (*callback_t)(void);
 #define BURN 0
 #define READ 1
 typedef struct {
-	unsigned char New_SecureCode[7];
-	unsigned char ar[2];
-	unsigned char ci[7];
-	unsigned char g[8];
-	unsigned char pw[7];
-	unsigned char id[7];
+	unsigned char ar[4][2];
+	unsigned char ci[4][8];
+	unsigned char g[4][9];
+	unsigned char pw[8][8];
+	unsigned char id[8];
 	unsigned char fuse;
 	unsigned char num_ar;
 }pe,*ppe;
+
+typedef struct {
+	unsigned char *data;
+	unsigned char g[8];
+	unsigned char pw[3];
+	unsigned int addr;
+	unsigned int size;
+}at88,*pat88;
 
 
 typedef struct {
@@ -124,3 +131,6 @@ typedef struct {
 
 BOOL auth(pge p,callback_t cb);
 BOOL read_userzone(pge p);
+BOOL burn(pe config);
+BOOL userzone_proc(pge p,BOOL read);
+

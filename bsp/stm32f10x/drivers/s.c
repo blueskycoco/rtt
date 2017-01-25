@@ -556,7 +556,7 @@ BOOL auth(pge p,callback_t cb)
 		//AT88DBG("cm_VerifyCrypto failed1\n");
 		return FALSE;
 	}
-	ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 0);
+	ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 1);
 	if (ucReturn != TRUE)  {
 		//AT88DBG("cm_VerifyPassword failed\n");
 		return FALSE;
@@ -620,15 +620,11 @@ BOOL get_config(unsigned char *buf)
 	return ucReturn;
 }
 
-#if BURN
+
 BOOL burn(pe p)
 {
 	unsigned char ucData[240];
 	unsigned char Def_SecureCode[3] = {0xdd,0x42,0x97};
-	unsigned char Def_SecureCode2[3] = {0xff,0xff,0xff};
-	unsigned char Def_SecureCode_fuse[3] = {0x32,0x56,0x9a};
-	unsigned char g[8]={0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
-	unsigned char pw[3]={0xff,0xff,0xff};
 	BOOL ucReturn;
 	unsigned char i,addr;	
 	unsigned char fuse;	
@@ -678,19 +674,84 @@ BOOL burn(pe p)
 
 	memset(ucData,0xff,240*sizeof(unsigned char));	
 	//6 write pw
-	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W0, p.pw, 7, FALSE);
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W0, p.pw[0], 7, FALSE);
 	if(ucReturn != TRUE) {
-		AT88DBG("cm_WriteConfigZone PW failed \n");
+		AT88DBG("cm_WriteConfigZone PW0 failed \n");
+		return FALSE;
+	}	
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W1, p.pw[1], 7, FALSE);
+	if(ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone PW1 failed \n");
+		return FALSE;
+	}	
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W2, p.pw[2], 7, FALSE);
+	if(ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone PW2 failed \n");
+		return FALSE;
+	}	
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W3, p.pw[3], 7, FALSE);
+	if(ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone PW3 failed \n");
+		return FALSE;
+	}	
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W4, p.pw[4], 7, FALSE);
+	if(ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone PW4 failed \n");
+		return FALSE;
+	}	
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W5, p.pw[5], 7, FALSE);
+	if(ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone PW5 failed \n");
+		return FALSE;
+	}	
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W6, p.pw[6], 7, FALSE);
+	if(ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone PW6 failed \n");
+		return FALSE;
+	}	
+	//ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W7, p.pw[7], 7, FALSE);
+	//if(ucReturn != TRUE) {
+	//	AT88DBG("cm_WriteConfigZone PW7 failed \n");
+	//	return FALSE;
+	//}
+	//7 write G
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_G0, p.g[0], 8, FALSE);
+	if (ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone G0 Failed\n");
+		return FALSE;
+	}	
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_G1, p.g[1], 8, FALSE);
+	if (ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone G1 Failed\n");
 		return FALSE;
 	}
-	//7 write G
-	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_G0, p.g, 8, FALSE);
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_G2, p.g[2], 8, FALSE);
 	if (ucReturn != TRUE) {
-		AT88DBG("cm_WriteConfigZone G Failed\n");
+		AT88DBG("cm_WriteConfigZone G2 Failed\n");
+		return FALSE;
+	}
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_G3, p.g[3], 8, FALSE);
+	if (ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone G3 Failed\n");
 		return FALSE;
 	}
 	//8 write Ci
-	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_CI0, p.ci, 7, FALSE);
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_CI0, p.ci[0], 7, FALSE);
+	if (ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone Ci Failed\n");
+		return FALSE;
+	}
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_CI1, p.ci[1], 7, FALSE);
+	if (ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone Ci Failed\n");
+		return FALSE;
+	}
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_CI2, p.ci[2], 7, FALSE);
+	if (ucReturn != TRUE) {
+		AT88DBG("cm_WriteConfigZone Ci Failed\n");
+		return FALSE;
+	}
+	ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_CI3, p.ci[3], 7, FALSE);
 	if (ucReturn != TRUE) {
 		AT88DBG("cm_WriteConfigZone Ci Failed\n");
 		return FALSE;
@@ -698,7 +759,7 @@ BOOL burn(pe p)
     for(i=0;i<p.num_ar;i++)
     {
         
-        ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_AR0+i*2, p.ar, 2, FALSE);
+        ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_AR0+i*2, p.ar[i], 2, FALSE);
         if (ucReturn != TRUE) {
             AT88DBG("cm_WriteConfigZone AR Failed\n");
             return FALSE;
@@ -717,8 +778,7 @@ BOOL burn(pe p)
 		//set fuse
 		unsigned char fuse;
 		//update Def_SecureCode before fuse
-		//unsigned char pw[7]={0x32,0x56,0x9a,0xff,0xff,0xff,0xff};
-		ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W7, p.New_SecureCode, 7, FALSE);
+		ucReturn = cm_WriteConfigZone(DEFAULT_ADDRESS, AT88SC_W7, p.pw[7], 7, FALSE);
 		if (ucReturn != TRUE) {
 			AT88DBG("cm_WriteConfigZone Def_SecureCode Failed\n");
 			return FALSE;
@@ -749,7 +809,6 @@ BOOL burn(pe p)
 	}
 	return TRUE;
 }
-#else
 
 BOOL userzone_proc(pge p,BOOL read)
 {
@@ -764,7 +823,10 @@ BOOL userzone_proc(pge p,BOOL read)
 		AT88DBG("cm_VerifyCrypto failed1\n");
 		return FALSE;
 	}
-	ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 0);
+	if (read)
+		ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 1);
+	else
+		ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, p->pw,p->use_pw, 0);
 	if (ucReturn != TRUE)  
 	{
 		AT88DBG("cm_VerifyPassword failed\n");
@@ -806,4 +868,5 @@ BOOL userzone_proc(pge p,BOOL read)
 	}
 return TRUE;
 }
-#endif
+
+

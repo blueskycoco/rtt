@@ -51,6 +51,7 @@ static struct rt_thread led_thread;
 extern void main_loop();
 extern void dgus_loop();
 void sburn(void);
+rt_bool_t test_write_reg();
 static void led_thread_entry(void* parameter)
 {
 	unsigned int count=0;
@@ -82,6 +83,7 @@ void rt_init_thread_entry(void* parameter)
 #endif
 	init_esp8266();
 	sburn();
+	test_write_reg();
 
 #if defined(RT_USING_DFS) && defined(RT_USING_DFS_ELMFAT)
 	if (dfs_mount("sd0", "/", "elm", 0, 0) == 0)
@@ -126,11 +128,11 @@ int rt_application_init(void)
 
 	return 0;
 }
+int one_page_max=0;
+int one_userzone_max=0;
+int userzone_num=0;
 void sinit(void)
 {
-	int one_page_max=0;
-	int one_userzone_max=0;
-	int userzone_num=0;
 	unsigned char chip_info[24] = {0};
 	unsigned char chip_at88sc0104c[] ={0x3b,0xb2,0x11,0x00,0x10,0x80,0x00,0x01,0x10,0x10};
 	unsigned char chip_at88sc0204c[] ={0x3b,0xb2,0x11,0x00,0x10,0x80,0x00,0x02,0x20,0x20};
@@ -156,7 +158,7 @@ void sinit(void)
 	else
 		rt_kprintf("read config failed\r\n");
 }
-char *parse_json(char *text,const char *item_str)
+char *parse_id(char *text,const char *item_str)
 {	
 	char *out=RT_NULL;
 	cJSON *item_json;	
@@ -188,12 +190,79 @@ char *parse_json(char *text,const char *item_str)
 	}	
 	return out;
 }
-
+char *parse_obj(char *text,const char *item_str, const char *item_str2)
+{	
+	char *out=RT_NULL;
+	cJSON *item_json;	
+	item_json=cJSON_Parse(text);	
+	if (!item_json)
+	{
+		rt_kprintf("Error before: [%s]\n",cJSON_GetErrorPtr());
+	}
+	else	
+	{	
+		if (item_json)
+		{	 		
+			cJSON *data=RT_NULL;	
+			data=cJSON_GetObjectItem(item_json, item_str);
+			if (!data)
+			{
+				rt_kprintf("can not find %s\n", item_str);
+				cJSON_Delete(item_json);
+				return RT_NULL;
+			}
+			cJSON *data2=cJSON_GetObjectItem(data,item_str2);
+			if(data2)		
+			{			
+				int nLen = rt_strlen(data2->valuestring);
+				//rt_kprintf("%s ,%d %s\n",item_str,nLen,data->valuestring);			
+				out=(char *)rt_malloc(nLen+1);		
+				rt_memset(out,'\0',nLen+1);	
+				rt_memcpy(out,data2->valuestring,nLen);	
+				cJSON_Delete(data2);	
+			}		
+			else		
+				rt_kprintf("can not find %s\n",item_str2);
+			cJSON_Delete(data);		
+		} 
+		else	
+			rt_kprintf("get %s failed\n",item_str); 
+		cJSON_Delete(item_json);	
+	}	
+	return out;
+}
+void str2c(char *str, char *c)
+{
+	char *ptr = str;
+	char *p_c = c;
+	while (ptr != '\0')
+	{
+		if (*ptr>='0' && *ptr<='9')
+			*p_c = *ptr - '0';
+		else if(*ptr >= 'a' && *ptr <= 'f')
+			*p_c = *ptr - 'a' + 10;
+		else
+			*p_c = *ptr - 'A' + 10;
+		ptr++;
+		*p_c = *p_c * 16;
+		if (*ptr>='0' && *ptr<='9')
+			*p_c = *ptr - '0';
+		else if(*ptr >= 'a' && *ptr <= 'f')
+			*p_c = *ptr - 'a' + 10;
+		else
+			*p_c = *ptr - 'A' + 10;
+		ptr++;
+		p_c++;
+	}
+}
 extern rt_err_t rym_null(char *devname);
 rt_uint8_t *key = RT_NULL;
 rt_uint32_t key_len = 0;
 void sburn(void)
 {
+	pe config;
+	rt_memset(&config,0,sizeof(pe));
+	char *str = RT_NULL;
 	rym_null("uart1");
 	if (key == RT_NULL || key_len == 0)
 	{
@@ -205,7 +274,289 @@ void sburn(void)
 		for (int i = 0; i < key_len; i++)
 			rt_kprintf("%c",key[i]);
 	}
-	parse_json(key, "ROOT_KEY");
+	str = parse_id(key, "ID");
+	if(str)
+	{
+		str2c(str, config.id);
+		rt_kprintf("ID %s %s\r\n", str, config.id);
+		rt_free(str);
+	}
+	
+	str = parse_obj(key, "G", "G0");
+	if(str)
+	{
+		str2c(str, config.g[0]);
+		rt_kprintf("G0 %s %s\r\n", str, config.g[0]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "G", "G1");
+	if(str)
+	{
+		str2c(str, config.g[1]);
+		rt_kprintf("G1 %s %s\r\n", str, config.g[1]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "G", "G2");
+	if(str)
+	{
+		str2c(str, config.g[2]);
+		rt_kprintf("G2 %s %s\r\n", str, config.g[2]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "G", "G3");
+	if(str)
+	{
+		str2c(str, config.g[3]);
+		rt_kprintf("G3 %s %s\r\n", str, config.g[3]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "CI", "CI0");
+	if(str)
+	{
+		str2c(str, config.ci[0]);
+		rt_kprintf("CI0 %s %s\r\n", str, config.ci[0]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "CI", "CI1");
+	if(str)
+	{
+		str2c(str, config.ci[1]);
+		rt_kprintf("CI1 %s %s\r\n", str, config.ci[1]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "CI", "CI2");
+	if(str)
+	{
+		str2c(str, config.ci[2]);
+		rt_kprintf("CI2 %s %s\r\n", str, config.ci[2]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "CI", "CI3");
+	if(str)
+	{
+		str2c(str, config.ci[3]);
+		rt_kprintf("CI3 %s %s\r\n", str, config.ci[3]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "PW", "PWW0");
+	if(str)
+	{
+		str2c(str, config.pw[0]);
+		rt_kprintf("PWW0 %s %s ", str, config.pw[0]);
+		rt_free(str);
+	}	
+	str = parse_obj(key, "PW", "PWR0");
+	if(str)
+	{
+		config.pw[0][3]='f';
+		str2c(str, &(config.pw[0][4]));
+		rt_kprintf("PWR0 %s %s\r\n", str, config.pw[0]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "PW", "PWW1");
+	if(str)
+	{
+		str2c(str, config.pw[1]);
+		rt_kprintf("PWW1 %s %s ", str, config.pw[1]);
+		rt_free(str);
+	}	
+	str = parse_obj(key, "PW", "PWR1");
+	if(str)
+	{
+		config.pw[1][3]='f';
+		str2c(str, &(config.pw[1][4]));
+		rt_kprintf("PWR1 %s %s\r\n", str, config.pw[1]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "PW", "PWW2");
+	if(str)
+	{
+		str2c(str, config.pw[2]);
+		rt_kprintf("PWW2 %s %s ", str, config.pw[2]);
+		rt_free(str);
+	}	
+	str = parse_obj(key, "PW", "PWR2");
+	if(str)
+	{
+		config.pw[2][3]='f';
+		str2c(str, &(config.pw[2][4]));
+		rt_kprintf("PWR2 %s %s\r\n", str, config.pw[2]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "PW", "PWW3");
+	if(str)
+	{
+		str2c(str, config.pw[3]);
+		rt_kprintf("PWW3 %s %s ", str, config.pw[3]);
+		rt_free(str);
+	}	
+	str = parse_obj(key, "PW", "PWR3");
+	if(str)
+	{
+		config.pw[3][3]='f';
+		str2c(str, &(config.pw[3][4]));
+		rt_kprintf("PWR3 %s %s\r\n", str, config.pw[3]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "PW", "PWW4");
+	if(str)
+	{
+		str2c(str, config.pw[4]);
+		rt_kprintf("PWW4 %s %s ", str, config.pw[4]);
+		rt_free(str);
+	}	
+	str = parse_obj(key, "PW", "PWR4");
+	if(str)
+	{
+		config.pw[4][3]='f';
+		str2c(str, &(config.pw[4][4]));
+		rt_kprintf("PWR4 %s %s\r\n", str, config.pw[4]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "PW", "PWW5");
+	if(str)
+	{
+		str2c(str, config.pw[5]);
+		rt_kprintf("PWW5 %s %s ", str, config.pw[5]);
+		rt_free(str);
+	}	
+	str = parse_obj(key, "PW", "PWR5");
+	if(str)
+	{
+		config.pw[5][3]='f';
+		str2c(str, &(config.pw[5][4]));
+		rt_kprintf("PWR5 %s %s\r\n", str, config.pw[5]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "PW", "PWW6");
+	if(str)
+	{
+		str2c(str, config.pw[6]);
+		rt_kprintf("PWW6 %s %s ", str, config.pw[6]);
+		rt_free(str);
+	}	
+	str = parse_obj(key, "PW", "PWR6");
+	if(str)
+	{
+		config.pw[6][3]='f';
+		str2c(str, &(config.pw[6][4]));
+		rt_kprintf("PWR6 %s\r\n", str, config.pw[6]);
+		rt_free(str);
+	}
+	str = parse_obj(key, "PW", "PWW7");
+	if(str)
+	{
+		str2c(str, config.pw[7]);
+		rt_kprintf("PWW7 %s %s ", str, config.pw[7]);
+		rt_free(str);
+	}	
+	str = parse_obj(key, "PW", "PWR7");
+	if(str)
+	{
+		config.pw[7][3]='f';
+		str2c(str, &(config.pw[7][4]));
+		rt_kprintf("PWR7 %s %s\r\n", str, config.pw[7]);
+		rt_free(str);
+	}
+
+	config.ar[0][0] = 0x17;config.ar[0][1] = 0x00;
+	config.ar[1][0] = 0x17;config.ar[1][1] = (0x01<<6|0x01);
+	config.ar[2][0] = 0x17;config.ar[2][1] = (0x02<<6|0x02);
+	config.ar[3][0] = 0x17;config.ar[3][1] = (0x03<<6|0x03);
+	config.num_ar = 4;
+	config.fuse = 0;
+	if (burn(config))
+		rt_kprintf("burn is done\r\n");
+	else
+		rt_kprintf("burn is failed\r\n");
+}
+
+BOOL WriteReg(at88* value)
+{
+	BOOL rc = FALSE;
+	int index=0,local_size,local_addr;
+	ge param;
+	/*transfer addr to userzone 0 byte to 32768 byte*/
+	if((value->addr+value->size)>one_userzone_max*userzone_num)
+		return FALSE;
+	int user_zone_begin=value->addr/one_userzone_max;
+	int user_zone_end=(value->addr+value->size)/one_userzone_max;
+	memcpy(param.g,value->g,8);
+	memcpy(param.pw,value->pw,3);	
+	param.page_size=one_page_max;	
+	local_size=value->size;
+	local_addr=value->addr;
+	for(param.zone_index=user_zone_begin;param.zone_index<user_zone_end;param.zone_index++)
+	{		
+		param.addr=local_addr%one_userzone_max;
+		if((param.addr+local_size)<=one_userzone_max)
+			param.len=local_size;
+		else
+			param.len=one_userzone_max-param.addr;
+			
+		param.use_g=param.zone_index;
+		param.use_pw=param.zone_index;
+		//memcpy(param.user_zone,value->data+index,param.len);
+		param.user_zone=value->data+index;
+		userzone_proc(&param,0);
+		local_size=local_size-param.len;		
+		local_addr=local_addr+param.len;
+		index=index+param.len;
+	}
+}
+
+BOOL ReadReg(at88* value)
+{
+	int index=0,local_size,local_addr;
+	ge param;
+	/*transfer addr to userzone 0 byte to 32768 byte*/
+	if((value->addr+value->size)>one_userzone_max*userzone_num)
+		return FALSE;
+	int user_zone_begin=value->addr/one_userzone_max;
+	int user_zone_end=(value->addr+value->size)/one_userzone_max;
+	memcpy(param.g,value->g,8);
+	memcpy(param.pw,value->pw,3);
+	param.page_size=one_page_max;
+	local_size=value->size;
+	local_addr=value->addr;
+	for(param.zone_index=user_zone_begin;param.zone_index<user_zone_end;param.zone_index++)
+	{		
+		param.addr=local_addr%one_userzone_max;
+		if((param.addr+local_size)<=one_userzone_max)
+			param.len=local_size;
+		else
+			param.len=one_userzone_max-param.addr;
+			
+			param.use_g=param.zone_index;
+			param.use_pw=param.zone_index;
+		//memcpy(param.user_zone,value->data+index,param.len);
+		param.user_zone=value->data+index;
+		/*rt_kprintf("user_zone %x\r\ng %x %x %x %x %x %x %x %x\r\npw %x %x %x\r\npage_size %x\r\nzone_index %x\r\n",
+			param.user_zone,param.g[0],param.g[1],param.g[2],param.g[3],param.g[4],param.g[5],param.g[6],param.g[7],
+			param.pw[0],param.pw[1],param.pw[2],param.page_size,param.zone_index);*/
+		userzone_proc(&param,1);
+		local_size=local_size-param.len;		
+		local_addr=local_addr+param.len;
+		index=index+param.len;
+	}
+return TRUE;
+}
+rt_bool_t test_write_reg()
+{
+	unsigned char buf[32]={0};
+	at88 at88;	
+	at88.data=buf;
+	at88.addr=0;
+	at88.size=32;
+	at88.g[0]=0x12;at88.g[1]=0x12;at88.g[2]=0x12;
+	at88.g[3]=0x12;at88.g[4]=0x12;at88.g[5]=0x12;
+	at88.g[6]=0x12;at88.g[7]=0x12;
+	at88.pw[0]=0x12;at88.pw[1]=0x12;
+	at88.pw[2]=0x12;
+	if(ReadReg(&at88))
+		if(WriteReg(&at88))
+			return RT_TRUE;
+	return RT_FALSE;
 }
 #ifdef RT_USING_FINSH
 FINSH_FUNCTION_EXPORT(sinit, init security)
