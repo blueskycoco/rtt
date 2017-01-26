@@ -81,7 +81,8 @@ void rt_init_thread_entry(void* parameter)
 #ifdef RT_USING_COMPONENTS_INIT
 	rt_components_init();
 #endif
-	init_esp8266();
+	//init_esp8266();
+	sinit();
 	sburn();
 	//test_write_reg();
 
@@ -127,6 +128,41 @@ int rt_application_init(void)
 		rt_thread_startup(init_thread);
 
 	return 0;
+}
+void dump_config(ppe config)
+{
+	int i=0;
+	int j=0;
+	for(i=0;i<4;i++)
+	{
+		rt_kprintf("\nAR[%d]\t",i);
+		for(j=0;j<2;j++)
+			rt_kprintf("%2x ",config->ar[i][j]);
+	}
+	for(i=0;i<4;i++)
+	{
+		rt_kprintf("\nCI[%d]\t",i);
+		for(j=0;j<7;j++)
+			rt_kprintf("%2x ",config->ci[i][j]);
+	}
+	for(i=0;i<4;i++)
+	{
+		rt_kprintf("\nG[%d]\t",i);
+		for(j=0;j<8;j++)
+			rt_kprintf("%2x ",config->g[i][j]);
+	}
+	for(i=0;i<8;i++)
+	{
+		rt_kprintf("\nPW[%d]\t",i);
+		for(j=0;j<7;j++)
+			rt_kprintf("%2x ",config->pw[i][j]);
+	}
+	rt_kprintf("\nID\t");
+	for(i=0;i<7;i++)
+	{
+		rt_kprintf("%2x ",config->id[i]);		
+	}
+	rt_kprintf("\nfuse %2d, num_ar %2d\n",config->fuse,config->num_ar);
 }
 int one_page_max=0;
 int one_userzone_max=0;
@@ -364,7 +400,7 @@ void sburn(void)
 	str = parse_obj(key, "PW", "PWR0");
 	if(str)
 	{
-		config.pw[0][3]='f';
+		config.pw[0][3]=0xff;
 		str2c(str, &(config.pw[0][4]));
 		rt_kprintf("PWR0 %s \r\n", str);
 		rt_free(str);
@@ -379,7 +415,7 @@ void sburn(void)
 	str = parse_obj(key, "PW", "PWR1");
 	if(str)
 	{
-		config.pw[1][3]='f';
+		config.pw[1][3]=0xff;
 		str2c(str, &(config.pw[1][4]));
 		rt_kprintf("PWR1 %s \r\n", str);
 		rt_free(str);
@@ -394,7 +430,7 @@ void sburn(void)
 	str = parse_obj(key, "PW", "PWR2");
 	if(str)
 	{
-		config.pw[2][3]='f';
+		config.pw[2][3]=0xff;
 		str2c(str, &(config.pw[2][4]));
 		rt_kprintf("PWR2 %s \r\n", str);
 		rt_free(str);
@@ -409,7 +445,7 @@ void sburn(void)
 	str = parse_obj(key, "PW", "PWR3");
 	if(str)
 	{
-		config.pw[3][3]='f';
+		config.pw[3][3]=0xff;
 		str2c(str, &(config.pw[3][4]));
 		rt_kprintf("PWR3 %s \r\n", str);
 		rt_free(str);
@@ -424,7 +460,7 @@ void sburn(void)
 	str = parse_obj(key, "PW", "PWR4");
 	if(str)
 	{
-		config.pw[4][3]='f';
+		config.pw[4][3]=0xff;
 		str2c(str, &(config.pw[4][4]));
 		rt_kprintf("PWR4 %s \r\n", str);
 		rt_free(str);
@@ -439,7 +475,7 @@ void sburn(void)
 	str = parse_obj(key, "PW", "PWR5");
 	if(str)
 	{
-		config.pw[5][3]='f';
+		config.pw[5][3]=0xff;
 		str2c(str, &(config.pw[5][4]));
 		rt_kprintf("PWR5 %s \r\n", str);
 		rt_free(str);
@@ -454,7 +490,7 @@ void sburn(void)
 	str = parse_obj(key, "PW", "PWR6");
 	if(str)
 	{
-		config.pw[6][3]='f';
+		config.pw[6][3]=0xff;
 		str2c(str, &(config.pw[6][4]));
 		rt_kprintf("PWR6 %s\r\n", str);
 		rt_free(str);
@@ -469,7 +505,7 @@ void sburn(void)
 	str = parse_obj(key, "PW", "PWR7");
 	if(str)
 	{
-		config.pw[7][3]='f';
+		config.pw[7][3]=0xff;
 		str2c(str, &(config.pw[7][4]));
 		rt_kprintf("PWR7 %s \r\n", str);
 		rt_free(str);
@@ -481,10 +517,11 @@ void sburn(void)
 	config.ar[3][0] = 0x17;config.ar[3][1] = (0x03<<6|0x03);
 	config.num_ar = 4;
 	config.fuse = 0;
-	//if (burn(config))
-	//	rt_kprintf("burn is done\r\n");
-	//else
-	//	rt_kprintf("burn is failed\r\n");
+	dump_config(&config);
+	if (burn(config))
+		rt_kprintf("burn is done\r\n");
+	else
+		rt_kprintf("burn is failed\r\n");
 }
 
 BOOL WriteReg(at88* value)

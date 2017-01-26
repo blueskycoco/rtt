@@ -592,9 +592,14 @@ BOOL get_config(unsigned char *buf)
 		AT88DBG("cm_ReadConfigZone failed\n");
 		return FALSE;
 	}
-	#if BURN
+	
 	cm_ReadFuse(DEFAULT_ADDRESS,&fuse);
-	AT88DBG("fuse , %x",fuse);	
+	AT88DBG("fuse , %x\n",fuse);	
+	if((fuse&0x7)==0x0)
+	{
+		AT88DBG("have already fused , can not write config area\r\n");
+		return TRUE;
+	}
 	/*unlock config area*/
 	ucReturn = cm_VerifyPassword(DEFAULT_ADDRESS, Def_SecureCode,7, 0);
 	if (ucReturn != TRUE)  
@@ -614,9 +619,9 @@ BOOL get_config(unsigned char *buf)
 	{
 		if(i%8==0 && i!=0)
 			AT88DBG("\n");
-		AT88DBG("%4X ",ucData[i]);		
+		AT88DBG("%02X  ",ucData[i]);		
 	}
-	#endif
+	
 	return ucReturn;
 }
 

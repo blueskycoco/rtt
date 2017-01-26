@@ -1,3 +1,4 @@
+
 /*
  *	brife: this is at88sc driver code,gpio code 
  */
@@ -24,45 +25,45 @@ void sleep_ms(unsigned long n)
 
 void i2c_init(void)
 {
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9|GPIO_Pin_10;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12|GPIO_Pin_13;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 }
 void i2c_scl_set(unsigned char level)
 {
 	if(level)
-		GPIO_SetBits(GPIOA, GPIO_Pin_10);
+		GPIO_SetBits(GPIOB, GPIO_Pin_13);
 	else
-		GPIO_ResetBits(GPIOA, GPIO_Pin_10);
+		GPIO_ResetBits(GPIOB, GPIO_Pin_13);
 	delay_us(10);
 }
 void i2c_sda_set(unsigned char level)
 {
 	if(level)
-		GPIO_SetBits(GPIOA, GPIO_Pin_9);
+		GPIO_SetBits(GPIOB, GPIO_Pin_12);
 	else
-		GPIO_ResetBits(GPIOA, GPIO_Pin_9);
+		GPIO_ResetBits(GPIOB, GPIO_Pin_12);
 	delay_us(10);
 }
 unsigned char i2c_sda_get(void)
 {
-	return GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_9);
+	return GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_12);
 }
 void i2c_sda_input(void)
 {
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_9;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_12;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 	delay_us(10);
 }
 void i2c_sda_output(void)
 {
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
-	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12;
+	GPIO_Init(GPIOB, &GPIO_InitStructure);
 }
 void i2c_SendStart(void)
 {
