@@ -817,7 +817,7 @@ BOOL burn(pe p)
 
 BOOL userzone_proc(pge p,BOOL read)
 {
-	BOOL ucReturn;
+	BOOL ucReturn = TRUE;
 	unsigned char ucData[240];
 
 	unsigned char i,index=0;	

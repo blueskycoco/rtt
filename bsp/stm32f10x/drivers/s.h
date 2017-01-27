@@ -104,6 +104,7 @@ typedef struct {
 	unsigned char g[4][9];
 	unsigned char pw[8][8];
 	unsigned char id[8];
+	unsigned char buf[4][32];
 	unsigned char fuse;
 	unsigned char num_ar;
 }pe,*ppe;
