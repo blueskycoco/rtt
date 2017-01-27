@@ -1,15 +1,19 @@
 #include <rtthread.h>
+#include <string.h>
 #include "stm32f10x.h"
 
 #include "esp8266.h"
 struct rt_semaphore rx_esp8266_sem;
+struct rt_semaphore rx_esp8266_sem1;
 rt_device_t uart;
+void AT(unsigned char *cmd);
 void uart_esp8266_rx(void* parameter)
 {
-	char ch;
+	char ch,last_ch = 0;
 	int i=0;
+	rt_bool_t show = RT_FALSE;
 	unsigned short x=0,y=0;
-	rt_kprintf("uart_esp8266_rx thread\r\n");
+	rt_kprintf("\n\nuart_esp8266_rx thread\r\n");
 	while(1)
 	{
 		if (rt_sem_take(&rx_esp8266_sem, 
@@ -18,7 +22,16 @@ void uart_esp8266_rx(void* parameter)
 		while (rt_device_read((rt_device_t)parameter, 
 			0, &ch, 1) == 1)
 		{
-			rt_kprintf("%c",ch);
+			if(show)
+				rt_kprintf("%c",ch);
+			if (last_ch == 'O' && ch == 'K' ||
+				last_ch == 'd' && ch == 'y' )
+			{
+				rt_sem_release(&rx_esp8266_sem1);
+				if (last_ch == 'd' && ch == 'y')
+					show = RT_TRUE;
+			}
+			last_ch = ch;
 		}		
 	}
 	return ;
@@ -59,17 +72,25 @@ rt_device_t init_esp8266()
 	if (rt_device_open(uart, RT_DEVICE_OFLAG_RDWR) == RT_EOK)
 	{		
 		rt_sem_init(&rx_esp8266_sem, "shrx", 0, 0);
+		rt_sem_init(&rx_esp8266_sem1, "shrx1", 0, 0);
 		rt_device_set_rx_indicate(uart, uart_esp8266_rx_ind);
 	}
+	config_gpio();
 	rt_thread_t rx_thread = rt_thread_create("rx_thread",
 	uart_esp8266_rx, (void *)(uart),2048, 20, 10);	
 	if(rx_thread!=RT_NULL)
 		rt_thread_startup(rx_thread);
-	config_gpio();
+	rt_sem_take(&rx_esp8266_sem1, RT_WAITING_FOREVER);
+	//AT("AT+CWLAP");
+	//rt_sem_take(&rx_esp8266_sem1, RT_WAITING_FOREVER);
+	AT("AT+CWJAP=\"333\",\"xky888mf666tanghua\"");
+	rt_sem_take(&rx_esp8266_sem1, RT_WAITING_FOREVER);
+	AT("AT+CIFSR");
+	rt_sem_take(&rx_esp8266_sem1, RT_WAITING_FOREVER);
 	return uart;
 }
-#ifdef RT_USING_FINSH
-#include <finsh.h>
+//#ifdef RT_USING_FINSH
+//#include <finsh.h>
 void AT(unsigned char *cmd)
 {
 	unsigned char *out=(unsigned char *)
@@ -80,5 +101,5 @@ void AT(unsigned char *cmd)
     rt_device_write(uart, 0, out, rt_strlen(out));
 	rt_free(out);
 }
-FINSH_FUNCTION_EXPORT(AT, send at to esp8266. e.g: at(at))
-#endif
+//FINSH_FUNCTION_EXPORT(AT, send at to esp8266. e.g: at(at))
+//#endif

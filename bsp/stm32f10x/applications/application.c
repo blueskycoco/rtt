@@ -82,13 +82,13 @@ void rt_init_thread_entry(void* parameter)
 	rt_components_init();
 #endif
 	pe burn_config;
-	//init_esp8266();
 	//sinit();
 	sburn(&burn_config);
 	write_zone(0,burn_config);
 	write_zone(1,burn_config);
 	write_zone(2,burn_config);
 	write_zone(3,burn_config);
+	init_esp8266();
 
 #if defined(RT_USING_DFS) && defined(RT_USING_DFS_ELMFAT)
 	if (dfs_mount("sd0", "/", "elm", 0, 0) == 0)
