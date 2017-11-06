@@ -31,6 +31,10 @@
 #ifdef RT_USING_GDB
 #include <gdb_stub.h>
 #endif
+#ifdef RT_USING_GUIENGINE
+#include "rtgui_demo.h"
+#include <rtgui/driver.h>
+#endif
 //#include "cJSON.h"
 rt_device_t dev_ch2o;
 struct rt_semaphore ch2o_rx_sem;
@@ -281,6 +285,17 @@ void rt_init_thread_entry(void* parameter)
         lwip_sys_init();
         rt_kprintf("TCP/IP initialized!\n");
     }
+#endif
+#ifdef RT_USING_GUIENGINE
+	{
+		rt_device_t device;
+
+		device = rt_device_find("lcd");
+		/* re-set graphic device */
+		rtgui_graphic_set_device(device);
+        
+        rt_gui_demo_init();
+	}
 #endif
 }
 
