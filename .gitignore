@@ -12,6 +12,7 @@ bsp/stm32f10x/make.sh
 *.pdb
 *.idb
 *.ilk
+*.old
 build
 Debug
 documentation/html
