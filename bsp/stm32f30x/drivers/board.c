@@ -19,7 +19,6 @@
 #include "board.h"
 #include "usart.h"
 #include "gpio.h"
-#include "ili93xx.h"
 
 /**
  * @addtogroup STM32
@@ -94,7 +93,6 @@ void rt_hw_board_init()
     /* Configure the SysTick */
     SysTick_Configuration();
 
-	TFT_Init();
 
     stm32_hw_usart_init();
 #ifdef RT_USING_PIN

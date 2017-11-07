@@ -155,8 +155,8 @@ void TFT_Init()
 	delayms(100);
 	RES_H;
 	delayms(100);
-	//int id=Read_ID();
-	//rt_kprintf("LCD Id %04x",id);
+	int id=Read_ID();
+	rt_kprintf("LCD Id %04x",id);
 	Write_Cmd_Data(0x0001,0x0100);	  /* Driver Output Contral Register */ 
 	Write_Cmd_Data(0x0002,0x0700);      /* LCD Driving Waveform Contral */
 	Write_Cmd_Data(0x0003,0x1030);	  /* Entry Mode设置 */
@@ -318,3 +318,140 @@ void LCD_PutChar(unsigned short x, unsigned short y, char c, unsigned int fColor
 		}
 }
 
+/*  设置像素点 颜色,X,Y */
+void rt_hw_lcd_set_pixel(const char* pixel, int x, int y)
+{
+	LCD_SetPoint(x,		y,	*(rt_uint16_t*)pixel);
+	LCD_SetPoint(x+1,	y,	*(rt_uint16_t*)pixel);
+	LCD_SetPoint(x,		y+1,*(rt_uint16_t*)pixel);
+	LCD_SetPoint(x+1, 	y+1,*(rt_uint16_t*)pixel); 	  	
+}
+
+/* 获取像素点颜色 */
+void rt_hw_lcd_get_pixel(char* pixel, int x, int y)
+{
+    *(rt_uint16_t*)pixel = Read_Point(x, y);//?BGR2RGB( lcd_read_gram(x,y) );
+}
+
+/* 画水平线 */
+void rt_hw_lcd_draw_hline(const char* pixel, int x1, int x2, int y)
+{
+    /* [5:4]-ID~ID0 [3]-AM-1垂直-0水平 */
+    write_reg(0x0003,(1<<12)|(1<<5)|(1<<4) | (0<<3) );
+
+    lcd_SetCursor(x1, y);
+    rw_data_prepare(); /* Prepare to write GRAM */
+    while (x1 < x2)
+    {
+        write_data( *(rt_uint16_t*)pixel );
+        x1++;
+    }
+}
+
+/* 垂直线 */
+void rt_hw_lcd_draw_vline(const char* pixel, int x, int y1, int y2)
+{
+    /* [5:4]-ID~ID0 [3]-AM-1垂直-0水平 */
+    write_reg(0x0003,(1<<12)|(1<<5)|(0<<4) | (1<<3) );
+
+    lcd_SetCursor(x, y1);
+    rw_data_prepare(); /* Prepare to write GRAM */
+    while (y1 < y2)
+    {
+        write_data( *(rt_uint16_t*)pixel );
+        y1++;
+    }
+}
+
+/* ?? */
+void rt_hw_lcd_draw_blit_line(const char* pixels, int x, int y, rt_size_t size)
+{
+    rt_uint16_t *ptr;
+
+    ptr = (rt_uint16_t*)pixels;
+
+    /* [5:4]-ID~ID0 [3]-AM-1垂直-0水平 */
+    write_reg(0x0003,(1<<12)|(1<<5)|(1<<4) | (0<<3) );
+
+    lcd_SetCursor(x, y);
+    rw_data_prepare(); /* Prepare to write GRAM */
+    while (size)
+    {
+        write_data(*ptr ++);
+        size --;
+    }
+}
+
+struct rt_device_graphic_ops lcd_ili_ops =
+{
+    rt_hw_lcd_set_pixel,
+    rt_hw_lcd_get_pixel,
+    rt_hw_lcd_draw_hline,
+    rt_hw_lcd_draw_vline,
+    rt_hw_lcd_draw_blit_line
+};
+
+struct rt_device _lcd_device;
+static rt_err_t lcd_init(rt_device_t dev)
+{
+    return RT_EOK;
+}
+
+static rt_err_t lcd_open(rt_device_t dev, rt_uint16_t oflag)
+{
+    return RT_EOK;
+}
+
+static rt_err_t lcd_close(rt_device_t dev)
+{
+    return RT_EOK;
+}
+
+static rt_err_t lcd_control(rt_device_t dev, rt_uint8_t cmd, void *args)
+{
+    switch (cmd)
+    {
+    case RTGRAPHIC_CTRL_GET_INFO:
+    {
+        struct rt_device_graphic_info *info;
+
+        info = (struct rt_device_graphic_info*) args;
+        RT_ASSERT(info != RT_NULL);
+
+        info->bits_per_pixel = 16;
+        info->pixel_format = RTGRAPHIC_PIXEL_FORMAT_RGB565P;
+        info->framebuffer = RT_NULL;
+        info->width = 240;
+        info->height = 320;
+    }
+    break;
+
+    case RTGRAPHIC_CTRL_RECT_UPDATE:
+        /* nothong to be done */
+        break;
+
+    default:
+        break;
+    }
+
+    return RT_EOK;
+}
+
+void rt_hw_lcd_init(void)
+{
+    /* register lcd device */
+    _lcd_device.type  = RT_Device_Class_Graphic;
+    _lcd_device.init  = lcd_init;
+    _lcd_device.open  = lcd_open;
+    _lcd_device.close = lcd_close;
+    _lcd_device.control = lcd_control;
+    _lcd_device.read  = RT_NULL;
+    _lcd_device.write = RT_NULL;
+
+    _lcd_device.user_data = &lcd_ili_ops;
+    //lcd_Initializtion();
+
+    /* register graphic device driver */
+    rt_device_register(&_lcd_device, "lcd",
+                       RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE);
+}

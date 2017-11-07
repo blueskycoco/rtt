@@ -19,7 +19,7 @@
 
 
 /********* control ***********/
-#include "stm32f10x.h"
+#include "stm32f30x.h"
 #include "board.h"
 
 //输出重定向.当不进行重定向时.
