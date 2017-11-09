@@ -76,7 +76,7 @@ void ch2o_rcv(void* parameter)
 	int data_ch2o = 0;
 	char ch = 0;
 	rt_kprintf("ch2o rx \n");
-	LCD_Clear(White);		
+	LCD_Clear(Black);		
 	while(1)	
 	{		
 		if (rt_sem_take(&(ch2o_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;	
@@ -136,7 +136,7 @@ void ch2o_rcv(void* parameter)
 						rt_kprintf("%s\r\n", buf);	
 						for(i=0;i<rt_strlen(buf);i++)
 						{
-							LCD_PutChar(40+i*8, 160,buf[i],Black,White);
+							LCD_PutChar(40+i*8, 160,buf[i],Green, Black);
 						}
 					}
 				}

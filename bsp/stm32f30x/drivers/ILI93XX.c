@@ -317,7 +317,7 @@ void LCD_PutChar(unsigned short x, unsigned short y, char c, unsigned int fColor
 			}
 		}
 }
-
+#if 0
 /*  设置像素点 颜色,X,Y */
 void rt_hw_lcd_set_pixel(const char* pixel, int x, int y)
 {
@@ -455,3 +455,4 @@ void rt_hw_lcd_init(void)
     rt_device_register(&_lcd_device, "lcd",
                        RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE);
 }
+#endif
