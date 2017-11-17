@@ -11,6 +11,9 @@ stm32f30x_it.c
 led.c
 ili93xx.c
 usart.c
+gui_basic.c
+gui_font.c
+gui_hzk64.c
 """)
 
 # add Ethernet drivers.

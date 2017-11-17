@@ -35,6 +35,7 @@
 #include "rtgui_demo.h"
 #include <rtgui/driver.h>
 #endif
+#include "app_types.h"
 //#include "cJSON.h"
 #define BEGIN 0
 #define READ_3 1
@@ -75,8 +76,22 @@ void ch2o_rcv(void* parameter)
 	int i;
 	int data_ch2o = 0;
 	char ch = 0;
+	char    str[6] = {0};
+	uint16_t  x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+	uint16  color[8] = {WHITE,BLACK,BLUE,BLACK,RED,BLACK,GREEN,BLACK};
 	rt_kprintf("ch2o rx \n");
-	LCD_Clear(Black);		
+	TFT_ClearScreen(Black);		
+	GUI_PutString(FONT_64, 10, 180, "23.5", WHITE, BLACK);
+
+	x1 = 10;
+	y1 = 200;
+
+	x2 = 100;
+	y2 = 240;
+	GUI_HLine(x1, y1, x2, WHITE);
+	GUI_VLine(x1, y1, y2, WHITE);
+	GUI_Line(x1, y1, x2, y2, WHITE);
+	x1 = 1;
 	while(1)	
 	{		
 		if (rt_sem_take(&(ch2o_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;	
@@ -138,6 +153,11 @@ void ch2o_rcv(void* parameter)
 						{
 							LCD_PutChar(40+i*8, 160,buf[i],Green, Black);
 						}
+		//x1++;
+		//sprintf(str, "%d", x1);
+		//GUI_PutString(FONT_64, 10, 200, str, WHITE, BLACK);
+
+//		GUI_DispColor(200, 100, 210, 130, color[x1 % 8]);
 					}
 				}
 				break;
