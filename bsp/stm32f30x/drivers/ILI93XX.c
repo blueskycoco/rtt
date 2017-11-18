@@ -166,13 +166,16 @@ void TFT_ClearScreen(uint16 color)
 {
 	uint32_t index=0;
 	
-	TFT_SetWindow(0,240,0,320);
+	//TFT_SetWindow(0,240,0,320);
+	Write_Cmd_Data(0X0020,0);
+	Write_Cmd_Data(0X0021,0);
+	LCD_Write_Cmd(0x0022);
 	for( index = 0; index < MAX_X * MAX_Y; index++ )
 	{
 		LCD_Write_Data(color);		
 	}		
 }
-void  TFT_SetWindow(uint16_t xStart, uint16_t yStart, uint16_t xEnd, uint16_t yEnd)
+void  TFT_SetWindow(uint16_t xStart, uint16_t xEnd, uint16_t yStart, uint16_t yEnd)
 {
 	Write_Cmd_Data(0X0050,xStart);	  
 	Write_Cmd_Data(0X0051,xEnd);	  

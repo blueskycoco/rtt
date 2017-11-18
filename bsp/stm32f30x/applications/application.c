@@ -81,13 +81,13 @@ void ch2o_rcv(void* parameter)
 	uint16  color[8] = {WHITE,BLACK,BLUE,BLACK,RED,BLACK,GREEN,BLACK};
 	rt_kprintf("ch2o rx \n");
 	TFT_ClearScreen(Black);		
-	GUI_PutString(FONT_64, 10, 180, "23.5", WHITE, BLACK);
+	GUI_PutString(FONT_64, 20, 30, "23.5", WHITE, BLACK);
 
 	x1 = 10;
-	y1 = 200;
+	y1 = 10;
 
-	x2 = 100;
-	y2 = 240;
+	x2 = 20;
+	y2 = 24;
 	GUI_HLine(x1, y1, x2, WHITE);
 	GUI_VLine(x1, y1, y2, WHITE);
 	GUI_Line(x1, y1, x2, y2, WHITE);
@@ -153,11 +153,15 @@ void ch2o_rcv(void* parameter)
 						{
 							LCD_PutChar(40+i*8, 160,buf[i],Green, Black);
 						}
-		//x1++;
-		//sprintf(str, "%d", x1);
-		//GUI_PutString(FONT_64, 10, 200, str, WHITE, BLACK);
+		x1++;
+		rt_kprintf("test 1\r\n");
+		rt_sprintf(str, "%d", x1);
+		rt_kprintf("test 2\r\n");
+		GUI_PutString(FONT_64, 100, 200, str, WHITE, BLACK);
+		rt_kprintf("test 3\r\n");
 
-//		GUI_DispColor(200, 100, 210, 130, color[x1 % 8]);
+		GUI_DispColor(70, 80, 90, 100, color[x1 % 8]);
+		rt_kprintf("test 4\r\n");
 					}
 				}
 				break;
