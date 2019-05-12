@@ -76,12 +76,13 @@ void ch2o_rcv(void* parameter)
 	int i;
 	int data_ch2o = 0;
 	char ch = 0;
+	uint16_t colors = 0;
 	char    str[6] = {0};
 	uint16_t  x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 	uint16  color[8] = {WHITE,BLACK,BLUE,BLACK,RED,BLACK,GREEN,BLACK};
 	rt_kprintf("ch2o rx \n");
 	TFT_ClearScreen(Black);		
-	GUI_PutString(FONT_64, 20, 30, "23.5", WHITE, BLACK);
+	/*GUI_PutString(FONT_64, 20, 30, "23.5", WHITE, BLACK);
 
 	x1 = 10;
 	y1 = 10;
@@ -91,7 +92,7 @@ void ch2o_rcv(void* parameter)
 	GUI_HLine(x1, y1, x2, WHITE);
 	GUI_VLine(x1, y1, y2, WHITE);
 	GUI_Line(x1, y1, x2, y2, WHITE);
-	x1 = 1;
+	x1 = 1;*/
 	while(1)	
 	{		
 		if (rt_sem_take(&(ch2o_rx_sem), RT_WAITING_FOREVER) != RT_EOK) continue;	
@@ -147,13 +148,24 @@ void ch2o_rcv(void* parameter)
 						data_ch2o = data_ch2o+ch;
 						mode = BEGIN;
 						rt_memset(buf,0,256);
-						rt_sprintf(buf,"AS04-T HCHO: %d.%02d ppm",data_ch2o/100,data_ch2o%100);
-						rt_kprintf("%s\r\n", buf);	
+						rt_sprintf(buf,"HCHO: ");
+						if (data_ch2o <= 6)
+							colors = Green;
+						else
+							colors = Red;
 						for(i=0;i<rt_strlen(buf);i++)
 						{
-							LCD_PutChar(40+i*8, 160,buf[i],Green, Black);
+							LCD_PutChar(10+i*8, 160,buf[i],colors, Black);
 						}
-		x1++;
+						rt_sprintf(buf,"%d.%02d",data_ch2o/100,data_ch2o%100);
+						GUI_PutString(FONT_64, 60, 120, buf, WHITE, BLACK);
+						rt_kprintf("%s\r\n", buf);	
+						rt_sprintf(buf,"ppm");
+						for(i=0;i<rt_strlen(buf);i++)
+						{
+							LCD_PutChar(200+i*8, 160,buf[i],colors, Black);
+						}
+		/*x1++;
 		rt_kprintf("test 1\r\n");
 		rt_sprintf(str, "%d", x1);
 		rt_kprintf("test 2\r\n");
@@ -161,7 +173,7 @@ void ch2o_rcv(void* parameter)
 		rt_kprintf("test 3\r\n");
 
 		GUI_DispColor(70, 80, 90, 100, color[x1 % 8]);
-		rt_kprintf("test 4\r\n");
+		rt_kprintf("test 4\r\n");*/
 					}
 				}
 				break;
@@ -227,15 +239,15 @@ void rt_init_thread_entry(void* parameter)
         rt_kprintf("TCP/IP initialized!\n");
     }
 #endif
-#ifdef RT_USING_GUIENGINE
+#ifndef RT_USING_GUIENGINE
 	{
-		//rt_device_t device;
+		rt_device_t device;
 
-		//device = rt_device_find("lcd");
+		device = rt_device_find("lcd");
 		/* re-set graphic device */
-		//rtgui_graphic_set_device(device);
+		rtgui_graphic_set_device(device);
         
-        //rt_gui_demo_init();
+        rt_gui_demo_init();
 	}
 #endif
 }
