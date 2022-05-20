@@ -78,6 +78,7 @@ static int wsa_init_done = 0;
 
 #else
 
+#endif /* ( _WIN32 || _WIN32_WCE ) && !EFIX64 && !EFI32 */
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -88,8 +89,7 @@ static int wsa_init_done = 0;
 #include <fcntl.h>
 #include <netdb.h>
 #include <errno.h>
-
-#endif /* ( _WIN32 || _WIN32_WCE ) && !EFIX64 && !EFI32 */
+#include <sys/ioctl.h>
 
 /* Some MS functions want int and MSVC warns if we pass size_t,
  * but the standard fucntions use socklen_t, so cast only for MSVC */

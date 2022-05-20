@@ -152,7 +152,7 @@ static int mqtt_example_main(int argc, char *argv[])
      *
      *  default value is ${productKey}.iot-as-mqtt.cn-shanghai.aliyuncs.com
      */
-    /* mqtt_params.host = "something.iot-as-mqtt.cn-shanghai.aliyuncs.com"; */
+    mqtt_params.host = "iot-06z00friwrngpm4.mqtt.iothub.aliyuncs.com";
 
     /**
      *

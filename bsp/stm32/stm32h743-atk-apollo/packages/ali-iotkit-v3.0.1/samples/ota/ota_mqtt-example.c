@@ -171,7 +171,7 @@ static int _ota_mqtt_client(void)
     mqtt_params.handle_event.h_fp = event_handle;
     mqtt_params.handle_event.pcontext = NULL;
 
-
+	mqtt_params.host = "iot-06z00friwrngpm4.mqtt.iothub.aliyuncs.com";
     /* Construct a MQTT client with specify parameter */
     pclient = IOT_MQTT_Construct(&mqtt_params);
     if (NULL == pclient) {
