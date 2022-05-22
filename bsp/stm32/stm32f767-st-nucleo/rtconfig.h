@@ -330,6 +330,9 @@
 /* On-chip Peripheral Drivers */
 
 #define BSP_USING_GPIO
+#define BSP_USING_ON_CHIP_FLASH
+#define BSP_USING_ONCHIP_RTC
+#define BSP_RTC_USING_LSE
 #define BSP_USING_UART
 #define BSP_USING_UART3
 
