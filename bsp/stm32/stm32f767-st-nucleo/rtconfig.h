@@ -140,6 +140,7 @@
 /* Docking with protocol stacks */
 
 #define SAL_USING_LWIP
+#define SAL_USING_AT
 #define SAL_USING_POSIX
 #define RT_USING_NETDEV
 #define NETDEV_USING_IFCONFIG
@@ -191,6 +192,13 @@
 #define LWIP_NETIF_LOOPBACK 0
 #define RT_LWIP_USING_PING
 #define RT_LWIP_DEBUG
+#define RT_USING_AT
+#define AT_USING_CLIENT
+#define AT_CLIENT_NUM_MAX 1
+#define AT_USING_SOCKET
+#define AT_USING_CLI
+#define AT_CMD_MAX_LEN 128
+#define AT_SW_VERSION_NUM 0x10301
 
 /* Utilities */
 
@@ -210,6 +218,16 @@
 
 /* Wiced WiFi */
 
+#define PKG_USING_AT_DEVICE
+#define AT_DEVICE_USING_L610
+#define AT_DEVICE_L610_SOCKET
+#define AT_DEVICE_L610_SAMPLE
+#define L610_SAMPLE_POWER_PIN -1
+#define L610_SAMPLE_STATUS_PIN -1
+#define L610_SAMPLE_CLIENT_NAME "uart2"
+#define L610_SAMPLE_RECV_BUFF_LEN 512
+#define PKG_USING_AT_DEVICE_LATEST_VERSION
+#define PKG_AT_DEVICE_VER_NUM 0x99999
 
 /* IoT Cloud */
 
@@ -342,6 +360,7 @@
 
 /* Onboard Peripheral Drivers */
 
+#define BSP_WORKING_AS_APP
 #define BSP_USING_USB_TO_USART
 #define BSP_USING_ETH
 #define PHY_USING_LAN8742A

@@ -9,6 +9,12 @@ config SOC_STM32F767ZI
 
 menu "Onboard Peripheral Drivers"
 
+    config BSP_WORKING_AS_APP
+        bool "Working as app"
+        select BSP_USING_ETH
+        select BSP_USING_ONCHIP_RTC
+        default y
+
     config BSP_USING_USB_TO_USART 
         bool "Enable USB TO USART (uart3)"
         select BSP_USING_UART3
@@ -46,7 +52,7 @@ menu "On-chip Peripheral Drivers"
 
     config BSP_USING_ON_CHIP_FLASH
         bool "Enable on-chip FLASH"
-        default n
+        default y
 
     menuconfig BSP_USING_ONCHIP_RTC
         bool "Enable RTC"
