@@ -88,6 +88,8 @@ int main(void)
 	fal_init();
 #ifndef BSP_WORKING_AS_APP
 	verify_and_jump();
+#else
+	rt_kprintf("hello 123\n");
 #endif
     while (1)
     {
