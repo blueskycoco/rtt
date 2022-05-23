@@ -137,7 +137,7 @@ int main(void)
 		rt_kprintf("ota success\n");
 	app_boot();
 #else
-	rt_kprintf("hello 123\n");
+	rt_kprintf("hello 789\n");
 #endif
     while (1)
     {
