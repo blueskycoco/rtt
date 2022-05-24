@@ -75,7 +75,8 @@
 #define DFS_FILESYSTEM_TYPES_MAX 4
 #define DFS_FD_MAX 16
 #define RT_USING_FAL
-#define FAL_DEBUG 0
+#define FAL_DEBUG_CONFIG
+#define FAL_DEBUG 1
 #define FAL_PART_HAS_TABLE_CFG
 
 /* Device Drivers */
@@ -295,6 +296,7 @@
 
 /* Onboard Peripheral Drivers */
 
+#define BSP_WORKING_AS_APP
 
 /* On-chip Peripheral Drivers */
 
@@ -303,6 +305,8 @@
 #define BSP_USING_UART1
 #define BSP_USING_UART5
 #define BSP_USING_ON_CHIP_FLASH
+#define BSP_USING_ONCHIP_RTC
+#define BSP_RTC_USING_LSE
 
 /* Board extended module Drivers */
 

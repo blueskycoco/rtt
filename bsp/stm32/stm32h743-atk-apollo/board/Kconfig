@@ -9,6 +9,12 @@ config SOC_STM32H743II
 
 menu "Onboard Peripheral Drivers"
 
+    config BSP_WORKING_AS_APP
+        bool "Working as app"
+        select BSP_USING_ETH
+        select BSP_USING_ONCHIP_RTC
+        default y
+
     config BSP_USING_COM2
         bool "Enable COM2(485)"
         select BSP_USING_UART

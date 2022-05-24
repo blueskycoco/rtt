@@ -93,3 +93,12 @@ void SystemClock_Config(void)
   }
 }
 
+#ifdef BSP_WORKING_AS_APP
+#include "stm32h7xx.h"
+static int vtor_config(void)
+{
+    SCB->VTOR = 0x08000000 + 256*1024;
+    return 0;
+}
+INIT_BOARD_EXPORT(vtor_config);
+#endif
