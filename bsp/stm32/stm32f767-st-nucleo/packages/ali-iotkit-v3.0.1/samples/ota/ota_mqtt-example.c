@@ -231,6 +231,8 @@ static int _ota_mqtt_client(void)
             char md5sum[33];
             char version[128] = {0};
             uint32_t len, size_downloaded, size_file, ofs = 0;
+            IOT_OTA_Ioctl(h_ota, IOT_OTAG_FILE_SIZE, &size_file, 4);
+            EXAMPLE_TRACE("get fw size: %d", size_file);
             do {
 
                 len = IOT_OTA_FetchYield(h_ota, ptr, 256 * 1024 + 1, 1);

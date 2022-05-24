@@ -26,6 +26,7 @@ typedef  void (*jump_app)(void);
 #define APP_LEN_ADDR 	0x08020000	//param
 #define APP_MD5_ADDR 	0x08100004
 #define OTA_ADDRESS		0x08100000
+#define SECTOR_SIZE		(256*1024)
 
 jump_app jump;
 
@@ -87,6 +88,7 @@ bool ota()
 			return false;
 		}
 		ptr = (uint8_t *)(OTA_ADDRESS + 20);
+#if 0
 		for (i = 0; i < ota_len/262144; i++) {
 			ptr += i*262144;
 			if (fal_partition_erase(part_dev, i*262144, 256*1024) < 0) {
@@ -112,6 +114,21 @@ bool ota()
 				return false;
 			}
 		}
+#else
+		for (i = 0; i < ota_len/SECTOR_SIZE; i++);
+
+		if (ota_len % SECTOR_SIZE) {
+			i++;
+		}
+		if (fal_partition_erase(part_dev, 0, i*SECTOR_SIZE) < 0) {
+			rt_kprintf("erase app zone failed %d", i*SECTOR_SIZE);
+			return false;
+		}
+		if (fal_partition_write(part_dev, 0, (const uint8_t *)ptr, ota_len) < 0) {
+			rt_kprintf("write to app zone failed %d", ota_len);
+			return false;
+		}
+#endif
 		/* recheck app zone */	
 		ptr = (uint8_t *)(APP_ADDRESS);
 		MD5Init(&md5);

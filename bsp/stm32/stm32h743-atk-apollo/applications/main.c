@@ -25,7 +25,7 @@ typedef  void (*jump_app)(void);
 #define APP_LEN_ADDR 	0x08020000	//param
 #define APP_MD5_ADDR 	0x08100004
 #define OTA_ADDRESS		0x08100000
-
+#define SECTOR_SIZE		(128*1024)
 jump_app jump;
 
 static void app_boot()
@@ -61,7 +61,7 @@ bool ota()
 	for (i = 0; i < 16; i++) {
 		//rt_kprintf("md5[%d] %02x %02x\n", i, decrypt[i], md5_sum[i]);
 		if (decrypt[i] != md5_sum[i]) {
-			rt_kprintf("ota zone download part fw\n");
+			//rt_kprintf("ota zone download part fw\n");
 			return false;
 		}
 	}
@@ -86,30 +86,18 @@ bool ota()
 			return false;
 		}
 		ptr = (uint8_t *)(OTA_ADDRESS + 20);
-		for (i = 0; i < ota_len/262144; i++) {
-			ptr += i*262144;
-			if (fal_partition_erase(part_dev, i*262144, 256*1024) < 0) {
-				rt_kprintf("erase app zone failed %d", i*262144);
-				return false;
-			}
-			if (fal_partition_write(part_dev, i*262144,
-						(const uint8_t *)ptr, 256 * 1024) < 0) {
-				rt_kprintf("write to app zone failed %d", i*262144);
-				return false;
-			}
-		}
+		for (i = 0; i < ota_len/SECTOR_SIZE; i++);
 
-		if (ota_len % 262144) {
-			ptr += i*262144;
-			if (fal_partition_erase(part_dev, i*262144, 256*1024) < 0) {
-				rt_kprintf("erase app zone failed %d", i);
-				return false;
-			}
-			if (fal_partition_write(part_dev, i*262144,
-						(const uint8_t *)ptr, ota_len - i*262144) < 0) {
-				rt_kprintf("write to app zone failed %d", ota_len - i*262144);
-				return false;
-			}
+		if (ota_len % SECTOR_SIZE) {
+			i++;
+		}
+		if (fal_partition_erase(part_dev, 0, i*SECTOR_SIZE) < 0) {
+			rt_kprintf("erase app zone failed %d", i*SECTOR_SIZE);
+			return false;
+		}
+		if (fal_partition_write(part_dev, 0, (const uint8_t *)ptr, ota_len) < 0) {
+			rt_kprintf("write to app zone failed %d", ota_len);
+			return false;
 		}
 		/* recheck app zone */	
 		ptr = (uint8_t *)(APP_ADDRESS);
