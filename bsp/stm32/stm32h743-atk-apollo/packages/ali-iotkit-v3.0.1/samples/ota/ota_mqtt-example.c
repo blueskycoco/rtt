@@ -17,6 +17,7 @@
 #include "ota_api.h"
 
 #include "rtthread.h"
+#include <fal.h>
 
 void *HAL_Malloc(uint32_t size);
 void HAL_Free(void *ptr);
@@ -117,16 +118,34 @@ static int _ota_mqtt_client(void)
     void *pclient = NULL, *h_ota = NULL;
     iotx_conn_info_pt pconn_info;
     iotx_mqtt_param_t mqtt_params;
-    char *msg_buf = NULL, *msg_readbuf = NULL;
+    char *msg_buf = NULL, *msg_readbuf = NULL, ver[128] = {0};
     // FILE *fp;
     char buf_ota[OTA_BUF_LEN];
-
+    static const struct fal_partition *part_dev = NULL, *param_dev = NULL;
+	if ((part_dev = fal_partition_find("ota")) == NULL) {
+		EXAMPLE_TRACE("can't find ota zone");
+		return -1;
+	}
+	if ((param_dev = fal_partition_find("param")) == NULL) {
+		EXAMPLE_TRACE("can't find param zone");
+		return -1;
+	}
+	char *ptr = (char *)HAL_Malloc(256 * 1024 + 1);
+	if (ptr == NULL) {
+		EXAMPLE_TRACE("can not get one sector size");
+		return -1;
+	}
+	char *param = (char *)HAL_Malloc(10 * 1024);
+	if (param == NULL) {
+		EXAMPLE_TRACE("can not get param sector size");
+		return -1;
+	}
     // if (NULL == (fp = fopen("ota.bin", "wb+"))) {
     //     EXAMPLE_TRACE("open file failed");
     //     goto do_exit;
     // }
 
-
+/*
     if (NULL == (msg_buf = (char *)HAL_Malloc(OTA_MQTT_MSGLEN))) {
         EXAMPLE_TRACE("not enough memory");
         rc = -1;
@@ -138,7 +157,7 @@ static int _ota_mqtt_client(void)
         rc = -1;
         goto do_exit;
     }
-
+*/
     /**< get device info*/
     HAL_GetProductKey(g_product_key);
     HAL_GetDeviceName(g_device_name);
@@ -171,7 +190,8 @@ static int _ota_mqtt_client(void)
     mqtt_params.handle_event.h_fp = event_handle;
     mqtt_params.handle_event.pcontext = NULL;
 
-	mqtt_params.host = "iot-06z00friwrngpm4.mqtt.iothub.aliyuncs.com";
+    mqtt_params.host = "iot-06z00friwrngpm4.mqtt.iothub.aliyuncs.com";
+
     /* Construct a MQTT client with specify parameter */
     pclient = IOT_MQTT_Construct(&mqtt_params);
     if (NULL == pclient) {
@@ -186,12 +206,16 @@ static int _ota_mqtt_client(void)
         goto do_exit;
     }
 
-    /* if (0 != IOT_OTA_ReportVersion(h_ota, "iotx_ver_1.1.0")) { */
-    /* rc = -1; */
-    /* EXAMPLE_TRACE("report OTA version failed"); */
-    /* goto do_exit; */
-    /* } */
-
+	fal_partition_read(param_dev, 0, param, 10*1024);
+/*	memcpy(ver, param, 128); //iotx_ver_1.1.0
+	if (ver[0] != 'a' || ver[1] != 'p' || ver[2] != 'p')
+		strcpy(ver, "app-1.0.1-20220523.0000");
+	if (0 != IOT_OTA_ReportVersion(h_ota, ver)) {
+	   	rc = -1;
+		EXAMPLE_TRACE("report OTA version failed");
+		goto do_exit;
+	}
+*/
     HAL_SleepMs(1000);
 
     do {
@@ -206,11 +230,17 @@ static int _ota_mqtt_client(void)
             uint32_t last_percent = 0, percent = 0;
             char md5sum[33];
             char version[128] = {0};
-            uint32_t len, size_downloaded, size_file;
+            uint32_t len, size_downloaded, size_file, ofs = 0;
             do {
 
-                len = IOT_OTA_FetchYield(h_ota, buf_ota, OTA_BUF_LEN, 1);
+                len = IOT_OTA_FetchYield(h_ota, ptr, 256 * 1024 + 1, 1);
                 if (len > 0) {
+                	EXAMPLE_TRACE("get fw len: %d", len);
+                	if (fal_partition_erase(part_dev, ofs, 256*1024) < 0)
+                		EXAMPLE_TRACE("erase ota zone failed %d", ofs);
+                	if (fal_partition_write(part_dev, ofs, (const uint8_t *)ptr, len) < 0)
+                		EXAMPLE_TRACE("write to ota zone failed %d", ofs);
+					ofs += len;
                     // if (1 != fwrite(buf_ota, len, 1, fp)) {
                     //     EXAMPLE_TRACE("write data to file failed");
                     //     rc = -1;
@@ -241,7 +271,14 @@ static int _ota_mqtt_client(void)
             if (0 == firmware_valid) {
                 EXAMPLE_TRACE("The firmware is invalid");
             } else {
-                EXAMPLE_TRACE("The firmware is valid");
+                EXAMPLE_TRACE("The firmware is valid: %s", version);
+                IOT_OTA_ReportVersion(h_ota, version);
+                memcpy(param, version, 128);
+                if (fal_partition_erase(param_dev, 0, 128*1024) < 0)
+                	EXAMPLE_TRACE("erase param zone failed");
+                if (fal_partition_write(param_dev, 0, (const uint8_t *)param, 10*1024) < 0)
+                	EXAMPLE_TRACE("write to param zone failed");
+                rt_hw_cpu_reset();
             }
 
             ota_over = 1;
@@ -261,6 +298,11 @@ do_exit:
         IOT_MQTT_Destroy(&pclient);
     }
 
+    if (ptr)
+    	HAL_Free(ptr);
+    if (param)
+    	HAL_Free(param);
+/*
     if (NULL != msg_buf) {
         HAL_Free(msg_buf);
     }
@@ -268,7 +310,7 @@ do_exit:
     if (NULL != msg_readbuf) {
         HAL_Free(msg_readbuf);
     }
-
+*/
     // if (NULL != fp) {
     //     fclose(fp);
     // }

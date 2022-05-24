@@ -34,8 +34,17 @@ char _device_secret[IOTX_DEVICE_SECRET_LEN + 1]   = "asXuHqpF68Hqxx8nHQ077QkiikH
 int HAL_GetFirmwareVersion(char *version)
 {
     RT_ASSERT(version);
+    char ver[128] = {0};
+    static const struct fal_partition *param_dev = NULL;
+	if ((param_dev = fal_partition_find("param")) == NULL) {
+		LOG_I("can't find param zone");
+		return 0;
+	}
 
-    char *ver = "app-1.0.0-20180101.1000";
+	fal_partition_read(param_dev, 0, ver, 128);
+	if (ver[0] != 'a' || ver[1] != 'p' || ver[2] != 'p')
+		strcpy(ver, "app-1.0.1-20220523.0000");
+    //char *ver = "app-1.0.0-20180101.1000";
     int len = strlen(ver);
     memset(version, 0x0, IOTX_FIRMWARE_VER_LEN);
     strncpy(version, ver, IOTX_FIRMWARE_VER_LEN);
