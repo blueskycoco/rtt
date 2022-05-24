@@ -233,13 +233,13 @@ static int _ota_mqtt_client(void)
             uint32_t len, size_downloaded, size_file, ofs = 0;
             IOT_OTA_Ioctl(h_ota, IOT_OTAG_FILE_SIZE, &size_file, 4);
             EXAMPLE_TRACE("get fw size: %d", size_file);
+            if (fal_partition_erase(part_dev, 0, size_file) < 0)
+            	EXAMPLE_TRACE("erase ota zone failed %d", ofs);
             do {
 
                 len = IOT_OTA_FetchYield(h_ota, ptr, 256 * 1024 + 1, 1);
                 if (len > 0) {
                 	EXAMPLE_TRACE("get fw len: %d", len);
-                	if (fal_partition_erase(part_dev, ofs, 256*1024) < 0)
-                		EXAMPLE_TRACE("erase ota zone failed %d", ofs);
                 	if (fal_partition_write(part_dev, ofs, (const uint8_t *)ptr, len) < 0)
                 		EXAMPLE_TRACE("write to ota zone failed %d", ofs);
 					ofs += len;
