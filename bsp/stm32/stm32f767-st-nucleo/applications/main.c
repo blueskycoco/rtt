@@ -60,9 +60,11 @@ bool ota()
 	MD5Update(&md5, ptr + 20, ota_len);
 	MD5Final(&md5, decrypt);
 	for (i = 0; i < 16; i++) {
-		rt_kprintf("md5[%d] %02x %02x\n", i, decrypt[i], md5_sum[i]);
-		if (decrypt[i] != md5_sum[i])
+		//rt_kprintf("md5[%d] %02x %02x\n", i, decrypt[i], md5_sum[i]);
+		if (decrypt[i] != md5_sum[i]) {
+			rt_kprintf("ota zone download part fw\n");
 			return false;
+		}
 	}
 	/* compare ota zone with app zone */
 	ptr = (uint8_t *)(APP_ADDRESS);
@@ -70,9 +72,11 @@ bool ota()
 	MD5Update(&md5, ptr, ota_len);
 	MD5Final(&md5, decrypt);
 	for (i = 0; i < 16; i++) {
-		rt_kprintf("app md5[%d] %02x %02x\n", i, decrypt[i], md5_sum[i]);
-		if (decrypt[i] != md5_sum[i])
+		//rt_kprintf("app md5[%d] %02x %02x\n", i, decrypt[i], md5_sum[i]);
+		if (decrypt[i] != md5_sum[i]) {
+			rt_kprintf("need do ota\n");
 			break;
+		}
 	}
 
 	/* cp ota zone to app zone as they are different */
@@ -114,9 +118,11 @@ bool ota()
 		MD5Update(&md5, ptr, ota_len);
 		MD5Final(&md5, decrypt);
 		for (i = 0; i < 16; i++) {
-			rt_kprintf("recheck app md5[%d] %02x %02x\n", i, decrypt[i], md5_sum[i]);
-			if (decrypt[i] != md5_sum[i])
+			//rt_kprintf("recheck app md5[%d] %02x %02x\n", i, decrypt[i], md5_sum[i]);
+			if (decrypt[i] != md5_sum[i]) {
+				rt_kprintf("recheck app md5 failed\n");
 				return false;
+			}
 		}
 
 		return true;
