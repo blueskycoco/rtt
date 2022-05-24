@@ -125,6 +125,22 @@ bool ota()
 
 	return false;
 }
+#else
+void get_cur_ver()
+{
+    uint8_t ver[128] = {0};
+    static const struct fal_partition *param_dev = NULL;
+	if ((param_dev = fal_partition_find("param")) == NULL) {
+		rt_kprintf("can't find param zone %d\n", __LINE__);
+		return;
+	}
+
+	fal_partition_read(param_dev, 0, ver, 128);
+	if (ver[0] != 'a' || ver[1] != 'p' || ver[2] != 'p')
+		strcpy((char *)ver, "app-1.0.1-20220523.0000");
+
+	rt_kprintf("cur version: %s\n", ver);
+}
 #endif
 
 int main(void)
@@ -137,7 +153,7 @@ int main(void)
 		rt_kprintf("ota success\n");
 	app_boot();
 #else
-	rt_kprintf("hello 789\n");
+	get_cur_ver();
 #endif
     while (1)
     {
