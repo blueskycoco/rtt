@@ -237,7 +237,7 @@ static int _ota_mqtt_client(void)
             	EXAMPLE_TRACE("erase ota zone failed %d", ofs);
             do {
 				EXAMPLE_TRACE("%s: %d", __func__, __LINE__);
-				len = IOT_OTA_FetchYield(h_ota, ptr, 256*1024 + 1, 1);
+				len = IOT_OTA_FetchYield(h_ota, ptr, 128*1024 + 1, 1);
                 if (len > 0) {
                 	EXAMPLE_TRACE("get fw len: %d", len);
 					if (fal_partition_write(part_dev, ofs, (const uint8_t *)ptr, len) < 0)
