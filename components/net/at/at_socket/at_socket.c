@@ -142,7 +142,7 @@ static int at_recvpkt_node_delete(rt_slist_t *rlist, rt_slist_t *node)
     pkt = rt_slist_entry(node, struct at_recv_pkt, list);
     if (pkt->buff)
     {
-		rt_kprintf("%s %d: free %x\n", __func__, __LINE__, pkt->buff);
+		//rt_kprintf("%s %d: free %x\n", __func__, __LINE__, pkt->buff);
         rt_free(pkt->buff);
     }
     if (pkt)

@@ -236,19 +236,20 @@ static int _ota_mqtt_client(void)
             if (fal_partition_erase(part_dev, 0, size_file) < 0)
             	EXAMPLE_TRACE("erase ota zone failed %d", ofs);
             do {
-				EXAMPLE_TRACE("%s: %d", __func__, __LINE__);
-				len = IOT_OTA_FetchYield(h_ota, ptr, 128*1024 + 1, 1);
+				len = IOT_OTA_FetchYield(h_ota, ptr, 256*1024 + 1, 1);
                 if (len > 0) {
-                	EXAMPLE_TRACE("get fw len: %d", len);
+                	EXAMPLE_TRACE("get fw len: %d, ofs %d", len, ofs);
 					if (fal_partition_write(part_dev, ofs, (const uint8_t *)ptr, len) < 0)
 						EXAMPLE_TRACE("write to ota zone failed %d", ofs);
+					else
+						EXAMPLE_TRACE("write fw at ofs %d, len %d ok", ofs, len);
 					ofs += len;
                     // if (1 != fwrite(buf_ota, len, 1, fp)) {
                     //     EXAMPLE_TRACE("write data to file failed");
                     //     rc = -1;
                     //     break;
                     // }
-                    EXAMPLE_TRACE("Here write OTA data to file or flash....");
+                    //EXAMPLE_TRACE("Here write OTA data to file or flash....");
                 } else {
                     IOT_OTA_ReportProgress(h_ota, IOT_OTAP_FETCH_FAILED, NULL);
                     EXAMPLE_TRACE("ota fetch fail");

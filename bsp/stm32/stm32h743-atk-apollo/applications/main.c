@@ -127,7 +127,7 @@ void get_cur_ver()
 	if (ver[0] != 'a' || ver[1] != 'p' || ver[2] != 'p')
 		strcpy((char *)ver, "app-1.0.1-20220523.0000");
 
-	rt_kprintf("cur version: %s\n", ver);
+	rt_kprintf("111 cur version: %s\n", ver);
 }
 #endif
 
