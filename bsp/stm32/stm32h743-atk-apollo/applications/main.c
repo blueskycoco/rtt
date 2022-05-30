@@ -137,6 +137,7 @@ void get_cur_ver()
 #define L601_POW_EN	GET_PIN(B, 2)
 #define L601_DTR	GET_PIN(E, 7)
 #define L601_CTL_EN	GET_PIN(E, 8)
+extern int radar_init();
 int main(void)
 {
     /* set LED1 pin mode to output */
@@ -148,6 +149,7 @@ int main(void)
 	app_boot();
 #else
 	get_cur_ver();
+	radar_init();
 #endif
     while (1)
     {
