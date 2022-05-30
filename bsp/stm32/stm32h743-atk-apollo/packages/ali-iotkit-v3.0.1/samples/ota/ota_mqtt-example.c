@@ -130,11 +130,11 @@ static int _ota_mqtt_client(void)
 		EXAMPLE_TRACE("can't find param zone");
 		return -1;
 	}
-	char *ptr = (char *)HAL_Malloc(256 * 1024 + 1);
-	if (ptr == NULL) {
-		EXAMPLE_TRACE("can not get one sector size");
-		return -1;
-	}
+	char *ptr = 0x30000000;//288k (char *)HAL_Malloc(8 * 1024 + 1);
+	//if (ptr == NULL) {
+	//	EXAMPLE_TRACE("can not get one sector size");
+	//	return -1;
+	//}
 	char *param = (char *)HAL_Malloc(10 * 1024);
 	if (param == NULL) {
 		EXAMPLE_TRACE("can not get param sector size");
@@ -236,12 +236,12 @@ static int _ota_mqtt_client(void)
             if (fal_partition_erase(part_dev, 0, size_file) < 0)
             	EXAMPLE_TRACE("erase ota zone failed %d", ofs);
             do {
-
-                len = IOT_OTA_FetchYield(h_ota, ptr, 256 * 1024 + 1, 1);
+				EXAMPLE_TRACE("%s: %d", __func__, __LINE__);
+				len = IOT_OTA_FetchYield(h_ota, ptr, 256*1024 + 1, 1);
                 if (len > 0) {
                 	EXAMPLE_TRACE("get fw len: %d", len);
-                	if (fal_partition_write(part_dev, ofs, (const uint8_t *)ptr, len) < 0)
-                		EXAMPLE_TRACE("write to ota zone failed %d", ofs);
+					if (fal_partition_write(part_dev, ofs, (const uint8_t *)ptr, len) < 0)
+						EXAMPLE_TRACE("write to ota zone failed %d", ofs);
 					ofs += len;
                     // if (1 != fwrite(buf_ota, len, 1, fp)) {
                     //     EXAMPLE_TRACE("write data to file failed");
@@ -263,8 +263,8 @@ static int _ota_mqtt_client(void)
                 last_percent = percent;
                 percent = (size_downloaded * 100) / size_file;
                 if (percent - last_percent > 0) {
-                    IOT_OTA_ReportProgress(h_ota, percent, NULL);
-                    IOT_OTA_ReportProgress(h_ota, percent, "hello");
+                    //IOT_OTA_ReportProgress(h_ota, percent, NULL);
+                    //IOT_OTA_ReportProgress(h_ota, percent, "hello");
                 }
                 IOT_MQTT_Yield(pclient, 100);
             } while (!IOT_OTA_IsFetchFinish(h_ota));
@@ -274,7 +274,9 @@ static int _ota_mqtt_client(void)
                 EXAMPLE_TRACE("The firmware is invalid");
             } else {
                 EXAMPLE_TRACE("The firmware is valid: %s", version);
+                IOT_OTA_ReportProgress(h_ota, 100, NULL);
                 IOT_OTA_ReportVersion(h_ota, version);
+                //rt_thread_mdelay(5000);
                 memcpy(param, version, 128);
                 if (fal_partition_erase(param_dev, 0, 128*1024) < 0)
                 	EXAMPLE_TRACE("erase param zone failed");

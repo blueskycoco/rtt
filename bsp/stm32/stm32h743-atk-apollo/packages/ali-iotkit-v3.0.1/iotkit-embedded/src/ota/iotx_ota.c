@@ -714,7 +714,7 @@ int IOT_OTA_FetchYield(void *handle, char *buf, uint32_t buf_len, uint32_t timeo
         return -1;
     } else if (0 == h_ota->size_fetched) {
         /* force report status in the first */
-        IOT_OTA_ReportProgress(h_ota, IOT_OTAP_FETCH_PERCENTAGE_MIN, "Enter in downloading state");
+        //IOT_OTA_ReportProgress(h_ota, IOT_OTAP_FETCH_PERCENTAGE_MIN, "Enter in downloading state");
     }
 
     otalib_MD5Update(h_ota->md5, buf, ret);

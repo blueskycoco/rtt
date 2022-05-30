@@ -145,6 +145,17 @@ extern "C" {
 #endif /* UART5_DMA_RX_CONFIG */
 #endif /* BSP_UART5_RX_USING_DMA */
 
+#if defined(BSP_UART5_TX_USING_DMA)
+#ifndef UART5_DMA_TX_CONFIG
+#define UART5_DMA_TX_CONFIG                                         \
+    {                                                               \
+        .Instance = UART5_TX_DMA_INSTANCE,                          \
+        .request = UART5_TX_DMA_REQUEST,                            \
+        .dma_rcc = UART5_TX_DMA_RCC,                                \
+        .dma_irq = UART5_TX_DMA_IRQ,                                \
+    }
+#endif /* UART5_DMA_RX_CONFIG */
+#endif /* BSP_UART5_RX_USING_DMA */
 #ifdef __cplusplus
 }
 #endif
