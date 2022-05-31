@@ -1,8 +1,91 @@
 #include <rtthread.h>
 #include <rtdevice.h>
+#include <time.h>
+#include <string.h>
+#include <stdio.h>
+#include "cJSON.h"
+#include "dev_sign_api.h"
+#include "mqtt_api.h"
+#if defined(RT_USING_SAL)
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#endif
+#if defined(RT_USING_NETDEV)
+#include <netdev.h>
+#elif defined(RT_USING_LWIP)
+#include <lwip/netif.h>
+#endif /* RT_USING_NETDEV */
 
 static struct rt_semaphore rx_sem;
 static rt_device_t serial;
+static uint8_t mb_radar[2048] = {0};
+static struct rt_mailbox mb;
+rt_bool_t net_ok = RT_FALSE;
+void                   *pclient = NULL;
+static char DEMO_PRODUCT_KEY[IOTX_PRODUCT_KEY_LEN + 1] = {0};
+static char DEMO_DEVICE_NAME[IOTX_DEVICE_NAME_LEN + 1] = {0};
+static char DEMO_DEVICE_SECRET[IOTX_DEVICE_SECRET_LEN + 1] = {0};
+static int example_publish(void *handle, char *payload);
+void *HAL_Malloc(uint32_t size);
+void HAL_Free(void *ptr);
+void HAL_Printf(const char *fmt, ...);
+int HAL_GetProductKey(char product_key[IOTX_PRODUCT_KEY_LEN + 1]);
+int HAL_GetDeviceName(char device_name[IOTX_DEVICE_NAME_LEN + 1]);
+int HAL_GetDeviceSecret(char device_secret[IOTX_DEVICE_SECRET_LEN]);
+uint64_t HAL_UptimeMs(void);
+int HAL_Snprintf(char *str, const int len, const char *fmt, ...);
+
+#define EXAMPLE_TRACE(fmt, ...)  \
+    do { \
+        HAL_Printf("%s|%03d :: ", __func__, __LINE__); \
+        HAL_Printf(fmt, ##__VA_ARGS__); \
+        HAL_Printf("%s", "\r\n"); \
+    } while(0)
+
+static void example_message_arrive(void *pcontext, void *pclient, iotx_mqtt_event_msg_pt msg)
+{
+    iotx_mqtt_topic_info_t     *topic_info = (iotx_mqtt_topic_info_pt) msg->msg;
+
+    switch (msg->event_type) {
+        case IOTX_MQTT_EVENT_PUBLISH_RECEIVED:
+            /* print topic name and topic message */
+            EXAMPLE_TRACE("Message Arrived:");
+            EXAMPLE_TRACE("Topic  : %.*s", topic_info->topic_len, topic_info->ptopic);
+            EXAMPLE_TRACE("Payload: %.*s", topic_info->payload_len, topic_info->payload);
+            EXAMPLE_TRACE("\n");
+            break;
+        default:
+            break;
+    }
+}
+
+static int example_subscribe(void *handle)
+{
+    int res = 0;
+    const char *fmt = "/%s/%s/user/get";
+    char *topic = NULL;
+    int topic_len = 0;
+
+    topic_len = strlen(fmt) + strlen(DEMO_PRODUCT_KEY) + strlen(DEMO_DEVICE_NAME) + 1;
+    topic = HAL_Malloc(topic_len);
+    if (topic == NULL) {
+        EXAMPLE_TRACE("memory not enough");
+        return -1;
+    }
+    memset(topic, 0, topic_len);
+    HAL_Snprintf(topic, topic_len, fmt, DEMO_PRODUCT_KEY, DEMO_DEVICE_NAME);
+
+    res = IOT_MQTT_Subscribe(handle, topic, IOTX_MQTT_QOS0, example_message_arrive, NULL);
+    if (res < 0) {
+        EXAMPLE_TRACE("subscribe failed");
+        HAL_Free(topic);
+        return -1;
+    }
+
+    HAL_Free(topic);
+    return 0;
+}
 
 static rt_err_t uart_input(rt_device_t dev, rt_size_t size)
 {
@@ -10,9 +93,63 @@ static rt_err_t uart_input(rt_device_t dev, rt_size_t size)
 	return RT_EOK;
 }
 
+void build_json(uint8_t *data, uint8_t **str)
+{
+    cJSON *pJson;
+    char array_num[32] = {0};
+    int i = 0;
+    time_t time_p;
+    struct tm *tmp_ptr;
+
+    pJson = cJSON_CreateObject();
+    if (!pJson) {
+        rt_kprintf("can't create obj %d\n", __LINE__);
+        return;
+    }
+
+	time(&time_p);
+	tmp_ptr = localtime(&time_p);
+	rt_sprintf(array_num, "%04d-%02d-%02d %02d:%02d:%02d",
+			1900 + tmp_ptr->tm_year,
+			1 + tmp_ptr->tm_mon,
+			tmp_ptr->tm_mday,
+			tmp_ptr->tm_hour, tmp_ptr->tm_min, tmp_ptr->tm_sec);
+	cJSON_AddNumberToObject(pJson, "deviceid", *(uint32_t*)(0x1FF1E800) << 0 |
+			*(uint32_t*)(0x1FF1E800 + 4) << 8 |
+			*(uint32_t*)(0x1FF1E800 + 8) << 16);
+	cJSON_AddStringToObject(pJson, "timestamp", array_num);
+	cJSON_AddNumberToObject(pJson, "targetnum", data[4]);
+    for (i = 0; i < data[4]; i++) {
+    	cJSON *tmp = cJSON_CreateObject();
+		cJSON_AddNumberToObject(tmp, "targetid", data[5 + i*20]);
+		if (data[13 + i*20] == 0 || data[14 + i*20] == 0)
+			cJSON_AddNumberToObject(tmp, "vsvalid", 0);
+		else
+			cJSON_AddNumberToObject(tmp, "vsvalid", 1);
+		cJSON_AddNumberToObject(tmp, "heartrate", data[14 + i*20]);
+		cJSON_AddNumberToObject(tmp, "breathrate", data[13 + i*20]);
+		int16_t x = (int16_t)((data[7 + i*20] << 8) | data[8 + i*20]);
+		float _x = x / 100.00;
+		sprintf(array_num, "%.2f", _x);
+		cJSON_AddStringToObject(tmp, "positionx", array_num);
+		int16_t y = (data[9 + i*20] << 8) | data[10 + i*20];
+		float _y = y / 100.00;
+		sprintf(array_num, "%.2f", _y);
+		cJSON_AddStringToObject(tmp, "positiony", array_num);
+		cJSON_AddNumberToObject(tmp, "fdstate", data[12 + i*20]);
+		rt_sprintf(array_num, "%d", i);
+		cJSON_AddItemToObject(pJson, array_num, tmp);
+	}
+    
+    *str = cJSON_PrintUnformatted(pJson);
+//    rt_kprintf("json is: %s\n", *str);
+    cJSON_Delete(pJson);
+}
+
 static void serial_thread_entry(void *parameter)
 {
 	char ch;
+	uint8_t *str;
 	char buf[1024] = {0};
 	int cnt = 0, i;
 
@@ -24,10 +161,33 @@ static void serial_thread_entry(void *parameter)
 					buf[2] == 0xfa && buf[3] == 0x5a &&
 					buf[cnt - 4] == 0xfa && buf[cnt - 3] == 0x6a &&
 					buf[cnt - 2] == 0xfa && buf[cnt - 1] == 0x6a) {
+#if 0
 				for (i = 0; i < cnt; i++) {
 					rt_kprintf("%02x ", buf[i]);
 				}
 				rt_kprintf(" [%d]\r\n", cnt);
+				rt_kprintf("targetnum\t: %d\n", buf[4]);
+				for (i = 0; i < buf[4]; i++) {
+					rt_kprintf("_targetnum[%d]\t: %d\n", i, buf[5 + i*20]);
+					rt_kprintf("targetid[%d]\t: %d\n", i, buf[6 + i*20]);
+					rt_kprintf("positionx[%d]\t: %d\n", i, (int16_t)((buf[7 + i*20] << 8) | buf[8 + i*20]));
+					rt_kprintf("positiony[%d]\t: %d\n", i, (buf[9 + i*20] << 8) | buf[10 + i*20]);
+					rt_kprintf("high[%d]\t: %d\n", i, buf[11 + i*20]);
+					rt_kprintf("fdstate[%d]\t: %d\n", i, buf[12 + i*20]);
+					rt_kprintf("breathrate[%d] : %d\n", i, buf[13 + i*20]);
+					rt_kprintf("heartrate[%d]\t: %d\n", i, buf[14 + i*20]);
+					if (buf[13 + i*20] == 0 || buf[14 + i*20] == 0)
+						rt_kprintf("vsvalid[%d]\t: 0\n", i);
+					else
+						rt_kprintf("vsvalid[%d]\t: 1\n", i);
+				}
+				rt_kprintf("\r\n\r\n");
+#endif
+				build_json(buf, &str);
+				if (buf[4] > 0)
+					rt_mb_send(&mb, (rt_uint32_t)str);
+				else
+    				cJSON_free((void *)str);		
 				cnt = 0;
 			} else if (cnt > 50)
 				cnt = 0;
@@ -35,12 +195,115 @@ static void serial_thread_entry(void *parameter)
 		}
 		if (cnt < 1024)
 			buf[cnt++] = ch;
-		//rt_kprintf("%02x ", ch);
-		//ch = ch + 1;
-		//rt_device_write(serial, 0, &ch, 1);
 	}
 }
 
+static void net_thread_entry(void *parameter)
+{
+	rt_uint32_t addr;
+	while (RT_TRUE) {
+		if (rt_mb_recv(&mb, (rt_ubase_t *)&addr, RT_WAITING_FOREVER) == RT_EOK) {
+    			rt_kprintf("send[%x]: %s\n", addr, (char *)addr);
+    			if (net_ok) {
+    				example_publish(pclient, (char *)addr);
+        			IOT_MQTT_Yield(pclient, 200);
+				}
+    			cJSON_free((void *)addr);
+		}
+	}
+}
+
+static int example_publish(void *handle, char *payload)
+{
+    int             res = 0;
+    const char     *fmt = "/%s/%s/user/get";
+    char           *topic = NULL;
+    int             topic_len = 0;
+//    char           *payload = "{\"message\":\"hello!\"}";
+
+    topic_len = strlen(fmt) + strlen(DEMO_PRODUCT_KEY) + strlen(DEMO_DEVICE_NAME) + 1;
+    topic = HAL_Malloc(topic_len);
+    if (topic == NULL) {
+        EXAMPLE_TRACE("memory not enough");
+        return -1;
+    }
+    memset(topic, 0, topic_len);
+    HAL_Snprintf(topic, topic_len, fmt, DEMO_PRODUCT_KEY, DEMO_DEVICE_NAME);
+
+    res = IOT_MQTT_Publish_Simple(0, topic, IOTX_MQTT_QOS0, payload, strlen(payload));
+    if (res < 0) {
+        EXAMPLE_TRACE("publish failed, res = %d", res);
+        HAL_Free(topic);
+        return -1;
+    }
+
+    HAL_Free(topic);
+    return 0;
+}
+static void example_event_handle(void *pcontext, void *pclient, iotx_mqtt_event_msg_pt msg)
+{
+    EXAMPLE_TRACE("msg->event_type : %d", msg->event_type);
+}
+void mqtt_init()
+{
+	static rt_bool_t mqtt_inited = RT_FALSE;
+    int                     res = 0;
+    int                     loop_cnt = 0;
+    iotx_mqtt_param_t       mqtt_params;
+
+	if (mqtt_inited)
+		return;
+	mqtt_inited = RT_TRUE;
+    HAL_GetProductKey(DEMO_PRODUCT_KEY);
+    HAL_GetDeviceName(DEMO_DEVICE_NAME);
+    HAL_GetDeviceSecret(DEMO_DEVICE_SECRET);
+    memset(&mqtt_params, 0x0, sizeof(mqtt_params));
+    mqtt_params.host = "iot-06z00friwrngpm4.mqtt.iothub.aliyuncs.com";
+    mqtt_params.handle_event.h_fp = example_event_handle;
+
+    pclient = IOT_MQTT_Construct(&mqtt_params);
+    if (NULL == pclient) {
+        EXAMPLE_TRACE("MQTT construct failed");
+        return;
+    }
+    res = example_subscribe(pclient);
+    if (res < 0) {
+        IOT_MQTT_Destroy(&pclient);
+        return;
+    }
+    net_ok = RT_TRUE;
+}
+
+static rt_bool_t radar_check_network(void)
+{
+#ifdef RT_USING_NETDEV
+    struct netdev * netdev = netdev_get_by_family(AF_INET);
+    return (netdev && netdev_is_link_up(netdev));
+#else
+    return RT_TRUE;
+#endif
+}
+
+static struct rt_work radar_sync_work;
+static void radar_sync_work_func(struct rt_work *work, void *work_data)
+{
+    if (radar_check_network())
+    {
+        mqtt_init();
+    }
+    else
+    {
+        rt_work_submit(work, rt_tick_from_millisecond(5 * 1000));
+    }
+}
+
+static int radar_auto_sync_init(void)
+{
+    rt_work_init(&radar_sync_work, radar_sync_work_func, RT_NULL);
+    rt_work_submit(&radar_sync_work, rt_tick_from_millisecond(30 * 1000));
+    return RT_EOK;
+}
+//INIT_COMPONENT_EXPORT(radar_auto_sync_init);
 int radar_init()
 {
 	rt_err_t ret = RT_EOK;
@@ -50,6 +313,8 @@ int radar_init()
 		rt_kprintf("find uart1 failed!\n");
 		return RT_ERROR;
 	}
+
+	rt_mb_init(&mb, "mbt", &mb_radar[0], sizeof(mb_radar)/4, RT_IPC_FLAG_FIFO);
 
 	rt_sem_init(&rx_sem, "rx_sem", 0, RT_IPC_FLAG_FIFO);
 	rt_device_open(serial, RT_DEVICE_FLAG_INT_RX);
@@ -69,5 +334,12 @@ int radar_init()
 		ret = RT_ERROR;
 	}
 
+	rt_thread_t net_thread = rt_thread_create("net", net_thread_entry,
+										  RT_NULL, 4096, 25, 10);
+	if (net_thread != RT_NULL) {
+		rt_thread_startup(net_thread);
+	} else {
+		ret = RT_ERROR;
+	}
 	return ret;
 }
