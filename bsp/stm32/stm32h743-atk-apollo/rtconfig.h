@@ -160,7 +160,7 @@
 #define PKG_NETUTILS_NTP
 #define NTP_USING_AUTO_SYNC
 #define NTP_AUTO_SYNC_FIRST_DELAY 10
-#define NTP_AUTO_SYNC_PERIOD 3600
+#define NTP_AUTO_SYNC_PERIOD 36000
 #define NETUTILS_NTP_HOSTNAME "cn.ntp.org.cn"
 #define NETUTILS_NTP_HOSTNAME2 "cn.ntp.org.cn"
 #define NETUTILS_NTP_HOSTNAME3 "edu.ntp.org.cn"
