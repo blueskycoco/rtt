@@ -3,9 +3,12 @@
 #include <time.h>
 #include <string.h>
 #include <stdio.h>
+#include <fal.h>
 #include "cJSON.h"
 #include "dev_sign_api.h"
 #include "mqtt_api.h"
+#include "infra_compat.h"
+#include "ota_api.h"
 #if defined(RT_USING_SAL)
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -23,6 +26,7 @@ static uint8_t mb_radar[2048] = {0};
 static struct rt_mailbox mb;
 rt_bool_t net_ok = RT_FALSE;
 void                   *pclient = NULL;
+void *h_ota = NULL;
 static char DEMO_PRODUCT_KEY[IOTX_PRODUCT_KEY_LEN + 1] = {0};
 static char DEMO_DEVICE_NAME[IOTX_DEVICE_NAME_LEN + 1] = {0};
 static char DEMO_DEVICE_SECRET[IOTX_DEVICE_SECRET_LEN + 1] = {0};
@@ -36,6 +40,7 @@ int HAL_GetDeviceSecret(char device_secret[IOTX_DEVICE_SECRET_LEN]);
 uint64_t HAL_UptimeMs(void);
 int HAL_Snprintf(char *str, const int len, const char *fmt, ...);
 
+#define OTA_MQTT_MSGLEN         (2048)
 #define EXAMPLE_TRACE(fmt, ...)  \
     do { \
         HAL_Printf("%s|%03d :: ", __func__, __LINE__); \
@@ -249,11 +254,132 @@ static void example_event_handle(void *pcontext, void *pclient, iotx_mqtt_event_
 {
     EXAMPLE_TRACE("msg->event_type : %d", msg->event_type);
 }
+
+int get_ota_len()
+{
+	uint32_t size_file = 0;
+	if (h_ota)
+		if (IOT_OTA_IsFetching(h_ota)) {
+			IOT_OTA_Ioctl(h_ota, IOT_OTAG_FILE_SIZE, &size_file, 4);
+			rt_kprintf("ota file len %d\n", size_file);
+		}
+
+	net_ok = RT_FALSE;
+	return size_file;
+}
+
+void mcu_ota()
+{
+#define OTA_BUF_LEN        (5000)
+
+    int rc = 0, ota_over = 0;
+    iotx_mqtt_param_t mqtt_params;
+    char *msg_buf = NULL, *msg_readbuf = NULL, ver[128] = {0};
+    char buf_ota[OTA_BUF_LEN];
+    static const struct fal_partition *part_dev = NULL, *param_dev = NULL;
+	if ((part_dev = fal_partition_find("ota")) == NULL) {
+		EXAMPLE_TRACE("can't find ota zone");
+		return;
+	}
+	if ((param_dev = fal_partition_find("param")) == NULL) {
+		EXAMPLE_TRACE("can't find param zone");
+		return;
+	}
+	char *ptr = 0x30000000;
+	char *param = (char *)HAL_Malloc(10 * 1024);
+	if (param == NULL) {
+		EXAMPLE_TRACE("can not get param sector size");
+		return;
+	}
+	fal_partition_read(param_dev, 0, param, 10*1024);
+    do {
+        uint32_t firmware_valid;
+
+        EXAMPLE_TRACE("wait ota upgrade command....");
+
+        /* handle the MQTT packet received from TCP or SSL connection */
+        IOT_MQTT_Yield(pclient, 200);
+
+        if (IOT_OTA_IsFetching(h_ota)) {
+            uint32_t last_percent = 0, percent = 0;
+            char md5sum[33];
+            char version[128] = {0};
+            uint32_t len, size_downloaded, size_file, ofs = 0;
+            IOT_OTA_Ioctl(h_ota, IOT_OTAG_FILE_SIZE, &size_file, 4);
+            EXAMPLE_TRACE("get fw size: %d", size_file);
+            if (fal_partition_erase(part_dev, 0, size_file) < 0)
+            	EXAMPLE_TRACE("erase ota zone failed %d", ofs);
+            do {
+				len = IOT_OTA_FetchYield(h_ota, ptr, 256*1024 + 1, 1);
+                if (len > 0) {
+                	EXAMPLE_TRACE("get fw len: %d, ofs %d", len, ofs);
+					if (fal_partition_write(part_dev, ofs, (const uint8_t *)ptr, len) < 0)
+						EXAMPLE_TRACE("write to ota zone failed %d", ofs);
+					else
+						EXAMPLE_TRACE("write fw at ofs %d, len %d ok", ofs, len);
+					ofs += len;
+                } else {
+                    IOT_OTA_ReportProgress(h_ota, IOT_OTAP_FETCH_FAILED, NULL);
+                    EXAMPLE_TRACE("ota fetch fail");
+                }
+
+                /* get OTA information */
+                IOT_OTA_Ioctl(h_ota, IOT_OTAG_FETCHED_SIZE, &size_downloaded, 4);
+                IOT_OTA_Ioctl(h_ota, IOT_OTAG_FILE_SIZE, &size_file, 4);
+                IOT_OTA_Ioctl(h_ota, IOT_OTAG_MD5SUM, md5sum, 33);
+                IOT_OTA_Ioctl(h_ota, IOT_OTAG_VERSION, version, 128);
+
+                last_percent = percent;
+                percent = (size_downloaded * 100) / size_file;
+                if (percent - last_percent > 0) {
+                    //IOT_OTA_ReportProgress(h_ota, percent, NULL);
+                    //IOT_OTA_ReportProgress(h_ota, percent, "hello");
+                }
+                IOT_MQTT_Yield(pclient, 100);
+            } while (!IOT_OTA_IsFetchFinish(h_ota));
+
+            IOT_OTA_Ioctl(h_ota, IOT_OTAG_CHECK_FIRMWARE, &firmware_valid, 4);
+            if (0 == firmware_valid) {
+                EXAMPLE_TRACE("The firmware is invalid");
+            } else {
+                EXAMPLE_TRACE("The firmware is valid: %s", version);
+                IOT_OTA_ReportProgress(h_ota, 100, NULL);
+                IOT_OTA_ReportVersion(h_ota, version);
+                memcpy(param, version, 128);
+                if (fal_partition_erase(param_dev, 0, 128*1024) < 0)
+                	EXAMPLE_TRACE("erase param zone failed");
+                if (fal_partition_write(param_dev, 0, (const uint8_t *)param, 10*1024) < 0)
+                	EXAMPLE_TRACE("write to param zone failed");
+                rt_hw_cpu_reset();
+            }
+
+            ota_over = 1;
+        }
+        HAL_SleepMs(2000);
+    } while (!ota_over);
+
+    HAL_SleepMs(200);
+
+    if (NULL != h_ota) {
+        IOT_OTA_Deinit(h_ota);
+    }
+
+    if (NULL != pclient) {
+        IOT_MQTT_Destroy(&pclient);
+    }
+
+    if (ptr)
+    	HAL_Free(ptr);
+    if (param)
+    	HAL_Free(param);
+}
+
 void mqtt_init()
 {
 	static rt_bool_t mqtt_inited = RT_FALSE;
     int                     res = 0;
     int                     loop_cnt = 0;
+    iotx_conn_info_pt pconn_info;
     iotx_mqtt_param_t       mqtt_params;
 
 	if (mqtt_inited)
@@ -262,15 +388,39 @@ void mqtt_init()
     HAL_GetProductKey(DEMO_PRODUCT_KEY);
     HAL_GetDeviceName(DEMO_DEVICE_NAME);
     HAL_GetDeviceSecret(DEMO_DEVICE_SECRET);
+    if (0 != IOT_SetupConnInfo(DEMO_PRODUCT_KEY, DEMO_DEVICE_NAME,
+    			DEMO_DEVICE_SECRET, (void **)&pconn_info)) {
+        EXAMPLE_TRACE("AUTH request failed!");
+        return;
+    }
     memset(&mqtt_params, 0x0, sizeof(mqtt_params));
     mqtt_params.host = "iot-06z00friwrngpm4.mqtt.iothub.aliyuncs.com";
     mqtt_params.handle_event.h_fp = example_event_handle;
+    mqtt_params.port = pconn_info->port;
+    //mqtt_params.host = pconn_info->host_name;
+    mqtt_params.client_id = pconn_info->client_id;
+    mqtt_params.username = pconn_info->username;
+    mqtt_params.password = pconn_info->password;
+    mqtt_params.pub_key = pconn_info->pub_key;
+
+    mqtt_params.request_timeout_ms = 2000;
+    mqtt_params.clean_session = 0;
+    mqtt_params.keepalive_interval_ms = 60000;
+    mqtt_params.read_buf_size = OTA_MQTT_MSGLEN;
+    mqtt_params.write_buf_size = OTA_MQTT_MSGLEN;
+    mqtt_params.handle_event.pcontext = NULL;
 
     pclient = IOT_MQTT_Construct(&mqtt_params);
     if (NULL == pclient) {
         EXAMPLE_TRACE("MQTT construct failed");
         return;
     }
+    h_ota = IOT_OTA_Init(DEMO_PRODUCT_KEY, DEMO_DEVICE_NAME, pclient);
+    if (NULL == h_ota) {
+        EXAMPLE_TRACE("initialize OTA failed");
+        return;
+    }
+//    HAL_SleepMs(1000);
     res = example_subscribe(pclient);
     if (res < 0) {
         IOT_MQTT_Destroy(&pclient);

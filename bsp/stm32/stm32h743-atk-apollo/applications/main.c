@@ -13,6 +13,9 @@
 #include <board.h>
 #include <fal.h>
 #include <stdbool.h>
+#include "infra_compat.h"
+#include "mqtt_api.h"
+#include "ota_api.h"
 
 /* defined the LED1 pin: PB0 */
 #define LED1_PIN    GET_PIN(B, 0)
@@ -139,8 +142,11 @@ void get_cur_ver()
 #define L601_CTL_EN	GET_PIN(E, 8)
 extern int radar_init();
 extern void *pclient;
+extern int get_ota_len();
+extern void mcu_ota();
 int main(void)
 {
+	uint32_t size_file;
     /* set LED1 pin mode to output */
     rt_pin_mode(LED1_PIN, PIN_MODE_OUTPUT);
 	fal_init();
@@ -158,8 +164,12 @@ int main(void)
         rt_thread_mdelay(500);
       //  rt_pin_write(LED0_PIN, PIN_LOW);
         rt_thread_mdelay(500);
-    if (pclient)
-    IOT_MQTT_Yield(pclient, 200);
+    if (pclient) {
+	    IOT_MQTT_Yield(pclient, 200);
+	    if (get_ota_len() > 0) {
+	    	mcu_ota();
+		}
+	}
 	//rt_kprintf("dis %d, rst %d, pwr %d, pow %d, dtr %d, ctl %d\n",
 	//			L601_W_DIS, L601_RST_EN, L601_PWR_EN,
 	//			L601_POW_EN, L601_DTR, L601_CTL_EN);
