@@ -262,9 +262,9 @@ int get_ota_len()
 		if (IOT_OTA_IsFetching(h_ota)) {
 			IOT_OTA_Ioctl(h_ota, IOT_OTAG_FILE_SIZE, &size_file, 4);
 			rt_kprintf("ota file len %d\n", size_file);
+			net_ok = RT_FALSE;
 		}
 
-	net_ok = RT_FALSE;
 	return size_file;
 }
 
@@ -304,7 +304,8 @@ void mcu_ota()
             uint32_t last_percent = 0, percent = 0;
             char md5sum[33];
             char version[128] = {0};
-            uint32_t len, size_downloaded, size_file, ofs = 0;
+            int len;
+            uint32_t size_downloaded, size_file, ofs = 0;
             IOT_OTA_Ioctl(h_ota, IOT_OTAG_FILE_SIZE, &size_file, 4);
             EXAMPLE_TRACE("get fw size: %d", size_file);
             if (fal_partition_erase(part_dev, 0, size_file) < 0)
@@ -321,6 +322,7 @@ void mcu_ota()
                 } else {
                     IOT_OTA_ReportProgress(h_ota, IOT_OTAP_FETCH_FAILED, NULL);
                     EXAMPLE_TRACE("ota fetch fail");
+                	rt_hw_cpu_reset();
                 }
 
                 /* get OTA information */

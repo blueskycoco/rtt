@@ -161,9 +161,9 @@
 #define NTP_USING_AUTO_SYNC
 #define NTP_AUTO_SYNC_FIRST_DELAY 5
 #define NTP_AUTO_SYNC_PERIOD 36000
-#define NETUTILS_NTP_HOSTNAME "cn.ntp.org.cn"
+#define NETUTILS_NTP_HOSTNAME "edu.ntp.org.cn"
 #define NETUTILS_NTP_HOSTNAME2 "ntp.rt-thread.org"
-#define NETUTILS_NTP_HOSTNAME3 "edu.ntp.org.cn"
+#define NETUTILS_NTP_HOSTNAME3 "cn.ntp.org.cn"
 #define PKG_USING_NETUTILS_LATEST_VERSION
 #define PKG_NETUTILS_VER_NUM 0x99999
 #define PKG_USING_AT_DEVICE
@@ -192,7 +192,6 @@
 #define INFRA_STRING
 #define INFRA_NET
 #define INFRA_LIST
-#define INFRA_LOG_NETWORK_PAYLOAD
 #define INFRA_LOG
 
 /* Log Configurations */

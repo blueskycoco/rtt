@@ -271,7 +271,7 @@ time_t ntp_get_time(const char *host_name)
     else
     {
         /* use the static default NTP server */
-        for (i = 0; i < 1/*NTP_SERVER_NUM*/; i++)
+        for (i = 0; i < NTP_SERVER_NUM; i++)
         {
             if (host_name_buf[i] == RT_NULL || strlen(host_name_buf[i]) == 0)
                 continue;
