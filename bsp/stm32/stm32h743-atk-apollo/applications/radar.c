@@ -109,6 +109,8 @@ void build_json(uint8_t *data, uint8_t **str)
 
 	time(&time_p);
 	tmp_ptr = localtime(&time_p);
+	if (tmp_ptr->tm_year == 100)
+		ntp_sync_to_rtc(RT_NULL);
 	rt_sprintf(array_num, "%04d-%02d-%02d %02d:%02d:%02d",
 			1900 + tmp_ptr->tm_year,
 			1 + tmp_ptr->tm_mon,
@@ -183,11 +185,13 @@ static void serial_thread_entry(void *parameter)
 				}
 				rt_kprintf("\r\n\r\n");
 #endif
-				build_json(buf, &str);
-				if (buf[4] > 0)
-					rt_mb_send(&mb, (rt_uint32_t)str);
-				else
-    				cJSON_free((void *)str);		
+				if (net_ok) {
+					build_json(buf, &str);
+					if (buf[4] > 0)
+						rt_mb_send(&mb, (rt_uint32_t)str);
+					else
+    					cJSON_free((void *)str);
+				}
 				cnt = 0;
 			} else if (cnt > 50)
 				cnt = 0;
