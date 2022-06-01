@@ -50,10 +50,10 @@ static void example_message_arrive(void *pcontext, void *pclient, iotx_mqtt_even
     switch (msg->event_type) {
         case IOTX_MQTT_EVENT_PUBLISH_RECEIVED:
             /* print topic name and topic message */
-            EXAMPLE_TRACE("Message Arrived:");
-            EXAMPLE_TRACE("Topic  : %.*s", topic_info->topic_len, topic_info->ptopic);
-            EXAMPLE_TRACE("Payload: %.*s", topic_info->payload_len, topic_info->payload);
-            EXAMPLE_TRACE("\n");
+            //EXAMPLE_TRACE("Message Arrived:");
+            //EXAMPLE_TRACE("Topic  : %.*s", topic_info->topic_len, topic_info->ptopic);
+            EXAMPLE_TRACE("rcv: %.*s", topic_info->payload_len, topic_info->payload);
+            //EXAMPLE_TRACE("\n");
             break;
         default:
             break;
@@ -207,7 +207,8 @@ static void net_thread_entry(void *parameter)
 	rt_uint32_t addr;
 	while (RT_TRUE) {
 		if (rt_mb_recv(&mb, (rt_ubase_t *)&addr, RT_WAITING_FOREVER) == RT_EOK) {
-    			rt_kprintf("send[%x]: %s\n", addr, (char *)addr);
+            	EXAMPLE_TRACE("send: %.*s", strlen((char *)addr), addr);
+    			//rt_kprintf("send[%x]: %s\n", addr, (char *)addr);
     			if (net_ok) {
     				example_publish(pclient, (char *)addr);
         			IOT_MQTT_Yield(pclient, 200);
@@ -277,7 +278,7 @@ void mqtt_init()
     }
     net_ok = RT_TRUE;
 }
-
+#if 0
 static rt_bool_t radar_check_network(void)
 {
 #ifdef RT_USING_NETDEV
@@ -308,6 +309,7 @@ static int radar_auto_sync_init(void)
     return RT_EOK;
 }
 //INIT_COMPONENT_EXPORT(radar_auto_sync_init);
+#endif
 int radar_init()
 {
 	rt_err_t ret = RT_EOK;

@@ -271,7 +271,7 @@ time_t ntp_get_time(const char *host_name)
     else
     {
         /* use the static default NTP server */
-        for (i = 0; i < NTP_SERVER_NUM; i++)
+        for (i = 0; i < 1/*NTP_SERVER_NUM*/; i++)
         {
             if (host_name_buf[i] == RT_NULL || strlen(host_name_buf[i]) == 0)
                 continue;
@@ -426,6 +426,7 @@ static void ntp_sync_work_func(struct rt_work *work, void *work_data)
 {
     if (ntp_check_network())
     {
+    	rt_thread_mdelay(2000);
         ntp_sync_to_rtc(RT_NULL);
         rt_work_submit(work, rt_tick_from_millisecond(NTP_AUTO_SYNC_PERIOD * 1000));
     }

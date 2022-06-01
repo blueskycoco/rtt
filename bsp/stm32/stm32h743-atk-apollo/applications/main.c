@@ -138,6 +138,7 @@ void get_cur_ver()
 #define L601_DTR	GET_PIN(E, 7)
 #define L601_CTL_EN	GET_PIN(E, 8)
 extern int radar_init();
+extern void *pclient;
 int main(void)
 {
     /* set LED1 pin mode to output */
@@ -157,6 +158,8 @@ int main(void)
         rt_thread_mdelay(500);
       //  rt_pin_write(LED0_PIN, PIN_LOW);
         rt_thread_mdelay(500);
+    if (pclient)
+    IOT_MQTT_Yield(pclient, 200);
 	//rt_kprintf("dis %d, rst %d, pwr %d, pow %d, dtr %d, ctl %d\n",
 	//			L601_W_DIS, L601_RST_EN, L601_PWR_EN,
 	//			L601_POW_EN, L601_DTR, L601_CTL_EN);
