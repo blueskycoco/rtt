@@ -190,12 +190,18 @@ static void serial_thread_entry(void *parameter)
 				}
 				rt_kprintf("\r\n\r\n");
 #endif
+				build_json(buf, &str);
 				if (net_ok) {
-					build_json(buf, &str);
-					if (buf[4] > 0)
-						rt_mb_send(&mb, (rt_uint32_t)str);
-					else
+					if (buf[4] > 0) {
+						if (RT_EOK != rt_mb_send(&mb, (rt_uint32_t)str)) {
+    						cJSON_free((void *)str);
+							rt_kprintf("send to net failed\n");
+						}
+					} else {
     					cJSON_free((void *)str);
+					}
+				} else {
+    				cJSON_free((void *)str);
 				}
 				cnt = 0;
 			} else if (cnt > 50)
@@ -485,7 +491,7 @@ int radar_init()
 	rt_device_control(serial, RT_DEVICE_CTRL_CONFIG, &config);
 
 	rt_thread_t thread = rt_thread_create("serial", serial_thread_entry,
-										  RT_NULL, 4096, 25, 10);
+										  RT_NULL, 8192, 25, 10);
 	if (thread != RT_NULL) {
 		rt_thread_startup(thread);
 	} else {
