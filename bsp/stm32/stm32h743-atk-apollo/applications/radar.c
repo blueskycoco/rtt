@@ -1,9 +1,9 @@
-#ifdef BSP_WORKING_AS_APP
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <time.h>
 #include <string.h>
 #include <stdio.h>
+#ifdef BSP_WORKING_AS_APP
 #include <fal.h>
 #include "cJSON.h"
 #include "dev_sign_api.h"
