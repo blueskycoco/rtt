@@ -1,3 +1,4 @@
+#ifdef BSP_WORKING_AS_APP
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <time.h>
@@ -507,3 +508,4 @@ int radar_init()
 	}
 	return ret;
 }
+#endif

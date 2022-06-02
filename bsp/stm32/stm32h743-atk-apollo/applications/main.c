@@ -13,9 +13,6 @@
 #include <board.h>
 #include <fal.h>
 #include <stdbool.h>
-#include "infra_compat.h"
-#include "mqtt_api.h"
-#include "ota_api.h"
 
 /* defined the LED1 pin: PB0 */
 #define LED1_PIN    GET_PIN(B, 0)
@@ -58,6 +55,8 @@ bool ota()
 	uint32_t ota_len = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | (ptr[3]);
 	uint8_t *md5_sum = (uint8_t *)(OTA_ADDRESS + 4);
 	rt_kprintf("app len: %d\n", ota_len);
+	if (ota_len == 0xffffffff)
+		return false;
 	MD5Init(&md5);
 	MD5Update(&md5, ptr + 20, ota_len);
 	MD5Final(&md5, decrypt);
@@ -117,6 +116,9 @@ bool ota()
 	return false;
 }
 #else
+#include "infra_compat.h"
+#include "mqtt_api.h"
+#include "ota_api.h"
 void get_cur_ver()
 {
     uint8_t ver[128] = {0};
@@ -164,12 +166,14 @@ int main(void)
         rt_thread_mdelay(500);
       //  rt_pin_write(LED0_PIN, PIN_LOW);
         rt_thread_mdelay(500);
+#ifdef BSP_WORKING_AS_APP
     if (pclient) {
 	    IOT_MQTT_Yield(pclient, 200);
 	    if (get_ota_len() > 0) {
 	    	mcu_ota();
 		}
 	}
+#endif
 	//rt_kprintf("dis %d, rst %d, pwr %d, pow %d, dtr %d, ctl %d\n",
 	//			L601_W_DIS, L601_RST_EN, L601_PWR_EN,
 	//			L601_POW_EN, L601_DTR, L601_CTL_EN);
