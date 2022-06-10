@@ -127,6 +127,7 @@ void build_json(uint8_t *data, uint8_t **str)
 			*(uint32_t*)(0x1FF1E800 + 8) << 16);
 	cJSON_AddStringToObject(pJson, "timestamp", array_num);
 	cJSON_AddNumberToObject(pJson, "targetnum", data[4]);
+	cJSON *array = cJSON_CreateArray();
     for (i = 0; i < data[4]; i++) {
     	cJSON *tmp = cJSON_CreateObject();
 		cJSON_AddNumberToObject(tmp, "targetid", data[5 + i*20]);
@@ -145,10 +146,12 @@ void build_json(uint8_t *data, uint8_t **str)
 		sprintf(array_num, "%.2f", _y);
 		cJSON_AddStringToObject(tmp, "positiony", array_num);
 		cJSON_AddNumberToObject(tmp, "fdstate", data[12 + i*20]);
-		rt_sprintf(array_num, "%d", i);
-		cJSON_AddItemToObject(pJson, array_num, tmp);
+		//rt_sprintf(array_num, "%d", i);
+		//cJSON_AddItemToObject(pJson, array_num, tmp);
+		cJSON_AddItemToArray(array, tmp);
 	}
     
+	cJSON_AddItemToObject(pJson, "targetitem", array);
     *str = cJSON_PrintUnformatted(pJson);
 //    rt_kprintf("json is: %s\n", *str);
     cJSON_Delete(pJson);
