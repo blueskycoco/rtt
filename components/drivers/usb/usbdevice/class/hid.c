@@ -184,25 +184,20 @@ const rt_uint8_t _report_desc[]=
 #endif
 
 #ifdef RT_USB_DEVICE_HID_GENERAL
-    USAGE_PAGE(1),      0x8c,
-    USAGE(1),           0x01,
-    COLLECTION(1),      0x01,
-    REPORT_ID(1),       HID_REPORT_ID_GENERAL,
-
-    REPORT_COUNT(1),    RT_USB_DEVICE_HID_GENERAL_IN_REPORT_LENGTH,
-    USAGE(1),           0x03,
-    REPORT_SIZE(1),     0x08,
-    LOGICAL_MINIMUM(1), 0x00,
-    LOGICAL_MAXIMUM(1), 0xFF,
-    INPUT(1),           0x02,
-
-    REPORT_COUNT(1),    RT_USB_DEVICE_HID_GENERAL_OUT_REPORT_LENGTH,
-    USAGE(1),           0x04,
-    REPORT_SIZE(1),     0x08,
-    LOGICAL_MINIMUM(1), 0x00,
-    LOGICAL_MAXIMUM(1), 0xFF,
-    OUTPUT(1),          0x02,
-    END_COLLECTION(0),
+	0x05,	0x01,
+	0x09,	0x00,
+	0xa1,	0x01,
+	0x15,	0x00,
+	0x25,	0xff,
+	0x19,	0x01,
+	0x29,	0x08,
+	0x95,	0x40,
+	0x75,	0x08,
+	0x81,	0x02,
+	0x19,	0x01,
+	0x29,	0x08,
+	0x91,	0x02,
+	0xc0,
 #endif
 #ifdef RT_USB_DEVICE_HID_MOUSE
     USAGE_PAGE(1),      0x01,           // Generic Desktop
@@ -365,9 +360,9 @@ ALIGN(4)
 const static char* _ustring[] =
 {
     "Language",
-    "RT-Thread Team.",
-    "RTT HID-Device",
-    "32021919830108",
+    "Blue Team.",
+    "Dillon Min",
+    "dillon.minfei@gmail.com",
     "Configuration",
     "Interface",
 };
