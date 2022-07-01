@@ -27,7 +27,7 @@ int write_file(const uint8_t *file, uint8_t *buf, int len)
 	return len;
 }
 
-int main(int argc, void *argv[])
+int main(int argc, char **argv)
 {
 	int i,j;
 	uint32_t ofs = 0;
