@@ -146,8 +146,6 @@
 
 /* IoT - internet of things */
 
-#define PKG_USING_CJSON
-#define PKG_USING_CJSON_LATEST_VERSION
 
 /* Wi-Fi */
 
@@ -244,6 +242,13 @@
 
 /* language packages */
 
+/* JSON: JavaScript Object Notation, a lightweight data-interchange format */
+
+#define PKG_USING_CJSON
+#define PKG_USING_CJSON_LATEST_VERSION
+
+/* XML: Extensible Markup Language */
+
 
 /* multimedia packages */
 
@@ -262,9 +267,6 @@
 /* system packages */
 
 /* enhanced kernel services */
-
-
-/* POSIX extension functions */
 
 
 /* acceleration: Assembly language or algorithmic acceleration packages */
