@@ -110,6 +110,7 @@ static void event_handle(void *pcontext, void *pclient, iotx_mqtt_event_msg_pt m
     }
 }
 
+extern void param_set(uint32_t ofs, uint8_t *buf, uint32_t len);
 static int _ota_mqtt_client(void)
 {
 #define OTA_BUF_LEN        (5000)
@@ -279,10 +280,14 @@ static int _ota_mqtt_client(void)
                 IOT_OTA_ReportVersion(h_ota, version);
                 //rt_thread_mdelay(5000);
                 memcpy(param, version, 128);
+#if 0
                 if (fal_partition_erase(param_dev, 0, 128*1024) < 0)
                 	EXAMPLE_TRACE("erase param zone failed");
                 if (fal_partition_write(param_dev, 0, (const uint8_t *)param, 10*1024) < 0)
                 	EXAMPLE_TRACE("write to param zone failed");
+#else
+				param_set(0x01, param, 63);
+#endif
                 rt_hw_cpu_reset();
             }
 

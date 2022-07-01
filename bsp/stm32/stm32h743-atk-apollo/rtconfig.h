@@ -94,6 +94,16 @@
 
 /* Using USB */
 
+#define RT_USING_USB
+#define RT_USING_USB_DEVICE
+#define RT_USBD_THREAD_STACK_SZ 4096
+#define USB_VENDOR_ID 0x0011
+#define USB_PRODUCT_ID 0x0022
+#define _RT_USB_DEVICE_HID
+#define RT_USB_DEVICE_HID
+#define RT_USB_DEVICE_HID_GENERAL
+#define RT_USB_DEVICE_HID_GENERAL_OUT_REPORT_LENGTH 63
+#define RT_USB_DEVICE_HID_GENERAL_IN_REPORT_LENGTH 63
 
 /* C/C++ and POSIX layer */
 
@@ -314,6 +324,7 @@
 #define BSP_USING_ON_CHIP_FLASH
 #define BSP_USING_ONCHIP_RTC
 #define BSP_RTC_USING_LSE
+#define BSP_USING_USBD
 
 /* Board extended module Drivers */
 

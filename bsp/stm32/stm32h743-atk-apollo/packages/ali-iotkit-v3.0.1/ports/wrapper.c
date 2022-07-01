@@ -31,10 +31,16 @@ char _device_name[IOTX_DEVICE_NAME_LEN + 1]       = "DEV_419_ALINK_1";
 char _device_secret[IOTX_DEVICE_SECRET_LEN + 1]   = "asXuHqpF68Hqxx8nHQ077QkiikHmYJrA";
 #endif
 
+#define PARAM_FW_VER			0x01
+#define PARAM_PRODUCT_KEY		(PARAM_FW_VER + 64)
+#define PARAM_DEV_NAME			(PARAM_PRODUCT_KEY + 64)
+#define PARAM_DEV_SECRET		(PARAM_DEV_NAME + 64)
+extern void param_get(uint32_t ofs, uint8_t *buf, uint32_t len);
 int HAL_GetFirmwareVersion(char *version)
 {
     RT_ASSERT(version);
     char ver[128] = {0};
+#if 0
     static const struct fal_partition *param_dev = NULL;
 	if ((param_dev = fal_partition_find("param")) == NULL) {
 		LOG_I("can't find param zone");
@@ -42,6 +48,9 @@ int HAL_GetFirmwareVersion(char *version)
 	}
 
 	fal_partition_read(param_dev, 0, ver, 128);
+#else
+	param_get(PARAM_FW_VER, ver, 63);
+#endif
 	if (ver[0] != 'a' || ver[1] != 'p' || ver[2] != 'p')
 		strcpy(ver, "app-1.0.1-20220523.0000");
     //char *ver = "app-1.0.0-20180101.1000";
@@ -101,7 +110,8 @@ int HAL_SetProductSecret(char* product_secret)
 }
 
 int HAL_GetProductKey(char product_key[IOTX_PRODUCT_KEY_LEN + 1])
-{   
+{
+	param_get(PARAM_PRODUCT_KEY, _product_key, IOTX_PRODUCT_KEY_LEN);
     memset(product_key, 0x0, IOTX_PRODUCT_KEY_LEN + 1);
     strncpy(product_key, _product_key, IOTX_PRODUCT_KEY_LEN);
 
@@ -118,6 +128,7 @@ int HAL_GetProductSecret(char product_secret[IOTX_PRODUCT_SECRET_LEN + 1])
 
 int HAL_GetDeviceName(char device_name[IOTX_DEVICE_NAME_LEN + 1])
 {
+	param_get(PARAM_DEV_NAME, _device_name, IOTX_DEVICE_NAME_LEN);
     memset(device_name, 0x0, IOTX_DEVICE_NAME_LEN + 1);
     strncpy(device_name, _device_name, IOTX_DEVICE_NAME_LEN);
 
@@ -126,6 +137,7 @@ int HAL_GetDeviceName(char device_name[IOTX_DEVICE_NAME_LEN + 1])
 
 int HAL_GetDeviceSecret(char device_secret[IOTX_DEVICE_SECRET_LEN + 1])
 {
+	param_get(PARAM_DEV_SECRET, _device_secret, IOTX_DEVICE_SECRET_LEN);
     memset(device_secret, 0x0, IOTX_DEVICE_SECRET_LEN + 1);
     strncpy(device_secret, _device_secret, IOTX_DEVICE_SECRET_LEN);
 
