@@ -275,18 +275,22 @@ static int _ota_mqtt_client(void)
             if (0 == firmware_valid) {
                 EXAMPLE_TRACE("The firmware is invalid");
             } else {
-                EXAMPLE_TRACE("The firmware is valid: %s", version);
+                EXAMPLE_TRACE("The firmware is 111 valid: %s", version);
                 IOT_OTA_ReportProgress(h_ota, 100, NULL);
                 IOT_OTA_ReportVersion(h_ota, version);
                 //rt_thread_mdelay(5000);
-                memcpy(param, version, 128);
+                //memcpy(param, version, 128);
 #if 0
                 if (fal_partition_erase(param_dev, 0, 128*1024) < 0)
                 	EXAMPLE_TRACE("erase param zone failed");
                 if (fal_partition_write(param_dev, 0, (const uint8_t *)param, 10*1024) < 0)
                 	EXAMPLE_TRACE("write to param zone failed");
 #else
-				param_set(0x01, param, 63);
+				EXAMPLE_TRACE("%s %d", __func__, __LINE__);
+				param_set(0x01, version, 32);
+				EXAMPLE_TRACE("%s %d", __func__, __LINE__);
+				rt_thread_mdelay(2000);
+				EXAMPLE_TRACE("%s %d", __func__, __LINE__);
 #endif
                 rt_hw_cpu_reset();
             }

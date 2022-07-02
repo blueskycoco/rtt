@@ -278,6 +278,7 @@ int get_ota_len()
 	return size_file;
 }
 
+extern void param_set(uint32_t ofs, uint8_t *buf, uint32_t len);
 void mcu_ota()
 {
 #define OTA_BUF_LEN        (5000)
@@ -291,17 +292,17 @@ void mcu_ota()
 		EXAMPLE_TRACE("can't find ota zone");
 		return;
 	}
-	if ((param_dev = fal_partition_find("param")) == NULL) {
-		EXAMPLE_TRACE("can't find param zone");
-		return;
-	}
+//	if ((param_dev = fal_partition_find("param")) == NULL) {
+//		EXAMPLE_TRACE("can't find param zone");
+//		return;
+//	}
 	char *ptr = 0x30000000;
-	char *param = (char *)HAL_Malloc(10 * 1024);
-	if (param == NULL) {
-		EXAMPLE_TRACE("can not get param sector size");
-		return;
-	}
-	fal_partition_read(param_dev, 0, param, 10*1024);
+//	char *param = (char *)HAL_Malloc(10 * 1024);
+//	if (param == NULL) {
+//		EXAMPLE_TRACE("can not get param sector size");
+//		return;
+//	}
+//	fal_partition_read(param_dev, 0, param, 10*1024);
     do {
         uint32_t firmware_valid;
 
@@ -357,11 +358,15 @@ void mcu_ota()
                 EXAMPLE_TRACE("The firmware is valid: %s", version);
                 IOT_OTA_ReportProgress(h_ota, 100, NULL);
                 IOT_OTA_ReportVersion(h_ota, version);
+				param_set(0x01, version, 32);
+				rt_thread_mdelay(2000);
+#if 0
                 memcpy(param, version, 128);
                 if (fal_partition_erase(param_dev, 0, 128*1024) < 0)
                 	EXAMPLE_TRACE("erase param zone failed");
                 if (fal_partition_write(param_dev, 0, (const uint8_t *)param, 10*1024) < 0)
                 	EXAMPLE_TRACE("write to param zone failed");
+#endif
                 rt_hw_cpu_reset();
             }
 
@@ -382,8 +387,8 @@ void mcu_ota()
 
     if (ptr)
     	HAL_Free(ptr);
-    if (param)
-    	HAL_Free(param);
+//    if (param)
+//  	HAL_Free(param);
 }
 
 void mqtt_init()

@@ -287,9 +287,15 @@ void param_set(uint32_t ofs, uint8_t *buf, uint32_t len)
 	if (rt_memcmp(buf, local_buf + ofs, len) == 0)
 		return;
 
+	rt_kprintf("0fw ver: %s\n", local_buf + PARAM_FW_VER);
+	rt_kprintf("0product key: %s\n", local_buf + PARAM_PRODUCT_KEY);
 	local_buf[ofs - 1] = 0xaa;
 	rt_memcpy(local_buf + ofs, buf, len);
 
+	rt_kprintf("fw ver: %s\n", local_buf + PARAM_FW_VER);
+	rt_kprintf("product key: %s\n", local_buf + PARAM_PRODUCT_KEY);
+	rt_kprintf("dev name: %s\n", local_buf + PARAM_DEV_NAME);
+	rt_kprintf("dev secret: %s\n", local_buf + PARAM_DEV_SECRET);
 	static const struct fal_partition *param_dev = NULL;
 	if ((param_dev = fal_partition_find("param")) == NULL) {
 		rt_kprintf("can't find param zone %d\n", __LINE__);
