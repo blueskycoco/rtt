@@ -96,7 +96,7 @@
 
 #define RT_USING_USB
 #define RT_USING_USB_DEVICE
-#define RT_USBD_THREAD_STACK_SZ 4096
+#define RT_USBD_THREAD_STACK_SZ 8192
 #define USB_VENDOR_ID 0x0011
 #define USB_PRODUCT_ID 0x0022
 #define _RT_USB_DEVICE_HID
@@ -156,6 +156,8 @@
 
 /* IoT - internet of things */
 
+#define PKG_USING_CJSON
+#define PKG_USING_CJSON_LATEST_VERSION
 
 /* Wi-Fi */
 
@@ -252,13 +254,6 @@
 
 /* language packages */
 
-/* JSON: JavaScript Object Notation, a lightweight data-interchange format */
-
-#define PKG_USING_CJSON
-#define PKG_USING_CJSON_LATEST_VERSION
-
-/* XML: Extensible Markup Language */
-
 
 /* multimedia packages */
 
@@ -277,6 +272,9 @@
 /* system packages */
 
 /* enhanced kernel services */
+
+
+/* POSIX extension functions */
 
 
 /* acceleration: Assembly language or algorithmic acceleration packages */

@@ -147,6 +147,8 @@ void parse_rsp(uint8_t *rsp, uint16_t len, uint8_t *payload,
 		}
 	}
 	memcpy(payload, rsp + PAYLOAD_OFS + 1, *payload_len - 1);
+	if (rsp[PAYLOAD_OFS] != 0)
+		printf("command failed, err %d\n", rsp[PAYLOAD_OFS]);
 }
 
 void cmd_build(uint16_t msgid, uint8_t *payload, uint16_t payload_len,
