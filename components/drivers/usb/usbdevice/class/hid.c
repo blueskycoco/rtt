@@ -612,7 +612,7 @@ RT_WEAK void HID_Report_Received(hid_report_t report)
     dump_report(report);
 }
 ALIGN(RT_ALIGN_SIZE)
-static rt_uint8_t hid_thread_stack[512];
+static rt_uint8_t hid_thread_stack[4096];
 static struct rt_thread hid_thread;
 
 static void hid_thread_entry(void* parameter)

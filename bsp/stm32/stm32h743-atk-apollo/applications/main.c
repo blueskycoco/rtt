@@ -251,7 +251,7 @@ typedef uint16_t (*mcu_func)( uint8_t *in, uint16_t in_len, uint8_t *out);
 #define MCU_ERR_UNSUPPORT 0x04
 #define MCU_ERR_CRC	0x05
 #define PAYLOAD_LEN_BASE 1	//err+payload, 0 + uint32_t
-#define DEFAULT_PARAM_LEN	4096
+#define DEFAULT_PARAM_LEN	512//4096
 static uint8_t *local_buf = RT_NULL;
 static int debug = 0;
 #define PARAM_FW_VER			0x01
