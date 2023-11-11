@@ -4,7 +4,7 @@
 #define DRV_DEBUG
 #define LOG_TAG "drv.lcd"
 #include <drv_log.h>
-
+#include "lv_conf.h"
 #include <rtdevice.h>
 #include <board.h>
 
@@ -24,29 +24,12 @@
 #define  RES_L	GPIOC->ODR 		&= ~(1<<5)
 #define  PortData				(GPIOB->ODR)
 
-#define LCD_WIDTH           80
-#define LCD_HEIGHT          240
+#define LCD_WIDTH           240
+#define LCD_HEIGHT          320
 #define LCD_BITS_PER_PIXEL  16
 #define LCD_BUF_SIZE        (LCD_WIDTH * LCD_HEIGHT * LCD_BITS_PER_PIXEL / 8)
 #define LCD_PIXEL_FORMAT    RTGRAPHIC_PIXEL_FORMAT_RGB565
 #define LCD_DEVICE(dev) (struct drv_lcd_device *)(dev)
-
-struct drv_lcd_device {
-    struct rt_device parent;
-
-    struct rt_device_graphic_info lcd_info;
-
-    rt_uint8_t *frame_buf;
-};
-
-struct drv_lcd_device _lcd;
-
-static rt_err_t drv_lcd_init(struct rt_device *device) {
-    struct drv_lcd_device *lcd = LCD_DEVICE(device);
-    /* nothing, right now */
-    lcd = lcd;
-    return RT_EOK;
-}
 
 static void cmd(uint16_t Cmd) {
 	 CS_L;RS_L;RD_H;
@@ -121,53 +104,65 @@ static void set_window(rt_uint16_t xStart, rt_uint16_t xEnd,
 	cmd(0x0022);
 }
 
-static rt_err_t drv_lcd_control(struct rt_device *device, int cmd, void *args) {
-    struct drv_lcd_device *lcd = LCD_DEVICE(device);
-
-    switch (cmd) {
-    case RTGRAPHIC_CTRL_RECT_UPDATE: {
-		struct rt_device_rect_info *rect = (struct rt_device_rect_info *)args;
-
-		set_window(rect->x, rect->y, rect->x + rect->width,
-									rect->y + rect->height);
-        for (int y = rect->y; y <= rect->y + rect->height; y++) {
-            for (int x = rect->x; x <= rect->x + rect->width; x++) {
-                int location = (x) + (y)*rect->width;
-                w_data(_lcd.lcd_info.framebuffer[location]);
-			}
-		}
-	}
-    break;
-
-    case RTGRAPHIC_CTRL_GET_INFO: {
-        struct rt_device_graphic_info *info = (struct rt_device_graphic_info *)args;
-
-        RT_ASSERT(info != RT_NULL);
-        info->pixel_format = lcd->lcd_info.pixel_format;
-        info->bits_per_pixel = 16;
-        info->width = lcd->lcd_info.width;
-        info->height = lcd->lcd_info.height;
-        info->framebuffer = lcd->lcd_info.framebuffer;
-    }
-    break;
-
-    default:
-        return -RT_EINVAL;
-    }
-
-    return RT_EOK;
+static void set_point(rt_uint16_t Xpos, rt_uint16_t Ypos, rt_uint16_t point)
+{
+	set_window(Xpos, Xpos+1, Ypos, Ypos+1);
+	w_cmd_data(0x0022, point);
 }
 
-#ifdef RT_USING_DEVICE_OPS
-const static struct rt_device_ops lcd_ops = {
-    drv_lcd_init,
-    RT_NULL,
-    RT_NULL,
-    RT_NULL,
-    RT_NULL,
-    drv_lcd_control
-};
-#endif
+static void blit_line(rt_uint16_t x1, rt_uint16_t y1,
+		rt_uint16_t x2, rt_uint16_t y2, rt_uint16_t *pixel)
+{
+	rt_uint16_t t; 
+	int xerr=0,yerr=0,delta_x,delta_y,distance; 
+	int incx,incy,uRow,uCol; 
+
+	delta_x=x2-x1; 
+	delta_y=y2-y1; 
+	uRow=x1; 
+	uCol=y1; 
+	if(delta_x>0)incx=1; 
+	else if(delta_x==0)incx=0;
+	else {incx=-1;delta_x=-delta_x;} 
+	if(delta_y>0)incy=1; 
+	else if(delta_y==0)incy=0;
+	else{incy=-1;delta_y=-delta_y;} 
+	if( delta_x>delta_y)distance=delta_x; 
+	else distance=delta_y; 
+	for(t=0;t<=distance+1;t++ )
+	{  
+		set_point(uRow, uCol, *pixel++);
+		xerr+=delta_x ; 
+		yerr+=delta_y ; 
+		if(xerr>distance) 
+		{ 
+			xerr-=distance; 
+			uRow+=incx; 
+		} 
+		if(yerr>distance) 
+		{ 
+			yerr-=distance; 
+			uCol+=incy; 
+		} 
+	}  
+}
+void lcd_fill_array(rt_uint16_t x_start, rt_uint16_t y_start, rt_uint16_t x_end,
+					rt_uint16_t y_end, void *pcolor)
+{
+		set_window(x_start, x_end, y_start, y_end);
+        for (int y = y_start; y <= y_end; y++) {
+            for (int x = x_start; x <= x_end; x++) {
+            	w_data(*(rt_uint16_t *) pcolor);
+			}
+		}
+
+}
+
+static void ili9341_lcd_blit_line(const char *pixels, int x, int y, rt_size_t size)
+{
+	blit_line(x, y, x + size, y, (rt_uint16_t *)pixels);
+}
+
 
 static int _lcd_init(void) {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -236,6 +231,152 @@ static int _lcd_init(void) {
   	clear_screen(0x8700);
 }
 
+#if 1
+#define ili9341_delay_ms(ms)    rt_thread_mdelay(ms)
+//#define XSIZE_PHYS LCD_W
+//#define YSIZE_PHYS 
+
+static struct rt_device_graphic_info g_Ili9341Info =
+{
+    .bits_per_pixel = 16,
+    .pixel_format = RTGRAPHIC_PIXEL_FORMAT_RGB565,
+    .framebuffer = RT_NULL,
+    .width = LCD_W,
+    .pitch = LCD_H * 2,
+    .height = LCD_H
+};
+
+static rt_err_t ili9341_lcd_open(rt_device_t dev, rt_uint16_t oflag)
+{
+    return RT_EOK;
+}
+
+static rt_err_t ili9341_lcd_close(rt_device_t dev)
+{
+    return RT_EOK;
+}
+
+static rt_err_t ili9341_lcd_control(rt_device_t dev, int cmd, void *args)
+{
+    switch (cmd)
+    {
+    case RTGRAPHIC_CTRL_GET_INFO:
+    {
+        struct rt_device_graphic_info *info;
+
+        info = (struct rt_device_graphic_info *) args;
+        RT_ASSERT(info != RT_NULL);
+        rt_memcpy(args, (void *)&g_Ili9341Info, sizeof(struct rt_device_graphic_info));
+    }
+    break;
+
+    case RTGRAPHIC_CTRL_RECT_UPDATE:
+    {
+        /* nothong to be done */
+    }
+    break;
+    default:
+        return -RT_ERROR;
+    }
+
+    return RT_EOK;
+}
+
+static struct rt_device lcd_device;
+static struct rt_device_graphic_ops ili9341_ops =
+{
+    RT_NULL,
+    RT_NULL,
+    RT_NULL,
+    RT_NULL,
+    ili9341_lcd_blit_line
+};
+
+int lcd_init(void)
+{
+	_lcd_init();
+    /* register lcd device */
+    lcd_device.type = RT_Device_Class_Graphic;
+    lcd_device.init = RT_NULL;
+    lcd_device.open = ili9341_lcd_open;
+    lcd_device.close = ili9341_lcd_close;
+    lcd_device.control = ili9341_lcd_control;
+    lcd_device.read = RT_NULL;
+    lcd_device.write = RT_NULL;
+
+    lcd_device.user_data = &ili9341_ops;
+
+    /* register graphic device driver */
+    rt_device_register(&lcd_device, "lcd", RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE);
+
+    return 0;
+}
+#else
+struct drv_lcd_device {
+    struct rt_device parent;
+
+    struct rt_device_graphic_info lcd_info;
+
+    rt_uint8_t *frame_buf;
+};
+
+struct drv_lcd_device _lcd;
+
+static rt_err_t drv_lcd_init(struct rt_device *device) {
+    struct drv_lcd_device *lcd = LCD_DEVICE(device);
+    /* nothing, right now */
+    lcd = lcd;
+    return RT_EOK;
+}
+
+static rt_err_t drv_lcd_control(struct rt_device *device, int cmd, void *args) {
+    struct drv_lcd_device *lcd = LCD_DEVICE(device);
+
+    switch (cmd) {
+    case RTGRAPHIC_CTRL_RECT_UPDATE: {
+		struct rt_device_rect_info *rect = (struct rt_device_rect_info *)args;
+
+		set_window(rect->x, rect->y, rect->x + rect->width,
+									rect->y + rect->height);
+        for (int y = rect->y; y <= rect->y + rect->height; y++) {
+            for (int x = rect->x; x <= rect->x + rect->width; x++) {
+                int location = (x) + (y)*rect->width;
+                w_data(_lcd.lcd_info.framebuffer[location]);
+			}
+		}
+	}
+    break;
+
+    case RTGRAPHIC_CTRL_GET_INFO: {
+        struct rt_device_graphic_info *info = (struct rt_device_graphic_info *)args;
+
+        RT_ASSERT(info != RT_NULL);
+        info->pixel_format = lcd->lcd_info.pixel_format;
+        info->bits_per_pixel = 16;
+        info->width = lcd->lcd_info.width;
+        info->height = lcd->lcd_info.height;
+        info->framebuffer = lcd->lcd_info.framebuffer;
+    }
+    break;
+
+    default:
+        return -RT_EINVAL;
+    }
+
+    return RT_EOK;
+}
+
+#ifdef RT_USING_DEVICE_OPS
+const static struct rt_device_ops lcd_ops = {
+    drv_lcd_init,
+    RT_NULL,
+    RT_NULL,
+    RT_NULL,
+    RT_NULL,
+    drv_lcd_control
+};
+#endif
+
 int lcd_init(void)
 {
     rt_err_t result = RT_EOK;
@@ -283,4 +424,5 @@ __exit:
     }
     return result;
 }
+#endif
 INIT_DEVICE_EXPORT(lcd_init);

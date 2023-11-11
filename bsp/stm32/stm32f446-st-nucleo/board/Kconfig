@@ -18,6 +18,10 @@ menu "On-chip Peripheral Drivers"
         select RT_USING_PIN
         default y
 
+    config BSP_USING_LVGL
+        bool "Enable LVGL for LCD"
+        default n
+
     menuconfig BSP_USING_UART
         bool "Enable UART"
         default y

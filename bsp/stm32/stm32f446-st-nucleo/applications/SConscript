@@ -1,3 +1,4 @@
+import rtconfig
 from building import *
 import os
 
